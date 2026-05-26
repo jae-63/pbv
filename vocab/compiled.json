@@ -1,0 +1,4390 @@
+{
+  "entries": [
+    {
+      "spoken": "alpha",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "a"
+    },
+    {
+      "spoken": "bravo",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "b"
+    },
+    {
+      "spoken": "charlie",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "c"
+    },
+    {
+      "spoken": "delta",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "d"
+    },
+    {
+      "spoken": "echo",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "e"
+    },
+    {
+      "spoken": "foxtrot",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "f"
+    },
+    {
+      "spoken": "golf",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "g"
+    },
+    {
+      "spoken": "hotel",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "h"
+    },
+    {
+      "spoken": "india",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "i"
+    },
+    {
+      "spoken": "juliet",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "j"
+    },
+    {
+      "spoken": "kilo",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "k"
+    },
+    {
+      "spoken": "lima",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "l"
+    },
+    {
+      "spoken": "mike",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "m"
+    },
+    {
+      "spoken": "november",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "n"
+    },
+    {
+      "spoken": "oscar",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "o"
+    },
+    {
+      "spoken": "papa",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "p"
+    },
+    {
+      "spoken": "quebec",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "q"
+    },
+    {
+      "spoken": "romeo",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "r"
+    },
+    {
+      "spoken": "sierra",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "s"
+    },
+    {
+      "spoken": "tango",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "t"
+    },
+    {
+      "spoken": "uniform",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "u"
+    },
+    {
+      "spoken": "victor",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "v"
+    },
+    {
+      "spoken": "whiskey",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "w"
+    },
+    {
+      "spoken": "x-ray",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "x"
+    },
+    {
+      "spoken": "yankee",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "y"
+    },
+    {
+      "spoken": "zulu",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "z"
+    },
+    {
+      "spoken": "cap alpha",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "A"
+    },
+    {
+      "spoken": "cap bravo",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "B"
+    },
+    {
+      "spoken": "cap charlie",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "C"
+    },
+    {
+      "spoken": "cap delta",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "D"
+    },
+    {
+      "spoken": "cap echo",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "E"
+    },
+    {
+      "spoken": "cap foxtrot",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "F"
+    },
+    {
+      "spoken": "cap golf",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "G"
+    },
+    {
+      "spoken": "cap hotel",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "H"
+    },
+    {
+      "spoken": "cap india",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "I"
+    },
+    {
+      "spoken": "cap juliet",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "J"
+    },
+    {
+      "spoken": "cap kilo",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "K"
+    },
+    {
+      "spoken": "cap lima",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "L"
+    },
+    {
+      "spoken": "cap mike",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "M"
+    },
+    {
+      "spoken": "cap november",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "N"
+    },
+    {
+      "spoken": "cap oscar",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "O"
+    },
+    {
+      "spoken": "cap papa",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "P"
+    },
+    {
+      "spoken": "cap quebec",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "Q"
+    },
+    {
+      "spoken": "cap romeo",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "R"
+    },
+    {
+      "spoken": "cap sierra",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "S"
+    },
+    {
+      "spoken": "cap tango",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "T"
+    },
+    {
+      "spoken": "cap uniform",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "U"
+    },
+    {
+      "spoken": "cap victor",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "V"
+    },
+    {
+      "spoken": "cap whiskey",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "W"
+    },
+    {
+      "spoken": "cap x-ray",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "X"
+    },
+    {
+      "spoken": "cap yankee",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "Y"
+    },
+    {
+      "spoken": "cap zulu",
+      "source": "core",
+      "category": "characters",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "Z"
+    },
+    {
+      "spoken": "dollar sign",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "$"
+    },
+    {
+      "spoken": "at sign",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "@"
+    },
+    {
+      "spoken": "hash",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "#"
+    },
+    {
+      "spoken": "percent",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "%"
+    },
+    {
+      "spoken": "ampersand",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "&"
+    },
+    {
+      "spoken": "asterisk",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "*"
+    },
+    {
+      "spoken": "caret",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "^"
+    },
+    {
+      "spoken": "tilde",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "~"
+    },
+    {
+      "spoken": "backtick",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "`"
+    },
+    {
+      "spoken": "pipe",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "|"
+    },
+    {
+      "spoken": "backslash",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "\\"
+    },
+    {
+      "spoken": "slash",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "/"
+    },
+    {
+      "spoken": "underscore",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "_"
+    },
+    {
+      "spoken": "hyphen",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "-"
+    },
+    {
+      "spoken": "dot",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "."
+    },
+    {
+      "spoken": "comma",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ","
+    },
+    {
+      "spoken": "semicolon",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ";"
+    },
+    {
+      "spoken": "colon",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ":"
+    },
+    {
+      "spoken": "exclamation",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "!"
+    },
+    {
+      "spoken": "question mark",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "?"
+    },
+    {
+      "spoken": "open paren",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "("
+    },
+    {
+      "spoken": "close paren",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ")"
+    },
+    {
+      "spoken": "open bracket",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "["
+    },
+    {
+      "spoken": "close bracket",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "]"
+    },
+    {
+      "spoken": "open brace",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "{"
+    },
+    {
+      "spoken": "close brace",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "}"
+    },
+    {
+      "spoken": "open angle",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "<"
+    },
+    {
+      "spoken": "close angle",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ">"
+    },
+    {
+      "spoken": "open quote",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "\""
+    },
+    {
+      "spoken": "close quote",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "\""
+    },
+    {
+      "spoken": "open single quote",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "'"
+    },
+    {
+      "spoken": "close single quote",
+      "source": "core",
+      "category": "punctuation",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "'"
+    },
+    {
+      "spoken": "new line",
+      "source": "core",
+      "category": "whitespace",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "\n"
+    },
+    {
+      "spoken": "spacebar",
+      "source": "core",
+      "category": "whitespace",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " "
+    },
+    {
+      "spoken": "tab",
+      "source": "core",
+      "category": "whitespace",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "\t"
+    },
+    {
+      "spoken": "no space",
+      "source": "core",
+      "category": "whitespace",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "{NOSPACE}"
+    },
+    {
+      "spoken": "undo",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "undo"
+    },
+    {
+      "spoken": "redo",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "redo"
+    },
+    {
+      "spoken": "start transaction",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "startUndoGroup"
+    },
+    {
+      "spoken": "end transaction",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "endUndoGroup"
+    },
+    {
+      "spoken": "kill line",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "deleteToEndOfLine"
+    },
+    {
+      "spoken": "delete line",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "deleteLine"
+    },
+    {
+      "spoken": "duplicate line",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "duplicateLine"
+    },
+    {
+      "spoken": "select all",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "selectAll"
+    },
+    {
+      "spoken": "cut",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cut"
+    },
+    {
+      "spoken": "copy",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "copy"
+    },
+    {
+      "spoken": "paste",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "paste"
+    },
+    {
+      "spoken": "save",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "save"
+    },
+    {
+      "spoken": "format document",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "formatDocument"
+    },
+    {
+      "spoken": "comment line",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "toggleLineComment"
+    },
+    {
+      "spoken": "kill {N} characters",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "deleteChars",
+      "param": "N"
+    },
+    {
+      "spoken": "select {N} characters",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "selectChars",
+      "param": "N"
+    },
+    {
+      "spoken": "kill {N} words",
+      "source": "core",
+      "category": "editing",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "deleteWords",
+      "param": "N"
+    },
+    {
+      "spoken": "move up",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cursorUp"
+    },
+    {
+      "spoken": "move down",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cursorDown"
+    },
+    {
+      "spoken": "move left",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cursorLeft"
+    },
+    {
+      "spoken": "move right",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cursorRight"
+    },
+    {
+      "spoken": "beginning of line",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cursorHome"
+    },
+    {
+      "spoken": "end of line",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cursorEnd"
+    },
+    {
+      "spoken": "top of file",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cursorTop"
+    },
+    {
+      "spoken": "bottom of file",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cursorBottom"
+    },
+    {
+      "spoken": "page up",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "pageUp"
+    },
+    {
+      "spoken": "page down",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "pageDown"
+    },
+    {
+      "spoken": "search",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "find"
+    },
+    {
+      "spoken": "search and replace",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "replace"
+    },
+    {
+      "spoken": "move up {N}",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cursorUpN",
+      "param": "N"
+    },
+    {
+      "spoken": "move down {N}",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cursorDownN",
+      "param": "N"
+    },
+    {
+      "spoken": "go to line {N}",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "gotoLine",
+      "param": "N"
+    },
+    {
+      "spoken": "jump to word {W} on line {L}",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "gotoWordOnLine",
+      "param": [
+        "W",
+        "L"
+      ]
+    },
+    {
+      "spoken": "jump to {ORD} word on line {L}",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "gotoWordOnLine",
+      "param": [
+        "ORD",
+        "L"
+      ]
+    },
+    {
+      "spoken": "select {TOKEN}",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "selectToken",
+      "param": "TOKEN"
+    },
+    {
+      "spoken": "update cache",
+      "source": "core",
+      "category": "cache",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "refreshCachePad"
+    },
+    {
+      "spoken": "cache {N}",
+      "source": "core",
+      "category": "cache",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "insertCacheItem",
+      "param": "N"
+    },
+    {
+      "spoken": "recent {N}",
+      "source": "core",
+      "category": "cache",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "insertCacheItem",
+      "param": "N"
+    },
+    {
+      "spoken": "remember this",
+      "source": "core",
+      "category": "cache",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cacheCurrentWord"
+    },
+    {
+      "spoken": "cache word",
+      "source": "core",
+      "category": "cache",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "cacheCurrentWord"
+    },
+    {
+      "spoken": "forget cache {N}",
+      "source": "core",
+      "category": "cache",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "evictCacheItem",
+      "param": "N"
+    },
+    {
+      "spoken": "clear cache",
+      "source": "core",
+      "category": "cache",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "clearCachePad"
+    },
+    {
+      "spoken": "package",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "package "
+    },
+    {
+      "spoken": "import",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import "
+    },
+    {
+      "spoken": "func",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "func "
+    },
+    {
+      "spoken": "function",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "func "
+    },
+    {
+      "spoken": "return",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "return "
+    },
+    {
+      "spoken": "var",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "var "
+    },
+    {
+      "spoken": "const",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "const "
+    },
+    {
+      "spoken": "type",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "type "
+    },
+    {
+      "spoken": "struct",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "struct "
+    },
+    {
+      "spoken": "interface",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "interface "
+    },
+    {
+      "spoken": "map",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "map"
+    },
+    {
+      "spoken": "slice",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "[]"
+    },
+    {
+      "spoken": "chan",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "chan "
+    },
+    {
+      "spoken": "channel",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "chan "
+    },
+    {
+      "spoken": "go routine",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "go "
+    },
+    {
+      "spoken": "defer",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "defer "
+    },
+    {
+      "spoken": "select",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "select "
+    },
+    {
+      "spoken": "for",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "for "
+    },
+    {
+      "spoken": "range",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "range "
+    },
+    {
+      "spoken": "if",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "if "
+    },
+    {
+      "spoken": "else",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " else "
+    },
+    {
+      "spoken": "switch",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "switch "
+    },
+    {
+      "spoken": "case",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "case "
+    },
+    {
+      "spoken": "default",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "default:"
+    },
+    {
+      "spoken": "break",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "break"
+    },
+    {
+      "spoken": "continue",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "continue"
+    },
+    {
+      "spoken": "fallthrough",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "fallthrough"
+    },
+    {
+      "spoken": "panic",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "panic"
+    },
+    {
+      "spoken": "recover",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "recover"
+    },
+    {
+      "spoken": "make",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "make"
+    },
+    {
+      "spoken": "new",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "new"
+    },
+    {
+      "spoken": "append",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "append"
+    },
+    {
+      "spoken": "len",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "len"
+    },
+    {
+      "spoken": "cap",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "cap"
+    },
+    {
+      "spoken": "copy",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "copy"
+    },
+    {
+      "spoken": "close",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "close"
+    },
+    {
+      "spoken": "delete",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "delete"
+    },
+    {
+      "spoken": "nil",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "nil"
+    },
+    {
+      "spoken": "true",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "true"
+    },
+    {
+      "spoken": "false",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "false"
+    },
+    {
+      "spoken": "error",
+      "source": "go",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "error"
+    },
+    {
+      "spoken": "short assign",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " := "
+    },
+    {
+      "spoken": "assign",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " = "
+    },
+    {
+      "spoken": "is equal to",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " == "
+    },
+    {
+      "spoken": "not equal to",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " != "
+    },
+    {
+      "spoken": "less than",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " < "
+    },
+    {
+      "spoken": "greater than",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " > "
+    },
+    {
+      "spoken": "less than or equal",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " <= "
+    },
+    {
+      "spoken": "greater than or equal",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " >= "
+    },
+    {
+      "spoken": "plus equals",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " += "
+    },
+    {
+      "spoken": "minus equals",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " -= "
+    },
+    {
+      "spoken": "plus plus",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "++"
+    },
+    {
+      "spoken": "minus minus",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "--"
+    },
+    {
+      "spoken": "and",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " && "
+    },
+    {
+      "spoken": "or",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " || "
+    },
+    {
+      "spoken": "not",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "!"
+    },
+    {
+      "spoken": "arrow",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " -> "
+    },
+    {
+      "spoken": "send",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " <- "
+    },
+    {
+      "spoken": "receive",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "<-"
+    },
+    {
+      "spoken": "pointer",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "*"
+    },
+    {
+      "spoken": "address of",
+      "source": "go",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "&"
+    },
+    {
+      "spoken": "string",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "string"
+    },
+    {
+      "spoken": "int",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "int"
+    },
+    {
+      "spoken": "int 64",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "int64"
+    },
+    {
+      "spoken": "int 32",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "int32"
+    },
+    {
+      "spoken": "uint 64",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "uint64"
+    },
+    {
+      "spoken": "float 64",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "float64"
+    },
+    {
+      "spoken": "float 32",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "float32"
+    },
+    {
+      "spoken": "bool",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "bool"
+    },
+    {
+      "spoken": "byte",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "byte"
+    },
+    {
+      "spoken": "rune",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "rune"
+    },
+    {
+      "spoken": "any",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "any"
+    },
+    {
+      "spoken": "interface any",
+      "source": "go",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "interface{}"
+    },
+    {
+      "spoken": "error check",
+      "source": "go",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "if err != nil {\n    return {CURSOR}err\n}"
+    },
+    {
+      "spoken": "func signature",
+      "source": "go",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "func {CURSOR}() error {\n    "
+    },
+    {
+      "spoken": "for range",
+      "source": "go",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "for {CURSOR}, v := range  {\n    "
+    },
+    {
+      "spoken": "struct definition",
+      "source": "go",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "type {CURSOR} struct {\n    "
+    },
+    {
+      "spoken": "interface definition",
+      "source": "go",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "type {CURSOR} interface {\n    "
+    },
+    {
+      "spoken": "make slice",
+      "source": "go",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "make([]{CURSOR}, 0)"
+    },
+    {
+      "spoken": "make map",
+      "source": "go",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "make(map[{CURSOR}])"
+    },
+    {
+      "spoken": "go routine",
+      "source": "go",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "go func() {\n    {CURSOR}\n}()"
+    },
+    {
+      "spoken": "fmt print line",
+      "source": "go",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "fmt.Println({CURSOR})"
+    },
+    {
+      "spoken": "fmt printf",
+      "source": "go",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "fmt.Printf(\"{CURSOR}\")"
+    },
+    {
+      "spoken": "fmt errorf",
+      "source": "go",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "fmt.Errorf(\"{CURSOR}\")"
+    },
+    {
+      "spoken": "api version",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "apiVersion: "
+    },
+    {
+      "spoken": "kind",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "kind: "
+    },
+    {
+      "spoken": "metadata",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "metadata:"
+    },
+    {
+      "spoken": "spec",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "spec:"
+    },
+    {
+      "spoken": "status",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "status:"
+    },
+    {
+      "spoken": "name",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "name: "
+    },
+    {
+      "spoken": "namespace",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "namespace: "
+    },
+    {
+      "spoken": "labels",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "labels:"
+    },
+    {
+      "spoken": "annotations",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "annotations:"
+    },
+    {
+      "spoken": "selector",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "selector:"
+    },
+    {
+      "spoken": "match labels",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "matchLabels:"
+    },
+    {
+      "spoken": "template",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "template:"
+    },
+    {
+      "spoken": "containers",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "containers:"
+    },
+    {
+      "spoken": "image",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "image: "
+    },
+    {
+      "spoken": "image pull policy",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "imagePullPolicy: "
+    },
+    {
+      "spoken": "ports",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "ports:"
+    },
+    {
+      "spoken": "container port",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "containerPort: "
+    },
+    {
+      "spoken": "env",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "env:"
+    },
+    {
+      "spoken": "env from",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "envFrom:"
+    },
+    {
+      "spoken": "resources",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "resources:"
+    },
+    {
+      "spoken": "limits",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "limits:"
+    },
+    {
+      "spoken": "requests",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "requests:"
+    },
+    {
+      "spoken": "volume mounts",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "volumeMounts:"
+    },
+    {
+      "spoken": "volumes",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "volumes:"
+    },
+    {
+      "spoken": "replicas",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "replicas: "
+    },
+    {
+      "spoken": "restart policy",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "restartPolicy: "
+    },
+    {
+      "spoken": "service account name",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "serviceAccountName: "
+    },
+    {
+      "spoken": "liveness probe",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "livenessProbe:"
+    },
+    {
+      "spoken": "readiness probe",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "readinessProbe:"
+    },
+    {
+      "spoken": "config map ref",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "configMapRef:"
+    },
+    {
+      "spoken": "secret ref",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "secretRef:"
+    },
+    {
+      "spoken": "value from",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "valueFrom:"
+    },
+    {
+      "spoken": "secret key ref",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "secretKeyRef:"
+    },
+    {
+      "spoken": "config map key ref",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "configMapKeyRef:"
+    },
+    {
+      "spoken": "node selector",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "nodeSelector:"
+    },
+    {
+      "spoken": "affinity",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "affinity:"
+    },
+    {
+      "spoken": "tolerations",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "tolerations:"
+    },
+    {
+      "spoken": "init containers",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "initContainers:"
+    },
+    {
+      "spoken": "command",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "command:"
+    },
+    {
+      "spoken": "args",
+      "source": "k8s-yaml",
+      "category": "fields",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "args:"
+    },
+    {
+      "spoken": "deployment",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Deployment"
+    },
+    {
+      "spoken": "service",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Service"
+    },
+    {
+      "spoken": "config map",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "ConfigMap"
+    },
+    {
+      "spoken": "secret",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Secret"
+    },
+    {
+      "spoken": "ingress",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Ingress"
+    },
+    {
+      "spoken": "service account",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "ServiceAccount"
+    },
+    {
+      "spoken": "stateful set",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "StatefulSet"
+    },
+    {
+      "spoken": "daemon set",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "DaemonSet"
+    },
+    {
+      "spoken": "cron job",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "CronJob"
+    },
+    {
+      "spoken": "job",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Job"
+    },
+    {
+      "spoken": "persistent volume",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "PersistentVolume"
+    },
+    {
+      "spoken": "persistent volume claim",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "PersistentVolumeClaim"
+    },
+    {
+      "spoken": "horizontal pod autoscaler",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "HorizontalPodAutoscaler"
+    },
+    {
+      "spoken": "namespace kind",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Namespace"
+    },
+    {
+      "spoken": "role",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Role"
+    },
+    {
+      "spoken": "cluster role",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "ClusterRole"
+    },
+    {
+      "spoken": "role binding",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "RoleBinding"
+    },
+    {
+      "spoken": "cluster role binding",
+      "source": "k8s-yaml",
+      "category": "kinds",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "ClusterRoleBinding"
+    },
+    {
+      "spoken": "deployment manifest",
+      "source": "k8s-yaml",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: {CURSOR}\n  namespace: default\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app:\n  template:\n    metadata:\n      labels:\n        app:\n    spec:\n      containers:\n        - name:\n          image:\n"
+    },
+    {
+      "spoken": "service manifest",
+      "source": "k8s-yaml",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "apiVersion: v1\nkind: Service\nmetadata:\n  name: {CURSOR}\n  namespace: default\nspec:\n  selector:\n    app:\n  ports:\n    - port: 80\n      targetPort:\n  type: ClusterIP\n"
+    },
+    {
+      "spoken": "config map manifest",
+      "source": "k8s-yaml",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: {CURSOR}\n  namespace: default\ndata:\n"
+    },
+    {
+      "spoken": "new document",
+      "source": "k8s-yaml",
+      "category": "patterns",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "---\n"
+    },
+    {
+      "spoken": "list item",
+      "source": "k8s-yaml",
+      "category": "patterns",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "- "
+    },
+    {
+      "spoken": "resource cpu",
+      "source": "k8s-yaml",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "cpu: \"{CURSOR}\""
+    },
+    {
+      "spoken": "resource memory",
+      "source": "k8s-yaml",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "memory: \"{CURSOR}\""
+    },
+    {
+      "spoken": "define",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def "
+    },
+    {
+      "spoken": "class",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "class "
+    },
+    {
+      "spoken": "return",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "return "
+    },
+    {
+      "spoken": "yield",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "yield "
+    },
+    {
+      "spoken": "import",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import "
+    },
+    {
+      "spoken": "from",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "from "
+    },
+    {
+      "spoken": "as",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " as "
+    },
+    {
+      "spoken": "if",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "if "
+    },
+    {
+      "spoken": "else",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "else"
+    },
+    {
+      "spoken": "else if",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "elif "
+    },
+    {
+      "spoken": "elif",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "elif "
+    },
+    {
+      "spoken": "for",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "for "
+    },
+    {
+      "spoken": "while",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "while "
+    },
+    {
+      "spoken": "with",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "with "
+    },
+    {
+      "spoken": "try",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "try"
+    },
+    {
+      "spoken": "except",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "except"
+    },
+    {
+      "spoken": "finally",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "finally"
+    },
+    {
+      "spoken": "raise",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "raise "
+    },
+    {
+      "spoken": "pass",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "pass"
+    },
+    {
+      "spoken": "break",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "break"
+    },
+    {
+      "spoken": "continue",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "continue"
+    },
+    {
+      "spoken": "lambda",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "lambda "
+    },
+    {
+      "spoken": "delete",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "del "
+    },
+    {
+      "spoken": "global",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "global "
+    },
+    {
+      "spoken": "nonlocal",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "nonlocal "
+    },
+    {
+      "spoken": "assert",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "assert "
+    },
+    {
+      "spoken": "async",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async "
+    },
+    {
+      "spoken": "await",
+      "source": "python",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "await "
+    },
+    {
+      "spoken": "true",
+      "source": "python",
+      "category": "literals",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "True"
+    },
+    {
+      "spoken": "false",
+      "source": "python",
+      "category": "literals",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "False"
+    },
+    {
+      "spoken": "none",
+      "source": "python",
+      "category": "literals",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "None"
+    },
+    {
+      "spoken": "not",
+      "source": "python",
+      "category": "literals",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "not "
+    },
+    {
+      "spoken": "and",
+      "source": "python",
+      "category": "literals",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " and "
+    },
+    {
+      "spoken": "or",
+      "source": "python",
+      "category": "literals",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " or "
+    },
+    {
+      "spoken": "in",
+      "source": "python",
+      "category": "literals",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " in "
+    },
+    {
+      "spoken": "not in",
+      "source": "python",
+      "category": "literals",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " not in "
+    },
+    {
+      "spoken": "is",
+      "source": "python",
+      "category": "literals",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " is "
+    },
+    {
+      "spoken": "is not",
+      "source": "python",
+      "category": "literals",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " is not "
+    },
+    {
+      "spoken": "assign",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " = "
+    },
+    {
+      "spoken": "is equal to",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " == "
+    },
+    {
+      "spoken": "not equal to",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " != "
+    },
+    {
+      "spoken": "less than",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " < "
+    },
+    {
+      "spoken": "greater than",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " > "
+    },
+    {
+      "spoken": "less than or equal",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " <= "
+    },
+    {
+      "spoken": "greater than or equal",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " >= "
+    },
+    {
+      "spoken": "plus equals",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " += "
+    },
+    {
+      "spoken": "minus equals",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " -= "
+    },
+    {
+      "spoken": "times equals",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " *= "
+    },
+    {
+      "spoken": "divide equals",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " /= "
+    },
+    {
+      "spoken": "plus",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " + "
+    },
+    {
+      "spoken": "minus",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " - "
+    },
+    {
+      "spoken": "times",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " * "
+    },
+    {
+      "spoken": "divide",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " / "
+    },
+    {
+      "spoken": "floor divide",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " // "
+    },
+    {
+      "spoken": "modulo",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " % "
+    },
+    {
+      "spoken": "power",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " ** "
+    },
+    {
+      "spoken": "walrus",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " := "
+    },
+    {
+      "spoken": "arrow",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " -> "
+    },
+    {
+      "spoken": "bitwise and",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " & "
+    },
+    {
+      "spoken": "bitwise or",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " | "
+    },
+    {
+      "spoken": "bitwise xor",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " ^ "
+    },
+    {
+      "spoken": "left shift",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " << "
+    },
+    {
+      "spoken": "right shift",
+      "source": "python",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " >> "
+    },
+    {
+      "spoken": "print",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "print"
+    },
+    {
+      "spoken": "len",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "len"
+    },
+    {
+      "spoken": "range",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "range"
+    },
+    {
+      "spoken": "list",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "list"
+    },
+    {
+      "spoken": "dict",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "dict"
+    },
+    {
+      "spoken": "set",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "set"
+    },
+    {
+      "spoken": "tuple",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "tuple"
+    },
+    {
+      "spoken": "string",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "str"
+    },
+    {
+      "spoken": "int",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "int"
+    },
+    {
+      "spoken": "float",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "float"
+    },
+    {
+      "spoken": "bool",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "bool"
+    },
+    {
+      "spoken": "type",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "type"
+    },
+    {
+      "spoken": "isinstance",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "isinstance"
+    },
+    {
+      "spoken": "enumerate",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "enumerate"
+    },
+    {
+      "spoken": "zip",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "zip"
+    },
+    {
+      "spoken": "map",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "map"
+    },
+    {
+      "spoken": "filter",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "filter"
+    },
+    {
+      "spoken": "sorted",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "sorted"
+    },
+    {
+      "spoken": "reversed",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "reversed"
+    },
+    {
+      "spoken": "open",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "open"
+    },
+    {
+      "spoken": "super",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "super"
+    },
+    {
+      "spoken": "self",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "self"
+    },
+    {
+      "spoken": "class method",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "cls"
+    },
+    {
+      "spoken": "get attr",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "getattr"
+    },
+    {
+      "spoken": "set attr",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "setattr"
+    },
+    {
+      "spoken": "has attr",
+      "source": "python",
+      "category": "builtins",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "hasattr"
+    },
+    {
+      "spoken": "colon new line",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ":\n    "
+    },
+    {
+      "spoken": "define function",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def {CURSOR}():\n    "
+    },
+    {
+      "spoken": "define method",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def {CURSOR}(self):\n    "
+    },
+    {
+      "spoken": "if block",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "if {CURSOR}:\n    "
+    },
+    {
+      "spoken": "for loop",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "for {CURSOR} in :\n    "
+    },
+    {
+      "spoken": "while loop",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "while {CURSOR}:\n    "
+    },
+    {
+      "spoken": "list comprehension",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "[{CURSOR} for  in ]"
+    },
+    {
+      "spoken": "dict comprehension",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "{{CURSOR}: for  in }"
+    },
+    {
+      "spoken": "try block",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "try:\n    {CURSOR}\nexcept Exception as e:\n    "
+    },
+    {
+      "spoken": "f string",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "f\"{CURSOR}\""
+    },
+    {
+      "spoken": "with block",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "with {CURSOR} as :\n    "
+    },
+    {
+      "spoken": "type hint",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ": {CURSOR}"
+    },
+    {
+      "spoken": "import from",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "from {CURSOR} import "
+    },
+    {
+      "spoken": "dunder init",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__init__"
+    },
+    {
+      "spoken": "dunder main",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__main__"
+    },
+    {
+      "spoken": "dunder name",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__name__"
+    },
+    {
+      "spoken": "dunder str",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__str__"
+    },
+    {
+      "spoken": "dunder repr",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__repr__"
+    },
+    {
+      "spoken": "if main",
+      "source": "python",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "if __name__ == \"__main__\":\n    "
+    },
+    {
+      "spoken": "optional",
+      "source": "python",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Optional"
+    },
+    {
+      "spoken": "union",
+      "source": "python",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Union"
+    },
+    {
+      "spoken": "list type",
+      "source": "python",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "List"
+    },
+    {
+      "spoken": "dict type",
+      "source": "python",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Dict"
+    },
+    {
+      "spoken": "tuple type",
+      "source": "python",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Tuple"
+    },
+    {
+      "spoken": "any",
+      "source": "python",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Any"
+    },
+    {
+      "spoken": "callable",
+      "source": "python",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Callable"
+    },
+    {
+      "spoken": "generator",
+      "source": "python",
+      "category": "types",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Generator"
+    },
+    {
+      "spoken": "property",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@property\n"
+    },
+    {
+      "spoken": "static method",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@staticmethod\n"
+    },
+    {
+      "spoken": "class method decorator",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@classmethod\n"
+    },
+    {
+      "spoken": "data class",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@dataclass\n"
+    },
+    {
+      "spoken": "lru cache",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@functools.lru_cache()\n"
+    },
+    {
+      "spoken": "cache decorator",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@functools.cache\n"
+    },
+    {
+      "spoken": "abstract method",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@abstractmethod\n"
+    },
+    {
+      "spoken": "override",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@override\n"
+    },
+    {
+      "spoken": "cached property",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@cached_property\n"
+    },
+    {
+      "spoken": "shebang",
+      "source": "python",
+      "category": "boilerplate",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "#!/usr/bin/env python3\n"
+    },
+    {
+      "spoken": "encoding",
+      "source": "python",
+      "category": "boilerplate",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "# -*- coding: utf-8 -*-\n"
+    },
+    {
+      "spoken": "all exports",
+      "source": "python",
+      "category": "boilerplate",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__all__ = [{CURSOR}]"
+    },
+    {
+      "spoken": "empty dict",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "{}"
+    },
+    {
+      "spoken": "empty list",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "[]"
+    },
+    {
+      "spoken": "empty set",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "set()"
+    },
+    {
+      "spoken": "dot get",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".get({CURSOR})"
+    },
+    {
+      "spoken": "dot items",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".items()"
+    },
+    {
+      "spoken": "dot keys",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".keys()"
+    },
+    {
+      "spoken": "dot values",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".values()"
+    },
+    {
+      "spoken": "dot update",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".update({CURSOR})"
+    },
+    {
+      "spoken": "dot append",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".append({CURSOR})"
+    },
+    {
+      "spoken": "dot extend",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".extend({CURSOR})"
+    },
+    {
+      "spoken": "dot pop",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".pop({CURSOR})"
+    },
+    {
+      "spoken": "default dict",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "defaultdict({CURSOR})"
+    },
+    {
+      "spoken": "counter",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Counter({CURSOR})"
+    },
+    {
+      "spoken": "ordered dict",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "OrderedDict()"
+    },
+    {
+      "spoken": "named tuple",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "namedtuple(\"{CURSOR}\", [])"
+    },
+    {
+      "spoken": "dict get with default",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".get({CURSOR}, None)"
+    },
+    {
+      "spoken": "setdefault",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".setdefault({CURSOR}, [])"
+    },
+    {
+      "spoken": "closure",
+      "source": "python",
+      "category": "closures",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def outer({CURSOR}):\n    def inner():\n        \n    return inner"
+    },
+    {
+      "spoken": "partial",
+      "source": "python",
+      "category": "closures",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "functools.partial({CURSOR}, )"
+    },
+    {
+      "spoken": "reduce",
+      "source": "python",
+      "category": "closures",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "functools.reduce({CURSOR}, )"
+    },
+    {
+      "spoken": "wrapped",
+      "source": "python",
+      "category": "closures",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@functools.wraps({CURSOR})\n"
+    },
+    {
+      "spoken": "define decorator",
+      "source": "python",
+      "category": "closures",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def {CURSOR}(func):\n    @functools.wraps(func)\n    def wrapper(*args, **kwargs):\n        return func(*args, **kwargs)\n    return wrapper"
+    },
+    {
+      "spoken": "dir",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "dir({CURSOR})"
+    },
+    {
+      "spoken": "vars",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "vars({CURSOR})"
+    },
+    {
+      "spoken": "type of",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "type({CURSOR})"
+    },
+    {
+      "spoken": "is subclass",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "issubclass({CURSOR}, )"
+    },
+    {
+      "spoken": "callable check",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "callable({CURSOR})"
+    },
+    {
+      "spoken": "import inspect",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import inspect\n"
+    },
+    {
+      "spoken": "get members",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "inspect.getmembers({CURSOR})"
+    },
+    {
+      "spoken": "get source",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "inspect.getsource({CURSOR})"
+    },
+    {
+      "spoken": "get signature",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "inspect.signature({CURSOR})"
+    },
+    {
+      "spoken": "is function",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "inspect.isfunction({CURSOR})"
+    },
+    {
+      "spoken": "is class",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "inspect.isclass({CURSOR})"
+    },
+    {
+      "spoken": "annotations",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".__annotations__"
+    },
+    {
+      "spoken": "mro",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".__mro__"
+    },
+    {
+      "spoken": "abstract base class",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "class {CURSOR}(ABC):\n    "
+    },
+    {
+      "spoken": "metaclass",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "class {CURSOR}(metaclass=type):\n    "
+    },
+    {
+      "spoken": "dunder new",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __new__(cls, *args, **kwargs):\n    instance = super().__new__(cls)\n    {CURSOR}\n    return instance"
+    },
+    {
+      "spoken": "dunder init subclass",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __init_subclass__(cls, **kwargs):\n    super().__init_subclass__(**kwargs)\n    {CURSOR}"
+    },
+    {
+      "spoken": "dunder enter",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __enter__(self):\n    {CURSOR}\n    return self"
+    },
+    {
+      "spoken": "dunder exit",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __exit__(self, exc_type, exc_val, exc_tb):\n    {CURSOR}\n    return False"
+    },
+    {
+      "spoken": "dunder len",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __len__(self):\n    return {CURSOR}"
+    },
+    {
+      "spoken": "dunder getitem",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __getitem__(self, key):\n    return {CURSOR}"
+    },
+    {
+      "spoken": "dunder setitem",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __setitem__(self, key, value):\n    {CURSOR}"
+    },
+    {
+      "spoken": "dunder iter",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __iter__(self):\n    {CURSOR}"
+    },
+    {
+      "spoken": "dunder next",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __next__(self):\n    {CURSOR}"
+    },
+    {
+      "spoken": "dunder call",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __call__(self, *args, **kwargs):\n    {CURSOR}"
+    },
+    {
+      "spoken": "dunder eq",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __eq__(self, other):\n    return {CURSOR}"
+    },
+    {
+      "spoken": "dunder hash",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __hash__(self):\n    return hash({CURSOR})"
+    },
+    {
+      "spoken": "dunder slots",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "__slots__ = ({CURSOR},)"
+    },
+    {
+      "spoken": "async function",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async def {CURSOR}():\n    "
+    },
+    {
+      "spoken": "async method",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async def {CURSOR}(self):\n    "
+    },
+    {
+      "spoken": "async for loop",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async for {CURSOR} in :\n    "
+    },
+    {
+      "spoken": "async with block",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async with {CURSOR} as :\n    "
+    },
+    {
+      "spoken": "async main",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async def main() -> None:\n    {CURSOR}\n\nif __name__ == \"__main__\":\n    asyncio.run(main())"
+    },
+    {
+      "spoken": "asyncio run",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "asyncio.run({CURSOR})"
+    },
+    {
+      "spoken": "create task",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "asyncio.create_task({CURSOR})"
+    },
+    {
+      "spoken": "gather",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "await asyncio.gather({CURSOR})"
+    },
+    {
+      "spoken": "task group",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async with asyncio.TaskGroup() as tg:\n    {CURSOR}"
+    },
+    {
+      "spoken": "async generator",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async def {CURSOR}():\n    yield "
+    },
+    {
+      "spoken": "async context manager",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@asynccontextmanager\nasync def {CURSOR}():\n    try:\n        yield\n    finally:\n        pass"
+    },
+    {
+      "spoken": "import asyncio",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import asyncio\n"
+    },
+    {
+      "spoken": "sleep",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "await asyncio.sleep({CURSOR})"
+    },
+    {
+      "spoken": "event",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "asyncio.Event()"
+    },
+    {
+      "spoken": "async queue",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "asyncio.Queue({CURSOR})"
+    },
+    {
+      "spoken": "import threading",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import threading\n"
+    },
+    {
+      "spoken": "thread",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.Thread(target={CURSOR}, daemon=True)"
+    },
+    {
+      "spoken": "thread start",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".start()"
+    },
+    {
+      "spoken": "thread join",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".join()"
+    },
+    {
+      "spoken": "lock",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.Lock()"
+    },
+    {
+      "spoken": "r lock",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.RLock()"
+    },
+    {
+      "spoken": "with lock",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "with {CURSOR}:\n    "
+    },
+    {
+      "spoken": "condition",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.Condition({CURSOR})"
+    },
+    {
+      "spoken": "semaphore",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.Semaphore({CURSOR})"
+    },
+    {
+      "spoken": "event flag",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.Event()"
+    },
+    {
+      "spoken": "thread local",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.local()"
+    },
+    {
+      "spoken": "thread pool",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "ThreadPoolExecutor(max_workers={CURSOR})"
+    },
+    {
+      "spoken": "submit",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".submit({CURSOR})"
+    },
+    {
+      "spoken": "as completed",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "concurrent.futures.as_completed({CURSOR})"
+    },
+    {
+      "spoken": "future result",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".result()"
+    },
+    {
+      "spoken": "import multiprocessing",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import multiprocessing\n"
+    },
+    {
+      "spoken": "process",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Process(target={CURSOR}, daemon=True)"
+    },
+    {
+      "spoken": "process pool",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "ProcessPoolExecutor(max_workers={CURSOR})"
+    },
+    {
+      "spoken": "pool map",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "pool.map({CURSOR}, )"
+    },
+    {
+      "spoken": "mp queue",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Queue()"
+    },
+    {
+      "spoken": "pipe",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Pipe()"
+    },
+    {
+      "spoken": "shared value",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Value(\"{CURSOR}\", 0)"
+    },
+    {
+      "spoken": "shared array",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Array(\"{CURSOR}\", [])"
+    },
+    {
+      "spoken": "manager",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Manager()"
+    },
+    {
+      "spoken": "cpu count",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.cpu_count()"
+    },
+    {
+      "spoken": "spawn context",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.get_context(\"spawn\")"
+    },
+    {
+      "spoken": "resource",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "resource "
+    },
+    {
+      "spoken": "data",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "data "
+    },
+    {
+      "spoken": "variable",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "variable "
+    },
+    {
+      "spoken": "output",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "output "
+    },
+    {
+      "spoken": "locals",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "locals "
+    },
+    {
+      "spoken": "module",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "module "
+    },
+    {
+      "spoken": "provider",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "provider "
+    },
+    {
+      "spoken": "terraform",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "terraform "
+    },
+    {
+      "spoken": "backend",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "backend "
+    },
+    {
+      "spoken": "required providers",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "required_providers"
+    },
+    {
+      "spoken": "lifecycle",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "lifecycle "
+    },
+    {
+      "spoken": "provisioner",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "provisioner "
+    },
+    {
+      "spoken": "dynamic",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "dynamic "
+    },
+    {
+      "spoken": "for each",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "for_each"
+    },
+    {
+      "spoken": "count",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "count"
+    },
+    {
+      "spoken": "depends on",
+      "source": "terraform",
+      "category": "keywords",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "depends_on"
+    },
+    {
+      "spoken": "assign",
+      "source": "terraform",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " = "
+    },
+    {
+      "spoken": "equals",
+      "source": "terraform",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " == "
+    },
+    {
+      "spoken": "not equals",
+      "source": "terraform",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " != "
+    },
+    {
+      "spoken": "greater than",
+      "source": "terraform",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " > "
+    },
+    {
+      "spoken": "less than",
+      "source": "terraform",
+      "category": "operators",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": " < "
+    },
+    {
+      "spoken": "heredoc",
+      "source": "terraform",
+      "category": "operators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "<<-EOT\n{CURSOR}\nEOT"
+    },
+    {
+      "spoken": "true",
+      "source": "terraform",
+      "category": "literals",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "true"
+    },
+    {
+      "spoken": "false",
+      "source": "terraform",
+      "category": "literals",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "false"
+    },
+    {
+      "spoken": "null",
+      "source": "terraform",
+      "category": "literals",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "written": "null"
+    },
+    {
+      "spoken": "local dot",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "local."
+    },
+    {
+      "spoken": "var dot",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "var."
+    },
+    {
+      "spoken": "each dot key",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "each.key"
+    },
+    {
+      "spoken": "each dot value",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "each.value"
+    },
+    {
+      "spoken": "to set",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "toset("
+    },
+    {
+      "spoken": "to map",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "tomap("
+    },
+    {
+      "spoken": "to list",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "tolist("
+    },
+    {
+      "spoken": "merge",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "merge("
+    },
+    {
+      "spoken": "lookup",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "lookup("
+    },
+    {
+      "spoken": "try",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "try("
+    },
+    {
+      "spoken": "can",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "can("
+    },
+    {
+      "spoken": "coalesce",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "coalesce("
+    },
+    {
+      "spoken": "concat",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "concat("
+    },
+    {
+      "spoken": "flatten",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "flatten("
+    },
+    {
+      "spoken": "json encode",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "jsonencode("
+    },
+    {
+      "spoken": "json decode",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "jsondecode("
+    },
+    {
+      "spoken": "file",
+      "source": "terraform",
+      "category": "functions",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "file("
+    },
+    {
+      "spoken": "resource block",
+      "source": "terraform",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "resource \"{CURSOR}\" \"\" {\n  \n}"
+    },
+    {
+      "spoken": "variable block",
+      "source": "terraform",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "variable \"{CURSOR}\" {\n  type        = \n  description = \"\"\n  default     = \n}"
+    },
+    {
+      "spoken": "output block",
+      "source": "terraform",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "output \"{CURSOR}\" {\n  value = \n}"
+    },
+    {
+      "spoken": "locals block",
+      "source": "terraform",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "locals {\n  {CURSOR} = \n}"
+    },
+    {
+      "spoken": "for each block",
+      "source": "terraform",
+      "category": "patterns",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "for_each = {CURSOR}"
+    },
+    {
+      "spoken": "interpolation",
+      "source": "terraform",
+      "category": "patterns",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "${{{CURSOR}}}"
+    }
+  ]
+}

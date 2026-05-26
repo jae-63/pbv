@@ -1,0 +1,631 @@
+# Python vocabulary
+# Extends core.yaml. All entries follow the same schema.
+# space_before/space_after default to true for keywords/operators (word-level tokens).
+
+# ---------------------------------------------------------------------------
+# Keywords
+# ---------------------------------------------------------------------------
+keywords:
+  - {spoken: "define",          written: "def ",        space_before: true,  space_after: false}
+  - {spoken: "class",           written: "class ",      space_before: true,  space_after: false}
+  - {spoken: "return",          written: "return ",     space_before: true,  space_after: false}
+  - {spoken: "yield",           written: "yield ",      space_before: true,  space_after: false}
+  - {spoken: "import",          written: "import ",     space_before: true,  space_after: false}
+  - {spoken: "from",            written: "from ",       space_before: true,  space_after: false}
+  - {spoken: "as",              written: " as ",        space_before: false, space_after: false}
+  - {spoken: "if",              written: "if ",         space_before: true,  space_after: false}
+  - {spoken: "else",            written: "else",        space_before: true,  space_after: false}
+  - {spoken: "else if",         written: "elif ",       space_before: true,  space_after: false}
+  - {spoken: "elif",            written: "elif ",       space_before: true,  space_after: false}
+  - {spoken: "for",             written: "for ",        space_before: true,  space_after: false}
+  - {spoken: "while",           written: "while ",      space_before: true,  space_after: false}
+  - {spoken: "with",            written: "with ",       space_before: true,  space_after: false}
+  - {spoken: "try",             written: "try",         space_before: true,  space_after: false}
+  - {spoken: "except",          written: "except",      space_before: true,  space_after: false}
+  - {spoken: "finally",         written: "finally",     space_before: true,  space_after: false}
+  - {spoken: "raise",           written: "raise ",      space_before: true,  space_after: false}
+  - {spoken: "pass",            written: "pass",        space_before: true,  space_after: false}
+  - {spoken: "break",           written: "break",       space_before: true,  space_after: false}
+  - {spoken: "continue",        written: "continue",    space_before: true,  space_after: false}
+  - {spoken: "lambda",          written: "lambda ",     space_before: true,  space_after: false}
+  - {spoken: "delete",          written: "del ",        space_before: true,  space_after: false}
+  - {spoken: "global",          written: "global ",     space_before: true,  space_after: false}
+  - {spoken: "nonlocal",        written: "nonlocal ",   space_before: true,  space_after: false}
+  - {spoken: "assert",          written: "assert ",     space_before: true,  space_after: false}
+  - {spoken: "async",           written: "async ",      space_before: true,  space_after: false}
+  - {spoken: "await",           written: "await ",      space_before: true,  space_after: false}
+
+# ---------------------------------------------------------------------------
+# Boolean / None literals
+# ---------------------------------------------------------------------------
+literals:
+  - {spoken: "true",            written: "True",        space_before: true,  space_after: true}
+  - {spoken: "false",           written: "False",       space_before: true,  space_after: true}
+  - {spoken: "none",            written: "None",        space_before: true,  space_after: true}
+  - {spoken: "not",             written: "not ",        space_before: true,  space_after: false}
+  - {spoken: "and",             written: " and ",       space_before: false, space_after: false}
+  - {spoken: "or",              written: " or ",        space_before: false, space_after: false}
+  - {spoken: "in",              written: " in ",        space_before: false, space_after: false}
+  - {spoken: "not in",          written: " not in ",    space_before: false, space_after: false}
+  - {spoken: "is",              written: " is ",        space_before: false, space_after: false}
+  - {spoken: "is not",          written: " is not ",    space_before: false, space_after: false}
+
+# ---------------------------------------------------------------------------
+# Operators
+# ---------------------------------------------------------------------------
+operators:
+  - {spoken: "assign",              written: " = ",     space_before: false, space_after: false}
+  - {spoken: "is equal to",         written: " == ",    space_before: false, space_after: false}
+  - {spoken: "not equal to",        written: " != ",    space_before: false, space_after: false}
+  - {spoken: "less than",           written: " < ",     space_before: false, space_after: false}
+  - {spoken: "greater than",        written: " > ",     space_before: false, space_after: false}
+  - {spoken: "less than or equal",  written: " <= ",    space_before: false, space_after: false}
+  - {spoken: "greater than or equal", written: " >= ",  space_before: false, space_after: false}
+  - {spoken: "plus equals",         written: " += ",    space_before: false, space_after: false}
+  - {spoken: "minus equals",        written: " -= ",    space_before: false, space_after: false}
+  - {spoken: "times equals",        written: " *= ",    space_before: false, space_after: false}
+  - {spoken: "divide equals",       written: " /= ",    space_before: false, space_after: false}
+  - {spoken: "plus",                written: " + ",     space_before: false, space_after: false}
+  - {spoken: "minus",               written: " - ",     space_before: false, space_after: false}
+  - {spoken: "times",               written: " * ",     space_before: false, space_after: false}
+  - {spoken: "divide",              written: " / ",     space_before: false, space_after: false}
+  - {spoken: "floor divide",        written: " // ",    space_before: false, space_after: false}
+  - {spoken: "modulo",              written: " % ",     space_before: false, space_after: false}
+  - {spoken: "power",               written: " ** ",    space_before: false, space_after: false}
+  - {spoken: "walrus",              written: " := ",    space_before: false, space_after: false}
+  - {spoken: "arrow",               written: " -> ",    space_before: false, space_after: false}
+  - {spoken: "bitwise and",         written: " & ",     space_before: false, space_after: false}
+  - {spoken: "bitwise or",          written: " | ",     space_before: false, space_after: false}
+  - {spoken: "bitwise xor",         written: " ^ ",     space_before: false, space_after: false}
+  - {spoken: "left shift",          written: " << ",    space_before: false, space_after: false}
+  - {spoken: "right shift",         written: " >> ",    space_before: false, space_after: false}
+
+# ---------------------------------------------------------------------------
+# Built-in functions
+# ---------------------------------------------------------------------------
+builtins:
+  - {spoken: "print",           written: "print",       space_before: true,  space_after: false}
+  - {spoken: "len",             written: "len",         space_before: true,  space_after: false}
+  - {spoken: "range",           written: "range",       space_before: true,  space_after: false}
+  - {spoken: "list",            written: "list",        space_before: true,  space_after: false}
+  - {spoken: "dict",            written: "dict",        space_before: true,  space_after: false}
+  - {spoken: "set",             written: "set",         space_before: true,  space_after: false}
+  - {spoken: "tuple",           written: "tuple",       space_before: true,  space_after: false}
+  - {spoken: "string",          written: "str",         space_before: true,  space_after: false}
+  - {spoken: "int",             written: "int",         space_before: true,  space_after: false}
+  - {spoken: "float",           written: "float",       space_before: true,  space_after: false}
+  - {spoken: "bool",            written: "bool",        space_before: true,  space_after: false}
+  - {spoken: "type",            written: "type",        space_before: true,  space_after: false}
+  - {spoken: "isinstance",      written: "isinstance",  space_before: true,  space_after: false}
+  - {spoken: "enumerate",       written: "enumerate",   space_before: true,  space_after: false}
+  - {spoken: "zip",             written: "zip",         space_before: true,  space_after: false}
+  - {spoken: "map",             written: "map",         space_before: true,  space_after: false}
+  - {spoken: "filter",          written: "filter",      space_before: true,  space_after: false}
+  - {spoken: "sorted",          written: "sorted",      space_before: true,  space_after: false}
+  - {spoken: "reversed",        written: "reversed",    space_before: true,  space_after: false}
+  - {spoken: "open",            written: "open",        space_before: true,  space_after: false}
+  - {spoken: "super",           written: "super",       space_before: true,  space_after: false}
+  - {spoken: "self",            written: "self",        space_before: true,  space_after: false}
+  - {spoken: "class method",    written: "cls",         space_before: true,  space_after: false}
+  - {spoken: "get attr",        written: "getattr",     space_before: true,  space_after: false}
+  - {spoken: "set attr",        written: "setattr",     space_before: true,  space_after: false}
+  - {spoken: "has attr",        written: "hasattr",     space_before: true,  space_after: false}
+
+# ---------------------------------------------------------------------------
+# Common patterns / snippets
+# These insert multi-token strings; {CURSOR} marks where the cursor lands.
+# ---------------------------------------------------------------------------
+patterns:
+  - spoken: "colon new line"
+    written: ":\n    "
+    space_before: false
+    space_after: false
+
+  - spoken: "define function"
+    written: "def {CURSOR}():\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "define method"
+    written: "def {CURSOR}(self):\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "if block"
+    written: "if {CURSOR}:\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "for loop"
+    written: "for {CURSOR} in :\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "while loop"
+    written: "while {CURSOR}:\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "list comprehension"
+    written: "[{CURSOR} for  in ]"
+    space_before: true
+    space_after: false
+
+  - spoken: "dict comprehension"
+    written: "{{CURSOR}: for  in }"
+    space_before: true
+    space_after: false
+
+  - spoken: "try block"
+    written: "try:\n    {CURSOR}\nexcept Exception as e:\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "f string"
+    written: "f\"{CURSOR}\""
+    space_before: true
+    space_after: false
+
+  - spoken: "with block"
+    written: "with {CURSOR} as :\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "type hint"
+    written: ": {CURSOR}"
+    space_before: false
+    space_after: false
+
+  - spoken: "import from"
+    written: "from {CURSOR} import "
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder init"
+    written: "__init__"
+    space_before: false
+    space_after: false
+
+  - spoken: "dunder main"
+    written: "__main__"
+    space_before: false
+    space_after: false
+
+  - spoken: "dunder name"
+    written: "__name__"
+    space_before: false
+    space_after: false
+
+  - spoken: "dunder str"
+    written: "__str__"
+    space_before: false
+    space_after: false
+
+  - spoken: "dunder repr"
+    written: "__repr__"
+    space_before: false
+    space_after: false
+
+  - spoken: "if main"
+    written: "if __name__ == \"__main__\":\n    "
+    space_before: true
+    space_after: false
+
+# ---------------------------------------------------------------------------
+# Type annotation tokens
+# ---------------------------------------------------------------------------
+types:
+  - {spoken: "optional",      written: "Optional",      space_before: true,  space_after: false}
+  - {spoken: "union",         written: "Union",         space_before: true,  space_after: false}
+  - {spoken: "list type",     written: "List",          space_before: true,  space_after: false}
+  - {spoken: "dict type",     written: "Dict",          space_before: true,  space_after: false}
+  - {spoken: "tuple type",    written: "Tuple",         space_before: true,  space_after: false}
+  - {spoken: "any",           written: "Any",           space_before: true,  space_after: false}
+  - {spoken: "callable",      written: "Callable",      space_before: true,  space_after: false}
+  - {spoken: "generator",     written: "Generator",     space_before: true,  space_after: false}
+
+# ---------------------------------------------------------------------------
+# Decorator shortcuts
+# ---------------------------------------------------------------------------
+decorators:
+  - {spoken: "property",               written: "@property\n",               space_before: true, space_after: false}
+  - {spoken: "static method",          written: "@staticmethod\n",           space_before: true, space_after: false}
+  - {spoken: "class method decorator", written: "@classmethod\n",            space_before: true, space_after: false}
+  - {spoken: "data class",             written: "@dataclass\n",              space_before: true, space_after: false}
+  - {spoken: "lru cache",              written: "@functools.lru_cache()\n",  space_before: true, space_after: false}
+  - {spoken: "cache decorator",        written: "@functools.cache\n",        space_before: true, space_after: false}
+  - {spoken: "abstract method",        written: "@abstractmethod\n",         space_before: true, space_after: false}
+  - {spoken: "override",               written: "@override\n",               space_before: true, space_after: false}
+  - {spoken: "cached property",        written: "@cached_property\n",        space_before: true, space_after: false}
+
+# ---------------------------------------------------------------------------
+# File-level boilerplate
+# ---------------------------------------------------------------------------
+boilerplate:
+  - spoken: "shebang"
+    written: "#!/usr/bin/env python3\n"
+    space_before: false
+    space_after: false
+
+  - spoken: "encoding"
+    written: "# -*- coding: utf-8 -*-\n"
+    space_before: false
+    space_after: false
+
+  - spoken: "all exports"
+    written: "__all__ = [{CURSOR}]"
+    space_before: false
+    space_after: false
+
+# ---------------------------------------------------------------------------
+# Dictionaries and mappings
+# ---------------------------------------------------------------------------
+dicts:
+  - {spoken: "empty dict",       written: "{}",                   space_before: true,  space_after: false}
+  - {spoken: "empty list",       written: "[]",                   space_before: true,  space_after: false}
+  - {spoken: "empty set",        written: "set()",                space_before: true,  space_after: false}
+  - {spoken: "dot get",          written: ".get({CURSOR})",       space_before: false, space_after: false}
+  - {spoken: "dot items",        written: ".items()",             space_before: false, space_after: false}
+  - {spoken: "dot keys",         written: ".keys()",              space_before: false, space_after: false}
+  - {spoken: "dot values",       written: ".values()",            space_before: false, space_after: false}
+  - {spoken: "dot update",       written: ".update({CURSOR})",    space_before: false, space_after: false}
+  - {spoken: "dot append",       written: ".append({CURSOR})",    space_before: false, space_after: false}
+  - {spoken: "dot extend",       written: ".extend({CURSOR})",    space_before: false, space_after: false}
+  - {spoken: "dot pop",          written: ".pop({CURSOR})",       space_before: false, space_after: false}
+  - {spoken: "default dict",     written: "defaultdict({CURSOR})",space_before: true,  space_after: false}
+  - {spoken: "counter",          written: "Counter({CURSOR})",    space_before: true,  space_after: false}
+  - {spoken: "ordered dict",     written: "OrderedDict()",        space_before: true,  space_after: false}
+  - {spoken: "named tuple",      written: "namedtuple(\"{CURSOR}\", [])", space_before: true, space_after: false}
+
+  - spoken: "dict get with default"
+    written: ".get({CURSOR}, None)"
+    space_before: false
+    space_after: false
+
+  - spoken: "setdefault"
+    written: ".setdefault({CURSOR}, [])"
+    space_before: false
+    space_after: false
+
+# ---------------------------------------------------------------------------
+# Closures and higher-order functions
+# ---------------------------------------------------------------------------
+closures:
+  - spoken: "closure"
+    written: "def outer({CURSOR}):\n    def inner():\n        \n    return inner"
+    space_before: true
+    space_after: false
+
+  - spoken: "partial"
+    written: "functools.partial({CURSOR}, )"
+    space_before: true
+    space_after: false
+
+  - spoken: "reduce"
+    written: "functools.reduce({CURSOR}, )"
+    space_before: true
+    space_after: false
+
+  - spoken: "wrapped"
+    written: "@functools.wraps({CURSOR})\n"
+    space_before: true
+    space_after: false
+
+  - spoken: "define decorator"
+    written: "def {CURSOR}(func):\n    @functools.wraps(func)\n    def wrapper(*args, **kwargs):\n        return func(*args, **kwargs)\n    return wrapper"
+    space_before: true
+    space_after: false
+
+# ---------------------------------------------------------------------------
+# Introspection
+# ---------------------------------------------------------------------------
+introspection:
+  - {spoken: "dir",              written: "dir({CURSOR})",              space_before: true,  space_after: false}
+  - {spoken: "vars",             written: "vars({CURSOR})",             space_before: true,  space_after: false}
+  - {spoken: "type of",          written: "type({CURSOR})",             space_before: true,  space_after: false}
+  - {spoken: "is subclass",      written: "issubclass({CURSOR}, )",     space_before: true,  space_after: false}
+  - {spoken: "callable check",   written: "callable({CURSOR})",         space_before: true,  space_after: false}
+  - {spoken: "import inspect",   written: "import inspect\n",           space_before: true,  space_after: false}
+  - {spoken: "get members",      written: "inspect.getmembers({CURSOR})", space_before: true, space_after: false}
+  - {spoken: "get source",       written: "inspect.getsource({CURSOR})", space_before: true,  space_after: false}
+  - {spoken: "get signature",    written: "inspect.signature({CURSOR})", space_before: true,  space_after: false}
+  - {spoken: "is function",      written: "inspect.isfunction({CURSOR})", space_before: true, space_after: false}
+  - {spoken: "is class",         written: "inspect.isclass({CURSOR})",  space_before: true,  space_after: false}
+  - {spoken: "annotations",      written: ".__annotations__",           space_before: false, space_after: false}
+  - {spoken: "mro",              written: ".__mro__",                   space_before: false, space_after: false}
+
+# ---------------------------------------------------------------------------
+# Metaclasses and the data model
+# ---------------------------------------------------------------------------
+metaclasses:
+  - spoken: "abstract base class"
+    written: "class {CURSOR}(ABC):\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "metaclass"
+    written: "class {CURSOR}(metaclass=type):\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder new"
+    written: "def __new__(cls, *args, **kwargs):\n    instance = super().__new__(cls)\n    {CURSOR}\n    return instance"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder init subclass"
+    written: "def __init_subclass__(cls, **kwargs):\n    super().__init_subclass__(**kwargs)\n    {CURSOR}"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder enter"
+    written: "def __enter__(self):\n    {CURSOR}\n    return self"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder exit"
+    written: "def __exit__(self, exc_type, exc_val, exc_tb):\n    {CURSOR}\n    return False"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder len"
+    written: "def __len__(self):\n    return {CURSOR}"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder getitem"
+    written: "def __getitem__(self, key):\n    return {CURSOR}"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder setitem"
+    written: "def __setitem__(self, key, value):\n    {CURSOR}"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder iter"
+    written: "def __iter__(self):\n    {CURSOR}"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder next"
+    written: "def __next__(self):\n    {CURSOR}"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder call"
+    written: "def __call__(self, *args, **kwargs):\n    {CURSOR}"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder eq"
+    written: "def __eq__(self, other):\n    return {CURSOR}"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder hash"
+    written: "def __hash__(self):\n    return hash({CURSOR})"
+    space_before: true
+    space_after: false
+
+  - spoken: "dunder slots"
+    written: "__slots__ = ({CURSOR},)"
+    space_before: true
+    space_after: false
+
+# ---------------------------------------------------------------------------
+# Async IO
+# ---------------------------------------------------------------------------
+asyncio:
+  - spoken: "async function"
+    written: "async def {CURSOR}():\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "async method"
+    written: "async def {CURSOR}(self):\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "async for loop"
+    written: "async for {CURSOR} in :\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "async with block"
+    written: "async with {CURSOR} as :\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "async main"
+    written: "async def main() -> None:\n    {CURSOR}\n\nif __name__ == \"__main__\":\n    asyncio.run(main())"
+    space_before: true
+    space_after: false
+
+  - spoken: "asyncio run"
+    written: "asyncio.run({CURSOR})"
+    space_before: true
+    space_after: false
+
+  - spoken: "create task"
+    written: "asyncio.create_task({CURSOR})"
+    space_before: true
+    space_after: false
+
+  - spoken: "gather"
+    written: "await asyncio.gather({CURSOR})"
+    space_before: true
+    space_after: false
+
+  - spoken: "task group"
+    written: "async with asyncio.TaskGroup() as tg:\n    {CURSOR}"
+    space_before: true
+    space_after: false
+
+  - spoken: "async generator"
+    written: "async def {CURSOR}():\n    yield "
+    space_before: true
+    space_after: false
+
+  - spoken: "async context manager"
+    written: "@asynccontextmanager\nasync def {CURSOR}():\n    try:\n        yield\n    finally:\n        pass"
+    space_before: true
+    space_after: false
+
+  - spoken: "import asyncio"
+    written: "import asyncio\n"
+    space_before: true
+    space_after: false
+
+  - spoken: "sleep"
+    written: "await asyncio.sleep({CURSOR})"
+    space_before: true
+    space_after: false
+
+  - spoken: "event"
+    written: "asyncio.Event()"
+    space_before: true
+    space_after: false
+
+  - spoken: "async queue"
+    written: "asyncio.Queue({CURSOR})"
+    space_before: true
+    space_after: false
+
+# ---------------------------------------------------------------------------
+# Multithreading (threading module)
+# ---------------------------------------------------------------------------
+threading:
+  - spoken: "import threading"
+    written: "import threading\n"
+    space_before: true
+    space_after: false
+
+  - spoken: "thread"
+    written: "threading.Thread(target={CURSOR}, daemon=True)"
+    space_before: true
+    space_after: false
+
+  - spoken: "thread start"
+    written: ".start()"
+    space_before: false
+    space_after: false
+
+  - spoken: "thread join"
+    written: ".join()"
+    space_before: false
+    space_after: false
+
+  - spoken: "lock"
+    written: "threading.Lock()"
+    space_before: true
+    space_after: false
+
+  - spoken: "r lock"
+    written: "threading.RLock()"
+    space_before: true
+    space_after: false
+
+  - spoken: "with lock"
+    written: "with {CURSOR}:\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "condition"
+    written: "threading.Condition({CURSOR})"
+    space_before: true
+    space_after: false
+
+  - spoken: "semaphore"
+    written: "threading.Semaphore({CURSOR})"
+    space_before: true
+    space_after: false
+
+  - spoken: "event flag"
+    written: "threading.Event()"
+    space_before: true
+    space_after: false
+
+  - spoken: "thread local"
+    written: "threading.local()"
+    space_before: true
+    space_after: false
+
+  - spoken: "thread pool"
+    written: "ThreadPoolExecutor(max_workers={CURSOR})"
+    space_before: true
+    space_after: false
+
+  - spoken: "submit"
+    written: ".submit({CURSOR})"
+    space_before: false
+    space_after: false
+
+  - spoken: "as completed"
+    written: "concurrent.futures.as_completed({CURSOR})"
+    space_before: true
+    space_after: false
+
+  - spoken: "future result"
+    written: ".result()"
+    space_before: false
+    space_after: false
+
+# ---------------------------------------------------------------------------
+# Multiprocessing
+# ---------------------------------------------------------------------------
+multiprocessing:
+  - spoken: "import multiprocessing"
+    written: "import multiprocessing\n"
+    space_before: true
+    space_after: false
+
+  - spoken: "process"
+    written: "multiprocessing.Process(target={CURSOR}, daemon=True)"
+    space_before: true
+    space_after: false
+
+  - spoken: "process pool"
+    written: "ProcessPoolExecutor(max_workers={CURSOR})"
+    space_before: true
+    space_after: false
+
+  - spoken: "pool map"
+    written: "pool.map({CURSOR}, )"
+    space_before: true
+    space_after: false
+
+  - spoken: "mp queue"
+    written: "multiprocessing.Queue()"
+    space_before: true
+    space_after: false
+
+  - spoken: "pipe"
+    written: "multiprocessing.Pipe()"
+    space_before: true
+    space_after: false
+
+  - spoken: "shared value"
+    written: "multiprocessing.Value(\"{CURSOR}\", 0)"
+    space_before: true
+    space_after: false
+
+  - spoken: "shared array"
+    written: "multiprocessing.Array(\"{CURSOR}\", [])"
+    space_before: true
+    space_after: false
+
+  - spoken: "manager"
+    written: "multiprocessing.Manager()"
+    space_before: true
+    space_after: false
+
+  - spoken: "cpu count"
+    written: "multiprocessing.cpu_count()"
+    space_before: true
+    space_after: false
+
+  - spoken: "spawn context"
+    written: "multiprocessing.get_context(\"spawn\")"
+    space_before: true
+    space_after: false

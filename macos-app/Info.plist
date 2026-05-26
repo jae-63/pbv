@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Hide from Dock; menu bar only -->
+    <key>LSUIElement</key>
+    <true/>
+
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Voice Coder captures microphone audio for speech recognition.</string>
+
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Voice Coder uses on-device speech recognition to interpret voice commands and dictation.</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>com.voice-coder.app</string>
+
+    <key>CFBundleName</key>
+    <string>VoiceCoder</string>
+
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>0.1</string>
+</dict>
+</plist>

@@ -1,0 +1,70 @@
+{
+  "name": "voice-coder",
+  "displayName": "Voice Coder",
+  "description": "Voice coding assistant — cache pad, navigation, mode indicator, Swift app IPC",
+  "version": "0.1.0",
+  "engines": {"vscode": "^1.85.0"},
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "voiceCoder.cachePad",
+          "name": "Cache Pad",
+          "icon": "$(symbol-keyword)"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "voiceCoder.refreshCachePad",
+        "title": "Voice Coder: Refresh Cache Pad",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "voiceCoder.cacheCurrentWord",
+        "title": "Voice Coder: Cache Word Under Cursor"
+      },
+      {
+        "command": "voiceCoder.clearCachePad",
+        "title": "Voice Coder: Clear Cache Pad"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "voiceCoder.refreshCachePad",
+          "when": "view == voiceCoder.cachePad",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Voice Coder",
+      "properties": {
+        "voiceCoder.port": {
+          "type": "number",
+          "default": 7890,
+          "description": "TCP port the extension listens on for Swift app commands"
+        },
+        "voiceCoder.maxCacheItems": {
+          "type": "number",
+          "default": 20,
+          "description": "Maximum number of items in the cache pad"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

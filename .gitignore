@@ -1,0 +1,14 @@
+# Swift build artifacts
+macos-app/.build/
+
+# Node
+vscode-extension/node_modules/
+
+# NOTE: vscode-extension/out/ is intentionally committed.
+# The compiled JS is needed so the nephew's machine doesn't require npm.
+
+# Claude Code local settings
+.claude/
+
+# macOS
+.DS_Store

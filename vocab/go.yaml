@@ -1,0 +1,136 @@
+# Go vocabulary — extends core.yaml
+
+keywords:
+  - {spoken: "package",          written: "package ",       space_before: true,  space_after: false}
+  - {spoken: "import",           written: "import ",        space_before: true,  space_after: false}
+  - {spoken: "func",             written: "func ",          space_before: true,  space_after: false}
+  - {spoken: "function",         written: "func ",          space_before: true,  space_after: false}
+  - {spoken: "return",           written: "return ",        space_before: true,  space_after: false}
+  - {spoken: "var",              written: "var ",           space_before: true,  space_after: false}
+  - {spoken: "const",            written: "const ",         space_before: true,  space_after: false}
+  - {spoken: "type",             written: "type ",          space_before: true,  space_after: false}
+  - {spoken: "struct",           written: "struct ",        space_before: true,  space_after: false}
+  - {spoken: "interface",        written: "interface ",     space_before: true,  space_after: false}
+  - {spoken: "map",              written: "map",            space_before: true,  space_after: false}
+  - {spoken: "slice",            written: "[]",             space_before: false, space_after: false}
+  - {spoken: "chan",             written: "chan ",           space_before: true,  space_after: false}
+  - {spoken: "channel",          written: "chan ",          space_before: true,  space_after: false}
+  - {spoken: "go routine",       written: "go ",            space_before: true,  space_after: false}
+  - {spoken: "defer",            written: "defer ",         space_before: true,  space_after: false}
+  - {spoken: "select",           written: "select ",        space_before: true,  space_after: false}
+  - {spoken: "for",              written: "for ",           space_before: true,  space_after: false}
+  - {spoken: "range",            written: "range ",         space_before: true,  space_after: false}
+  - {spoken: "if",               written: "if ",            space_before: true,  space_after: false}
+  - {spoken: "else",             written: " else ",         space_before: false, space_after: false}
+  - {spoken: "switch",           written: "switch ",        space_before: true,  space_after: false}
+  - {spoken: "case",             written: "case ",          space_before: true,  space_after: false}
+  - {spoken: "default",          written: "default:",       space_before: true,  space_after: false}
+  - {spoken: "break",            written: "break",          space_before: true,  space_after: false}
+  - {spoken: "continue",         written: "continue",       space_before: true,  space_after: false}
+  - {spoken: "fallthrough",      written: "fallthrough",    space_before: true,  space_after: false}
+  - {spoken: "panic",            written: "panic",          space_before: true,  space_after: false}
+  - {spoken: "recover",          written: "recover",        space_before: true,  space_after: false}
+  - {spoken: "make",             written: "make",           space_before: true,  space_after: false}
+  - {spoken: "new",              written: "new",            space_before: true,  space_after: false}
+  - {spoken: "append",           written: "append",         space_before: true,  space_after: false}
+  - {spoken: "len",              written: "len",            space_before: true,  space_after: false}
+  - {spoken: "cap",              written: "cap",            space_before: true,  space_after: false}
+  - {spoken: "copy",             written: "copy",           space_before: true,  space_after: false}
+  - {spoken: "close",            written: "close",          space_before: true,  space_after: false}
+  - {spoken: "delete",           written: "delete",         space_before: true,  space_after: false}
+  - {spoken: "nil",              written: "nil",            space_before: true,  space_after: true}
+  - {spoken: "true",             written: "true",           space_before: true,  space_after: true}
+  - {spoken: "false",            written: "false",          space_before: true,  space_after: true}
+  - {spoken: "error",            written: "error",          space_before: true,  space_after: true}
+
+operators:
+  - {spoken: "short assign",         written: " := ",   space_before: false, space_after: false}
+  - {spoken: "assign",               written: " = ",    space_before: false, space_after: false}
+  - {spoken: "is equal to",          written: " == ",   space_before: false, space_after: false}
+  - {spoken: "not equal to",         written: " != ",   space_before: false, space_after: false}
+  - {spoken: "less than",            written: " < ",    space_before: false, space_after: false}
+  - {spoken: "greater than",         written: " > ",    space_before: false, space_after: false}
+  - {spoken: "less than or equal",   written: " <= ",   space_before: false, space_after: false}
+  - {spoken: "greater than or equal",written: " >= ",   space_before: false, space_after: false}
+  - {spoken: "plus equals",          written: " += ",   space_before: false, space_after: false}
+  - {spoken: "minus equals",         written: " -= ",   space_before: false, space_after: false}
+  - {spoken: "plus plus",            written: "++",     space_before: false, space_after: false}
+  - {spoken: "minus minus",          written: "--",     space_before: false, space_after: false}
+  - {spoken: "and",                  written: " && ",   space_before: false, space_after: false}
+  - {spoken: "or",                   written: " || ",   space_before: false, space_after: false}
+  - {spoken: "not",                  written: "!",      space_before: false, space_after: false}
+  - {spoken: "arrow",                written: " -> ",   space_before: false, space_after: false}
+  - {spoken: "send",                 written: " <- ",   space_before: false, space_after: false}
+  - {spoken: "receive",              written: "<-",     space_before: false, space_after: false}
+  - {spoken: "pointer",              written: "*",      space_before: false, space_after: false}
+  - {spoken: "address of",           written: "&",      space_before: false, space_after: false}
+
+types:
+  - {spoken: "string",        written: "string",    space_before: true, space_after: true}
+  - {spoken: "int",           written: "int",       space_before: true, space_after: true}
+  - {spoken: "int 64",        written: "int64",     space_before: true, space_after: true}
+  - {spoken: "int 32",        written: "int32",     space_before: true, space_after: true}
+  - {spoken: "uint 64",       written: "uint64",    space_before: true, space_after: true}
+  - {spoken: "float 64",      written: "float64",   space_before: true, space_after: true}
+  - {spoken: "float 32",      written: "float32",   space_before: true, space_after: true}
+  - {spoken: "bool",          written: "bool",      space_before: true, space_after: true}
+  - {spoken: "byte",          written: "byte",      space_before: true, space_after: true}
+  - {spoken: "rune",          written: "rune",      space_before: true, space_after: true}
+  - {spoken: "any",           written: "any",       space_before: true, space_after: true}
+  - {spoken: "interface any", written: "interface{}", space_before: true, space_after: true}
+
+patterns:
+  - spoken: "error check"
+    written: "if err != nil {\n    return {CURSOR}err\n}"
+    space_before: true
+    space_after: false
+
+  - spoken: "func signature"
+    written: "func {CURSOR}() error {\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "for range"
+    written: "for {CURSOR}, v := range  {\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "struct definition"
+    written: "type {CURSOR} struct {\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "interface definition"
+    written: "type {CURSOR} interface {\n    "
+    space_before: true
+    space_after: false
+
+  - spoken: "make slice"
+    written: "make([]{CURSOR}, 0)"
+    space_before: true
+    space_after: false
+
+  - spoken: "make map"
+    written: "make(map[{CURSOR}])"
+    space_before: true
+    space_after: false
+
+  - spoken: "go routine"
+    written: "go func() {\n    {CURSOR}\n}()"
+    space_before: true
+    space_after: false
+
+  - spoken: "fmt print line"
+    written: "fmt.Println({CURSOR})"
+    space_before: true
+    space_after: false
+
+  - spoken: "fmt printf"
+    written: "fmt.Printf(\"{CURSOR}\")"
+    space_before: true
+    space_after: false
+
+  - spoken: "fmt errorf"
+    written: "fmt.Errorf(\"{CURSOR}\")"
+    space_before: true
+    space_after: false

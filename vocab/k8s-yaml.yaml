@@ -1,0 +1,147 @@
+# Kubernetes YAML vocabulary — extends core.yaml
+# Note: YAML is structural/indentation-based. Most commands here produce
+# key-value lines or block starters. The {CURSOR} marker indicates where
+# typing continues after insertion.
+
+# ---------------------------------------------------------------------------
+# Top-level manifest fields
+# ---------------------------------------------------------------------------
+fields:
+  - {spoken: "api version",          written: "apiVersion: ",          space_before: true,  space_after: false}
+  - {spoken: "kind",                 written: "kind: ",                space_before: true,  space_after: false}
+  - {spoken: "metadata",             written: "metadata:",             space_before: true,  space_after: false}
+  - {spoken: "spec",                 written: "spec:",                 space_before: true,  space_after: false}
+  - {spoken: "status",               written: "status:",               space_before: true,  space_after: false}
+  - {spoken: "name",                 written: "name: ",                space_before: true,  space_after: false}
+  - {spoken: "namespace",            written: "namespace: ",           space_before: true,  space_after: false}
+  - {spoken: "labels",               written: "labels:",               space_before: true,  space_after: false}
+  - {spoken: "annotations",          written: "annotations:",          space_before: true,  space_after: false}
+  - {spoken: "selector",             written: "selector:",             space_before: true,  space_after: false}
+  - {spoken: "match labels",         written: "matchLabels:",          space_before: true,  space_after: false}
+  - {spoken: "template",             written: "template:",             space_before: true,  space_after: false}
+  - {spoken: "containers",           written: "containers:",           space_before: true,  space_after: false}
+  - {spoken: "image",                written: "image: ",               space_before: true,  space_after: false}
+  - {spoken: "image pull policy",    written: "imagePullPolicy: ",     space_before: true,  space_after: false}
+  - {spoken: "ports",                written: "ports:",                space_before: true,  space_after: false}
+  - {spoken: "container port",       written: "containerPort: ",       space_before: true,  space_after: false}
+  - {spoken: "env",                  written: "env:",                  space_before: true,  space_after: false}
+  - {spoken: "env from",             written: "envFrom:",              space_before: true,  space_after: false}
+  - {spoken: "resources",            written: "resources:",            space_before: true,  space_after: false}
+  - {spoken: "limits",               written: "limits:",               space_before: true,  space_after: false}
+  - {spoken: "requests",             written: "requests:",             space_before: true,  space_after: false}
+  - {spoken: "volume mounts",        written: "volumeMounts:",         space_before: true,  space_after: false}
+  - {spoken: "volumes",              written: "volumes:",              space_before: true,  space_after: false}
+  - {spoken: "replicas",             written: "replicas: ",            space_before: true,  space_after: false}
+  - {spoken: "restart policy",       written: "restartPolicy: ",       space_before: true,  space_after: false}
+  - {spoken: "service account name", written: "serviceAccountName: ",  space_before: true,  space_after: false}
+  - {spoken: "liveness probe",       written: "livenessProbe:",        space_before: true,  space_after: false}
+  - {spoken: "readiness probe",      written: "readinessProbe:",       space_before: true,  space_after: false}
+  - {spoken: "config map ref",       written: "configMapRef:",         space_before: true,  space_after: false}
+  - {spoken: "secret ref",           written: "secretRef:",            space_before: true,  space_after: false}
+  - {spoken: "value from",           written: "valueFrom:",            space_before: true,  space_after: false}
+  - {spoken: "secret key ref",       written: "secretKeyRef:",         space_before: true,  space_after: false}
+  - {spoken: "config map key ref",   written: "configMapKeyRef:",      space_before: true,  space_after: false}
+  - {spoken: "node selector",        written: "nodeSelector:",         space_before: true,  space_after: false}
+  - {spoken: "affinity",             written: "affinity:",             space_before: true,  space_after: false}
+  - {spoken: "tolerations",          written: "tolerations:",          space_before: true,  space_after: false}
+  - {spoken: "init containers",      written: "initContainers:",       space_before: true,  space_after: false}
+  - {spoken: "command",              written: "command:",              space_before: true,  space_after: false}
+  - {spoken: "args",                 written: "args:",                 space_before: true,  space_after: false}
+
+# ---------------------------------------------------------------------------
+# Kind values
+# ---------------------------------------------------------------------------
+kinds:
+  - {spoken: "deployment",           written: "Deployment",            space_before: true,  space_after: false}
+  - {spoken: "service",              written: "Service",               space_before: true,  space_after: false}
+  - {spoken: "config map",           written: "ConfigMap",             space_before: true,  space_after: false}
+  - {spoken: "secret",               written: "Secret",                space_before: true,  space_after: false}
+  - {spoken: "ingress",              written: "Ingress",               space_before: true,  space_after: false}
+  - {spoken: "service account",      written: "ServiceAccount",        space_before: true,  space_after: false}
+  - {spoken: "stateful set",         written: "StatefulSet",           space_before: true,  space_after: false}
+  - {spoken: "daemon set",           written: "DaemonSet",             space_before: true,  space_after: false}
+  - {spoken: "cron job",             written: "CronJob",               space_before: true,  space_after: false}
+  - {spoken: "job",                  written: "Job",                   space_before: true,  space_after: false}
+  - {spoken: "persistent volume",    written: "PersistentVolume",      space_before: true,  space_after: false}
+  - {spoken: "persistent volume claim", written: "PersistentVolumeClaim", space_before: true, space_after: false}
+  - {spoken: "horizontal pod autoscaler", written: "HorizontalPodAutoscaler", space_before: true, space_after: false}
+  - {spoken: "namespace kind",       written: "Namespace",             space_before: true,  space_after: false}
+  - {spoken: "role",                 written: "Role",                  space_before: true,  space_after: false}
+  - {spoken: "cluster role",         written: "ClusterRole",           space_before: true,  space_after: false}
+  - {spoken: "role binding",         written: "RoleBinding",           space_before: true,  space_after: false}
+  - {spoken: "cluster role binding", written: "ClusterRoleBinding",    space_before: true,  space_after: false}
+
+# ---------------------------------------------------------------------------
+# Common patterns / full manifest starters
+# ---------------------------------------------------------------------------
+patterns:
+  - spoken: "deployment manifest"
+    written: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: {CURSOR}
+        namespace: default
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app:
+        template:
+          metadata:
+            labels:
+              app:
+          spec:
+            containers:
+              - name:
+                image:
+    space_before: true
+    space_after: false
+
+  - spoken: "service manifest"
+    written: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: {CURSOR}
+        namespace: default
+      spec:
+        selector:
+          app:
+        ports:
+          - port: 80
+            targetPort:
+        type: ClusterIP
+    space_before: true
+    space_after: false
+
+  - spoken: "config map manifest"
+    written: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: {CURSOR}
+        namespace: default
+      data:
+    space_before: true
+    space_after: false
+
+  - spoken: "new document"
+    written: "---\n"
+    space_before: false
+    space_after: false
+
+  - spoken: "list item"
+    written: "- "
+    space_before: false
+    space_after: false
+
+  - spoken: "resource cpu"
+    written: "cpu: \"{CURSOR}\""
+    space_before: true
+    space_after: false
+
+  - spoken: "resource memory"
+    written: "memory: \"{CURSOR}\""
+    space_before: true
+    space_after: false

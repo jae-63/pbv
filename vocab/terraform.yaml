@@ -1,0 +1,82 @@
+# Terraform (HCL) vocabulary — extends core.yaml
+
+keywords:
+  - {spoken: "resource",         written: "resource ",       space_before: true,  space_after: false}
+  - {spoken: "data",             written: "data ",           space_before: true,  space_after: false}
+  - {spoken: "variable",         written: "variable ",       space_before: true,  space_after: false}
+  - {spoken: "output",           written: "output ",         space_before: true,  space_after: false}
+  - {spoken: "locals",           written: "locals ",         space_before: true,  space_after: false}
+  - {spoken: "module",           written: "module ",         space_before: true,  space_after: false}
+  - {spoken: "provider",         written: "provider ",       space_before: true,  space_after: false}
+  - {spoken: "terraform",        written: "terraform ",      space_before: true,  space_after: false}
+  - {spoken: "backend",          written: "backend ",        space_before: true,  space_after: false}
+  - {spoken: "required providers", written: "required_providers", space_before: true, space_after: false}
+  - {spoken: "lifecycle",        written: "lifecycle ",      space_before: true,  space_after: false}
+  - {spoken: "provisioner",      written: "provisioner ",    space_before: true,  space_after: false}
+  - {spoken: "dynamic",          written: "dynamic ",        space_before: true,  space_after: false}
+  - {spoken: "for each",         written: "for_each",        space_before: true,  space_after: false}
+  - {spoken: "count",            written: "count",           space_before: true,  space_after: false}
+  - {spoken: "depends on",       written: "depends_on",      space_before: true,  space_after: false}
+
+operators:
+  - {spoken: "assign",           written: " = ",             space_before: false, space_after: false}
+  - {spoken: "equals",           written: " == ",            space_before: false, space_after: false}
+  - {spoken: "not equals",       written: " != ",            space_before: false, space_after: false}
+  - {spoken: "greater than",     written: " > ",             space_before: false, space_after: false}
+  - {spoken: "less than",        written: " < ",             space_before: false, space_after: false}
+  - {spoken: "heredoc",          written: "<<-EOT\n{CURSOR}\nEOT", space_before: true, space_after: false}
+
+literals:
+  - {spoken: "true",             written: "true",            space_before: true,  space_after: true}
+  - {spoken: "false",            written: "false",           space_before: true,  space_after: true}
+  - {spoken: "null",             written: "null",            space_before: true,  space_after: true}
+
+functions:
+  - {spoken: "local dot",        written: "local.",          space_before: true,  space_after: false}
+  - {spoken: "var dot",          written: "var.",            space_before: true,  space_after: false}
+  - {spoken: "each dot key",     written: "each.key",        space_before: true,  space_after: false}
+  - {spoken: "each dot value",   written: "each.value",      space_before: true,  space_after: false}
+  - {spoken: "to set",           written: "toset(",          space_before: true,  space_after: false}
+  - {spoken: "to map",           written: "tomap(",          space_before: true,  space_after: false}
+  - {spoken: "to list",          written: "tolist(",         space_before: true,  space_after: false}
+  - {spoken: "merge",            written: "merge(",          space_before: true,  space_after: false}
+  - {spoken: "lookup",           written: "lookup(",         space_before: true,  space_after: false}
+  - {spoken: "try",              written: "try(",            space_before: true,  space_after: false}
+  - {spoken: "can",              written: "can(",            space_before: true,  space_after: false}
+  - {spoken: "coalesce",         written: "coalesce(",       space_before: true,  space_after: false}
+  - {spoken: "concat",           written: "concat(",         space_before: true,  space_after: false}
+  - {spoken: "flatten",          written: "flatten(",        space_before: true,  space_after: false}
+  - {spoken: "json encode",      written: "jsonencode(",     space_before: true,  space_after: false}
+  - {spoken: "json decode",      written: "jsondecode(",     space_before: true,  space_after: false}
+  - {spoken: "file",             written: "file(",           space_before: true,  space_after: false}
+
+patterns:
+  - spoken: "resource block"
+    written: "resource \"{CURSOR}\" \"\" {\n  \n}"
+    space_before: true
+    space_after: false
+
+  - spoken: "variable block"
+    written: "variable \"{CURSOR}\" {\n  type        = \n  description = \"\"\n  default     = \n}"
+    space_before: true
+    space_after: false
+
+  - spoken: "output block"
+    written: "output \"{CURSOR}\" {\n  value = \n}"
+    space_before: true
+    space_after: false
+
+  - spoken: "locals block"
+    written: "locals {\n  {CURSOR} = \n}"
+    space_before: true
+    space_after: false
+
+  - spoken: "for each block"
+    written: "for_each = {CURSOR}"
+    space_before: true
+    space_after: false
+
+  - spoken: "interpolation"
+    written: "${{{CURSOR}}}"
+    space_before: false
+    space_after: false

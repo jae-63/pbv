@@ -1,0 +1,188 @@
+# Core vocabulary — language-agnostic
+# Schema:
+#   spoken:        phrase the user says
+#   written:       text inserted into the editor
+#   space_before:  insert a space before written (default: true)
+#   space_after:   insert a space after written (default: true)
+#   category:      for documentation and tooling grouping
+#
+# Special written values:
+#   \n            newline
+#   \t            tab
+#   {CURSOR}      cursor placement hint (used by extension)
+#   {NOSPACE}     suppress the next auto-space
+
+# ---------------------------------------------------------------------------
+# Character names (NATO phonetic + common)
+# space_before/after both false — these emit single characters inline
+# ---------------------------------------------------------------------------
+characters:
+  - {spoken: "alpha",          written: "a",  space_before: false, space_after: false}
+  - {spoken: "bravo",          written: "b",  space_before: false, space_after: false}
+  - {spoken: "charlie",        written: "c",  space_before: false, space_after: false}
+  - {spoken: "delta",          written: "d",  space_before: false, space_after: false}
+  - {spoken: "echo",           written: "e",  space_before: false, space_after: false}
+  - {spoken: "foxtrot",        written: "f",  space_before: false, space_after: false}
+  - {spoken: "golf",           written: "g",  space_before: false, space_after: false}
+  - {spoken: "hotel",          written: "h",  space_before: false, space_after: false}
+  - {spoken: "india",          written: "i",  space_before: false, space_after: false}
+  - {spoken: "juliet",         written: "j",  space_before: false, space_after: false}
+  - {spoken: "kilo",           written: "k",  space_before: false, space_after: false}
+  - {spoken: "lima",           written: "l",  space_before: false, space_after: false}
+  - {spoken: "mike",           written: "m",  space_before: false, space_after: false}
+  - {spoken: "november",       written: "n",  space_before: false, space_after: false}
+  - {spoken: "oscar",          written: "o",  space_before: false, space_after: false}
+  - {spoken: "papa",           written: "p",  space_before: false, space_after: false}
+  - {spoken: "quebec",         written: "q",  space_before: false, space_after: false}
+  - {spoken: "romeo",          written: "r",  space_before: false, space_after: false}
+  - {spoken: "sierra",         written: "s",  space_before: false, space_after: false}
+  - {spoken: "tango",          written: "t",  space_before: false, space_after: false}
+  - {spoken: "uniform",        written: "u",  space_before: false, space_after: false}
+  - {spoken: "victor",         written: "v",  space_before: false, space_after: false}
+  - {spoken: "whiskey",        written: "w",  space_before: false, space_after: false}
+  - {spoken: "x-ray",          written: "x",  space_before: false, space_after: false}
+  - {spoken: "yankee",         written: "y",  space_before: false, space_after: false}
+  - {spoken: "zulu",           written: "z",  space_before: false, space_after: false}
+
+  # upper-case variants
+  - {spoken: "cap alpha",      written: "A",  space_before: false, space_after: false}
+  - {spoken: "cap bravo",      written: "B",  space_before: false, space_after: false}
+  - {spoken: "cap charlie",    written: "C",  space_before: false, space_after: false}
+  - {spoken: "cap delta",      written: "D",  space_before: false, space_after: false}
+  - {spoken: "cap echo",       written: "E",  space_before: false, space_after: false}
+  - {spoken: "cap foxtrot",    written: "F",  space_before: false, space_after: false}
+  - {spoken: "cap golf",       written: "G",  space_before: false, space_after: false}
+  - {spoken: "cap hotel",      written: "H",  space_before: false, space_after: false}
+  - {spoken: "cap india",      written: "I",  space_before: false, space_after: false}
+  - {spoken: "cap juliet",     written: "J",  space_before: false, space_after: false}
+  - {spoken: "cap kilo",       written: "K",  space_before: false, space_after: false}
+  - {spoken: "cap lima",       written: "L",  space_before: false, space_after: false}
+  - {spoken: "cap mike",       written: "M",  space_before: false, space_after: false}
+  - {spoken: "cap november",   written: "N",  space_before: false, space_after: false}
+  - {spoken: "cap oscar",      written: "O",  space_before: false, space_after: false}
+  - {spoken: "cap papa",       written: "P",  space_before: false, space_after: false}
+  - {spoken: "cap quebec",     written: "Q",  space_before: false, space_after: false}
+  - {spoken: "cap romeo",      written: "R",  space_before: false, space_after: false}
+  - {spoken: "cap sierra",     written: "S",  space_before: false, space_after: false}
+  - {spoken: "cap tango",      written: "T",  space_before: false, space_after: false}
+  - {spoken: "cap uniform",    written: "U",  space_before: false, space_after: false}
+  - {spoken: "cap victor",     written: "V",  space_before: false, space_after: false}
+  - {spoken: "cap whiskey",    written: "W",  space_before: false, space_after: false}
+  - {spoken: "cap x-ray",      written: "X",  space_before: false, space_after: false}
+  - {spoken: "cap yankee",     written: "Y",  space_before: false, space_after: false}
+  - {spoken: "cap zulu",       written: "Z",  space_before: false, space_after: false}
+
+# ---------------------------------------------------------------------------
+# Punctuation and symbols
+# ---------------------------------------------------------------------------
+punctuation:
+  - {spoken: "dollar sign",       written: "$",   space_before: false, space_after: false}
+  - {spoken: "at sign",           written: "@",   space_before: false, space_after: false}
+  - {spoken: "hash",              written: "#",   space_before: false, space_after: false}
+  - {spoken: "percent",           written: "%",   space_before: false, space_after: false}
+  - {spoken: "ampersand",         written: "&",   space_before: false, space_after: false}
+  - {spoken: "asterisk",          written: "*",   space_before: false, space_after: false}
+  - {spoken: "caret",             written: "^",   space_before: false, space_after: false}
+  - {spoken: "tilde",             written: "~",   space_before: false, space_after: false}
+  - {spoken: "backtick",          written: "`",   space_before: false, space_after: false}
+  - {spoken: "pipe",              written: "|",   space_before: false, space_after: false}
+  - {spoken: "backslash",         written: "\\",  space_before: false, space_after: false}
+  - {spoken: "slash",             written: "/",   space_before: false, space_after: false}
+  - {spoken: "underscore",        written: "_",   space_before: false, space_after: false}
+  - {spoken: "hyphen",            written: "-",   space_before: false, space_after: false}
+  - {spoken: "dot",               written: ".",   space_before: false, space_after: false}
+  - {spoken: "comma",             written: ",",   space_before: false, space_after: false}
+  - {spoken: "semicolon",         written: ";",   space_before: false, space_after: false}
+  - {spoken: "colon",             written: ":",   space_before: false, space_after: false}
+  - {spoken: "exclamation",       written: "!",   space_before: false, space_after: false}
+  - {spoken: "question mark",     written: "?",   space_before: false, space_after: false}
+  - {spoken: "open paren",        written: "(",   space_before: false, space_after: false}
+  - {spoken: "close paren",       written: ")",   space_before: false, space_after: false}
+  - {spoken: "open bracket",      written: "[",   space_before: false, space_after: false}
+  - {spoken: "close bracket",     written: "]",   space_before: false, space_after: false}
+  - {spoken: "open brace",        written: "{",   space_before: false, space_after: false}
+  - {spoken: "close brace",       written: "}",   space_before: false, space_after: false}
+  - {spoken: "open angle",        written: "<",   space_before: false, space_after: false}
+  - {spoken: "close angle",       written: ">",   space_before: false, space_after: false}
+  - {spoken: "open quote",        written: "\"",  space_before: false, space_after: false}
+  - {spoken: "close quote",       written: "\"",  space_before: false, space_after: false}
+  - {spoken: "open single quote", written: "'",   space_before: false, space_after: false}
+  - {spoken: "close single quote",written: "'",   space_before: false, space_after: false}
+
+# ---------------------------------------------------------------------------
+# Whitespace and structure
+# ---------------------------------------------------------------------------
+whitespace:
+  - {spoken: "new line",     written: "\n",   space_before: false, space_after: false}
+  - {spoken: "spacebar",     written: " ",    space_before: false, space_after: false}
+  - {spoken: "tab",          written: "\t",   space_before: false, space_after: false}
+  - {spoken: "no space",     written: "{NOSPACE}", space_before: false, space_after: false}
+
+# ---------------------------------------------------------------------------
+# Editing commands  (these trigger editor actions, not text insertion)
+# action: the command name dispatched to the VSCode extension / osascript
+# ---------------------------------------------------------------------------
+editing:
+  - {spoken: "undo",                   action: "undo"}
+  - {spoken: "redo",                   action: "redo"}
+  - {spoken: "start transaction",      action: "startUndoGroup"}
+  - {spoken: "end transaction",        action: "endUndoGroup"}
+  - {spoken: "kill line",              action: "deleteToEndOfLine"}
+  - {spoken: "delete line",            action: "deleteLine"}
+  - {spoken: "duplicate line",         action: "duplicateLine"}
+  - {spoken: "select all",             action: "selectAll"}
+  - {spoken: "cut",                    action: "cut"}
+  - {spoken: "copy",                   action: "copy"}
+  - {spoken: "paste",                  action: "paste"}
+  - {spoken: "save",                   action: "save"}
+  - {spoken: "format document",        action: "formatDocument"}
+  - {spoken: "comment line",           action: "toggleLineComment"}
+
+# Parameterized editing — N supplied by parser as integer
+  - {spoken: "kill {N} characters",    action: "deleteChars",    param: "N"}
+  - {spoken: "select {N} characters",  action: "selectChars",    param: "N"}
+  - {spoken: "kill {N} words",         action: "deleteWords",    param: "N"}
+
+# ---------------------------------------------------------------------------
+# Navigation commands
+# ---------------------------------------------------------------------------
+navigation:
+  - {spoken: "move up",                action: "cursorUp"}
+  - {spoken: "move down",              action: "cursorDown"}
+  - {spoken: "move left",              action: "cursorLeft"}
+  - {spoken: "move right",             action: "cursorRight"}
+  - {spoken: "beginning of line",      action: "cursorHome"}
+  - {spoken: "end of line",            action: "cursorEnd"}
+  - {spoken: "top of file",            action: "cursorTop"}
+  - {spoken: "bottom of file",         action: "cursorBottom"}
+  - {spoken: "page up",                action: "pageUp"}
+  - {spoken: "page down",              action: "pageDown"}
+  - {spoken: "search",                 action: "find"}
+  - {spoken: "search and replace",     action: "replace"}
+
+# Parameterized navigation
+  - {spoken: "move up {N}",            action: "cursorUpN",      param: "N"}
+  - {spoken: "move down {N}",          action: "cursorDownN",    param: "N"}
+  - {spoken: "go to line {N}",         action: "gotoLine",       param: "N"}
+  # gotoLine semantics: N is mod-100. Extension finds the nearest line L where
+  # (L mod 100) == N, measured from current cursor. Automatic — no absolute override needed.
+  #
+  # gotoWordOnLine: W is 1-based token index. Both cardinal ("word three") and ordinal
+  # ("third word") forms are accepted; the Swift parser normalises both to an integer
+  # before dispatching. Line L uses the same mod-100 nearest-line resolution as gotoLine.
+  - {spoken: "jump to word {W} on line {L}",   action: "gotoWordOnLine", param: ["W", "L"]}
+  - {spoken: "jump to {ORD} word on line {L}",  action: "gotoWordOnLine", param: ["ORD", "L"]}
+  # Content-based selection — non-trivial, implemented in VSCode extension
+  - {spoken: "select {TOKEN}",         action: "selectToken",    param: "TOKEN"}
+
+# ---------------------------------------------------------------------------
+# Cache pad commands
+# ---------------------------------------------------------------------------
+cache:
+  - {spoken: "update cache",           action: "refreshCachePad"}
+  - {spoken: "cache {N}",              action: "insertCacheItem", param: "N"}
+  - {spoken: "recent {N}",             action: "insertCacheItem", param: "N"}
+  - {spoken: "remember this",          action: "cacheCurrentWord"}
+  - {spoken: "cache word",             action: "cacheCurrentWord"}
+  - {spoken: "forget cache {N}",       action: "evictCacheItem",  param: "N"}
+  - {spoken: "clear cache",            action: "clearCachePad"}
