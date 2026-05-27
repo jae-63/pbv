@@ -1,5 +1,6 @@
 # Swift build artifacts
 macos-app/.build/
+macos-app/VoiceCoder.app/
 
 # Node
 vscode-extension/node_modules/

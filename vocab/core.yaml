@@ -164,6 +164,10 @@ navigation:
   - {spoken: "move up {N}",            action: "cursorUpN",      param: "N"}
   - {spoken: "move down {N}",          action: "cursorDownN",    param: "N"}
   - {spoken: "go to line {N}",         action: "gotoLine",       param: "N"}
+  # SFSpeechRecognizer mishears "go to line" as "coach" or "coach line"
+  # Longer pattern must come first — "coach {N}" would shadow "coach line {N}"
+  - {spoken: "coach line {N}",         action: "gotoLine",       param: "N"}
+  - {spoken: "coach {N}",              action: "gotoLine",       param: "N"}
   # gotoLine semantics: N is mod-100. Extension finds the nearest line L where
   # (L mod 100) == N, measured from current cursor. Automatic — no absolute override needed.
   #

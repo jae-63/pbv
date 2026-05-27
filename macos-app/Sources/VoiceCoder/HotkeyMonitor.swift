@@ -13,10 +13,8 @@ final class HotkeyMonitor {
 
     init(keyCode: CGKeyCode = 96 /* F5 */) {
         self.hotKeyCode = Int64(keyCode)
-        guard AXIsProcessTrustedWithOptions(
-            ["AXTrustedCheckOptionPrompt": true] as CFDictionary
-        ) else {
-            print("VoiceCoder: accessibility permission required for hotkey monitoring")
+        guard AXIsProcessTrusted() else {
+            print("VoiceCoder: F5 hotkey disabled — add this binary in System Settings → Privacy & Security → Accessibility, then restart.")
             return
         }
         installTap()

@@ -86,6 +86,11 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
         this.refresh();
     }
 
+    sync(items: string[]): void {
+        this.items = items.slice(0, this.maxItems);
+        this.refresh();
+    }
+
     // Scan changed text regions in a document edit for new identifiers.
     absorbEdit(event: vscode.TextDocumentChangeEvent): void {
         for (const change of event.contentChanges) {

@@ -967,6 +967,24 @@
       "param": "N"
     },
     {
+      "spoken": "coach line {N}",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "gotoLine",
+      "param": "N"
+    },
+    {
+      "spoken": "coach {N}",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "gotoLine",
+      "param": "N"
+    },
+    {
       "spoken": "jump to word {W} on line {L}",
       "source": "core",
       "category": "navigation",

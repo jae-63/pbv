@@ -10,6 +10,7 @@ export type InboundMessage =
   | { cmd: 'refreshCachePad' }
   | { cmd: 'evictCacheItem';   index: number }
   | { cmd: 'clearCachePad' }
+  | { cmd: 'syncCacheItems'; items: string[] }
   | { cmd: 'setMode';          mode: 'command' | 'dictation' }
   | { cmd: 'undo' }
   | { cmd: 'redo' }

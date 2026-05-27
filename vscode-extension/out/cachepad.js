@@ -106,6 +106,10 @@ class CachePad {
         this.recentSet.clear();
         this.refresh();
     }
+    sync(items) {
+        this.items = items.slice(0, this.maxItems);
+        this.refresh();
+    }
     // Scan changed text regions in a document edit for new identifiers.
     absorbEdit(event) {
         for (const change of event.contentChanges) {

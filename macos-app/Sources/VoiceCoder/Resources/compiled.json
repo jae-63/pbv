@@ -967,6 +967,24 @@
       "param": "N"
     },
     {
+      "spoken": "coach line {N}",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "gotoLine",
+      "param": "N"
+    },
+    {
+      "spoken": "coach {N}",
+      "source": "core",
+      "category": "navigation",
+      "spaceBefore": true,
+      "spaceAfter": true,
+      "action": "gotoLine",
+      "param": "N"
+    },
+    {
       "spoken": "jump to word {W} on line {L}",
       "source": "core",
       "category": "navigation",
@@ -3209,6 +3227,798 @@
       "spaceBefore": true,
       "spaceAfter": false,
       "written": "@dataclass\n"
+    },
+    {
+      "spoken": "lru cache",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@functools.lru_cache()\n"
+    },
+    {
+      "spoken": "cache decorator",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@functools.cache\n"
+    },
+    {
+      "spoken": "abstract method",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@abstractmethod\n"
+    },
+    {
+      "spoken": "override",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@override\n"
+    },
+    {
+      "spoken": "cached property",
+      "source": "python",
+      "category": "decorators",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@cached_property\n"
+    },
+    {
+      "spoken": "shebang",
+      "source": "python",
+      "category": "boilerplate",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "#!/usr/bin/env python3\n"
+    },
+    {
+      "spoken": "encoding",
+      "source": "python",
+      "category": "boilerplate",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "# -*- coding: utf-8 -*-\n"
+    },
+    {
+      "spoken": "all exports",
+      "source": "python",
+      "category": "boilerplate",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__all__ = [{CURSOR}]"
+    },
+    {
+      "spoken": "empty dict",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "{}"
+    },
+    {
+      "spoken": "empty list",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "[]"
+    },
+    {
+      "spoken": "empty set",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "set()"
+    },
+    {
+      "spoken": "dot get",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".get({CURSOR})"
+    },
+    {
+      "spoken": "dot items",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".items()"
+    },
+    {
+      "spoken": "dot keys",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".keys()"
+    },
+    {
+      "spoken": "dot values",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".values()"
+    },
+    {
+      "spoken": "dot update",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".update({CURSOR})"
+    },
+    {
+      "spoken": "dot append",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".append({CURSOR})"
+    },
+    {
+      "spoken": "dot extend",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".extend({CURSOR})"
+    },
+    {
+      "spoken": "dot pop",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".pop({CURSOR})"
+    },
+    {
+      "spoken": "default dict",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "defaultdict({CURSOR})"
+    },
+    {
+      "spoken": "counter",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Counter({CURSOR})"
+    },
+    {
+      "spoken": "ordered dict",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "OrderedDict()"
+    },
+    {
+      "spoken": "named tuple",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "namedtuple(\"{CURSOR}\", [])"
+    },
+    {
+      "spoken": "dict get with default",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".get({CURSOR}, None)"
+    },
+    {
+      "spoken": "setdefault",
+      "source": "python",
+      "category": "dicts",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".setdefault({CURSOR}, [])"
+    },
+    {
+      "spoken": "closure",
+      "source": "python",
+      "category": "closures",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def outer({CURSOR}):\n    def inner():\n        \n    return inner"
+    },
+    {
+      "spoken": "partial",
+      "source": "python",
+      "category": "closures",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "functools.partial({CURSOR}, )"
+    },
+    {
+      "spoken": "reduce",
+      "source": "python",
+      "category": "closures",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "functools.reduce({CURSOR}, )"
+    },
+    {
+      "spoken": "wrapped",
+      "source": "python",
+      "category": "closures",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@functools.wraps({CURSOR})\n"
+    },
+    {
+      "spoken": "define decorator",
+      "source": "python",
+      "category": "closures",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def {CURSOR}(func):\n    @functools.wraps(func)\n    def wrapper(*args, **kwargs):\n        return func(*args, **kwargs)\n    return wrapper"
+    },
+    {
+      "spoken": "dir",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "dir({CURSOR})"
+    },
+    {
+      "spoken": "vars",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "vars({CURSOR})"
+    },
+    {
+      "spoken": "type of",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "type({CURSOR})"
+    },
+    {
+      "spoken": "is subclass",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "issubclass({CURSOR}, )"
+    },
+    {
+      "spoken": "callable check",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "callable({CURSOR})"
+    },
+    {
+      "spoken": "import inspect",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import inspect\n"
+    },
+    {
+      "spoken": "get members",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "inspect.getmembers({CURSOR})"
+    },
+    {
+      "spoken": "get source",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "inspect.getsource({CURSOR})"
+    },
+    {
+      "spoken": "get signature",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "inspect.signature({CURSOR})"
+    },
+    {
+      "spoken": "is function",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "inspect.isfunction({CURSOR})"
+    },
+    {
+      "spoken": "is class",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "inspect.isclass({CURSOR})"
+    },
+    {
+      "spoken": "annotations",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".__annotations__"
+    },
+    {
+      "spoken": "mro",
+      "source": "python",
+      "category": "introspection",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".__mro__"
+    },
+    {
+      "spoken": "abstract base class",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "class {CURSOR}(ABC):\n    "
+    },
+    {
+      "spoken": "metaclass",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "class {CURSOR}(metaclass=type):\n    "
+    },
+    {
+      "spoken": "dunder new",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __new__(cls, *args, **kwargs):\n    instance = super().__new__(cls)\n    {CURSOR}\n    return instance"
+    },
+    {
+      "spoken": "dunder init subclass",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __init_subclass__(cls, **kwargs):\n    super().__init_subclass__(**kwargs)\n    {CURSOR}"
+    },
+    {
+      "spoken": "dunder enter",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __enter__(self):\n    {CURSOR}\n    return self"
+    },
+    {
+      "spoken": "dunder exit",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __exit__(self, exc_type, exc_val, exc_tb):\n    {CURSOR}\n    return False"
+    },
+    {
+      "spoken": "dunder len",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __len__(self):\n    return {CURSOR}"
+    },
+    {
+      "spoken": "dunder getitem",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __getitem__(self, key):\n    return {CURSOR}"
+    },
+    {
+      "spoken": "dunder setitem",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __setitem__(self, key, value):\n    {CURSOR}"
+    },
+    {
+      "spoken": "dunder iter",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __iter__(self):\n    {CURSOR}"
+    },
+    {
+      "spoken": "dunder next",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __next__(self):\n    {CURSOR}"
+    },
+    {
+      "spoken": "dunder call",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __call__(self, *args, **kwargs):\n    {CURSOR}"
+    },
+    {
+      "spoken": "dunder eq",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __eq__(self, other):\n    return {CURSOR}"
+    },
+    {
+      "spoken": "dunder hash",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "def __hash__(self):\n    return hash({CURSOR})"
+    },
+    {
+      "spoken": "dunder slots",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "__slots__ = ({CURSOR},)"
+    },
+    {
+      "spoken": "async function",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async def {CURSOR}():\n    "
+    },
+    {
+      "spoken": "async method",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async def {CURSOR}(self):\n    "
+    },
+    {
+      "spoken": "async for loop",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async for {CURSOR} in :\n    "
+    },
+    {
+      "spoken": "async with block",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async with {CURSOR} as :\n    "
+    },
+    {
+      "spoken": "async main",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async def main() -> None:\n    {CURSOR}\n\nif __name__ == \"__main__\":\n    asyncio.run(main())"
+    },
+    {
+      "spoken": "asyncio run",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "asyncio.run({CURSOR})"
+    },
+    {
+      "spoken": "create task",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "asyncio.create_task({CURSOR})"
+    },
+    {
+      "spoken": "gather",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "await asyncio.gather({CURSOR})"
+    },
+    {
+      "spoken": "task group",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async with asyncio.TaskGroup() as tg:\n    {CURSOR}"
+    },
+    {
+      "spoken": "async generator",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "async def {CURSOR}():\n    yield "
+    },
+    {
+      "spoken": "async context manager",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@asynccontextmanager\nasync def {CURSOR}():\n    try:\n        yield\n    finally:\n        pass"
+    },
+    {
+      "spoken": "import asyncio",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import asyncio\n"
+    },
+    {
+      "spoken": "sleep",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "await asyncio.sleep({CURSOR})"
+    },
+    {
+      "spoken": "event",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "asyncio.Event()"
+    },
+    {
+      "spoken": "async queue",
+      "source": "python",
+      "category": "asyncio",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "asyncio.Queue({CURSOR})"
+    },
+    {
+      "spoken": "import threading",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import threading\n"
+    },
+    {
+      "spoken": "thread",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.Thread(target={CURSOR}, daemon=True)"
+    },
+    {
+      "spoken": "thread start",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".start()"
+    },
+    {
+      "spoken": "thread join",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".join()"
+    },
+    {
+      "spoken": "lock",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.Lock()"
+    },
+    {
+      "spoken": "r lock",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.RLock()"
+    },
+    {
+      "spoken": "with lock",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "with {CURSOR}:\n    "
+    },
+    {
+      "spoken": "condition",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.Condition({CURSOR})"
+    },
+    {
+      "spoken": "semaphore",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.Semaphore({CURSOR})"
+    },
+    {
+      "spoken": "event flag",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.Event()"
+    },
+    {
+      "spoken": "thread local",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "threading.local()"
+    },
+    {
+      "spoken": "thread pool",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "ThreadPoolExecutor(max_workers={CURSOR})"
+    },
+    {
+      "spoken": "submit",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".submit({CURSOR})"
+    },
+    {
+      "spoken": "as completed",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "concurrent.futures.as_completed({CURSOR})"
+    },
+    {
+      "spoken": "future result",
+      "source": "python",
+      "category": "threading",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".result()"
+    },
+    {
+      "spoken": "import multiprocessing",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import multiprocessing\n"
+    },
+    {
+      "spoken": "process",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Process(target={CURSOR}, daemon=True)"
+    },
+    {
+      "spoken": "process pool",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "ProcessPoolExecutor(max_workers={CURSOR})"
+    },
+    {
+      "spoken": "pool map",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "pool.map({CURSOR}, )"
+    },
+    {
+      "spoken": "mp queue",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Queue()"
+    },
+    {
+      "spoken": "pipe",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Pipe()"
+    },
+    {
+      "spoken": "shared value",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Value(\"{CURSOR}\", 0)"
+    },
+    {
+      "spoken": "shared array",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Array(\"{CURSOR}\", [])"
+    },
+    {
+      "spoken": "manager",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.Manager()"
+    },
+    {
+      "spoken": "cpu count",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.cpu_count()"
+    },
+    {
+      "spoken": "spawn context",
+      "source": "python",
+      "category": "multiprocessing",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "multiprocessing.get_context(\"spawn\")"
     },
     {
       "spoken": "resource",

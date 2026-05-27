@@ -165,6 +165,9 @@ export class IpcServer {
             case 'clearCachePad':
                 this.cache.clear();
                 break;
+            case 'syncCacheItems':
+                this.cache.sync(msg.items);
+                break;
 
             // --- Mode ---
             case 'setMode':

@@ -12,7 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var overlay:   UtteranceOverlay!
     private var statusItem: NSStatusItem!
 
-    private var mode: Mode = .dictation {
+    private var mode: Mode = .command {
         didSet {
             overlay.setMode(mode.rawValue)
             client.sendSetMode(mode.rawValue)
@@ -44,9 +44,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         overlay = UtteranceOverlay()
         client  = ExtensionClient()
-        hotkey  = HotkeyMonitor()
-
-        hotkey.onToggle = { [weak self] in self?.toggleMode() }
+        // Sync initial mode to overlay and VSCode (didSet doesn't fire on declaration)
+        overlay.setMode(mode.rawValue)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            guard let self else { return }
+            self.client.sendSetMode(self.mode.rawValue)
+        }
+        // F5 hotkey requires a .app bundle — disabled for plain-binary testing.
+        // hotkey  = HotkeyMonitor()
+        // hotkey.onToggle = { [weak self] in self?.toggleMode() }
 
         client.onCacheUpdate = { items in
             // Mirror cache state locally if needed (e.g. for display in menu)
@@ -73,6 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // ---------------------------------------------------------------------------
 
     private func handle(transcript: String) {
+        NSLog("[VoiceCoder] transcript: %@  mode=%@", transcript, mode.rawValue)
         overlay.showUtterance(transcript)
 
         switch mode {
@@ -81,11 +88,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let result = parser.parseCommand(transcript)
             switch result {
             case .action(let name, let params):
+                NSLog("[VoiceCoder] action: %@  params=%@", name, params.description)
                 dispatchAction(name: name, params: params)
             case .insertText(let text):
+                NSLog("[VoiceCoder] insertText: %@", text)
                 client.sendInsertText(text)
             case .noMatch:
-                // Optionally: play a short error tone here
+                NSLog("[VoiceCoder] noMatch for: %@", transcript)
                 break
             }
 

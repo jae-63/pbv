@@ -90,7 +90,8 @@ final class CommandParser {
     // ---------------------------------------------------------------------------
 
     func parseCommand(_ transcript: String) -> ParsedCommand {
-        let t = transcript.trimmingCharacters(in: .whitespaces).lowercased()
+        var t = transcript.trimmingCharacters(in: .whitespaces).lowercased()
+        while let last = t.last, ".,!?".contains(last) { t.removeLast() }
 
         if let entry = exactLookup[t] { return resolve(entry, captures: [:]) }
 
