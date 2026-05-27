@@ -9,7 +9,7 @@ let package = Package(
             name: "VoiceCoder",
             path: "Sources/VoiceCoder",
             resources: [
-                .copy("Resources/compiled.json"),
+                .process("Resources/compiled.json"),
             ]
         )
     ]

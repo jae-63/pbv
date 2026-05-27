@@ -31,8 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupMenuBar()
 
         // Load compiled vocabulary
-        guard let vocabURL = Bundle.main.url(forResource: "compiled", withExtension: "json",
-                                             subdirectory: "Resources") else {
+        guard let vocabURL = Bundle.module.url(forResource: "compiled", withExtension: "json") else {
             showError("compiled.json not found in app bundle.\nRun vocab/compile_vocab.py then rebuild.")
             return
         }

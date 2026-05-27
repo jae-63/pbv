@@ -1,5 +1,6 @@
 {
   "name": "voice-coder",
+  "publisher": "local",
   "displayName": "Voice Coder",
   "description": "Voice coding assistant — cache pad, navigation, mode indicator, Swift app IPC",
   "version": "0.1.0",
