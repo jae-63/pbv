@@ -3,43 +3,43 @@ import Foundation
 
 // Whisper-backed speech engine.
 //
-// AVAudioEngine captures mic audio into a ring of PCM frames. When the
-// silence timer fires, the accumulated frames are written to a temp WAV file
-// and whisper-cli is invoked. The resulting transcript is passed to the
-// onTranscript callback, then the buffer is cleared and listening resumes.
+// On start(), launches whisper-server as a background process (model stays
+// resident — no per-utterance load cost). AVAudioEngine captures 16 kHz mono
+// PCM; an energy threshold gates silence; on the silence timer the buffered
+// frames are POSTed to whisper-server and the transcript is returned.
 
 final class SpeechEngine: NSObject {
 
     var onTranscript:  ((String) -> Void)?
     var onStateChange: ((State) -> Void)?
-
     enum State { case idle, listening, error(String) }
+
+    // ---------------------------------------------------------------------------
+    // Configuration
+    // ---------------------------------------------------------------------------
+
+    // whisper-server runs as a LaunchAgent (com.voicecoder.whisper) on this port.
+    private let serverPort  = 8765
+    private var serverURL:  URL { URL(string: "http://127.0.0.1:\(serverPort)/inference")! }
+
+    // RMS below this level is treated as silence and not sent to Whisper.
+    private let energyThreshold: Float = 0.01
+
+    // Silence timeout — wait this long after last audio before transcribing.
+    private let silenceDelay: TimeInterval = 0.8
+
+    // ---------------------------------------------------------------------------
+    // State
+    // ---------------------------------------------------------------------------
 
     private let audioEngine  = AVAudioEngine()
     private var frames       = [AVAudioPCMBuffer]()
     private var silenceTimer: DispatchWorkItem?
     private var isRunning    = false
-
-    // Locate whisper-cli and the model once at init time.
-    private let whisperCLI:  String
-    private let modelPath:   String
-
-    override init() {
-        // whisper-cli is installed by Homebrew at a fixed path.
-        whisperCLI = "/opt/homebrew/bin/whisper-cli"
-
-        // Model lives where whisper-cpp-download-ggml-model puts it.
-        let candidates = [
-            "/opt/homebrew/share/whisper-cpp/models/ggml-small.en.bin",
-            (NSHomeDirectory() as NSString).appendingPathComponent(
-                "Library/Caches/whisper/ggml-small.en.bin"),
-        ]
-        modelPath = candidates.first { FileManager.default.fileExists(atPath: $0) } ?? candidates[0]
-        super.init()
-    }
+    private var converter:    AVAudioConverter?
 
     // ---------------------------------------------------------------------------
-    // Permissions
+    // Permissions — only mic needed now (no SFSpeechRecognizer)
     // ---------------------------------------------------------------------------
 
     func requestPermissions(completion: @escaping (Bool) -> Void) {
@@ -56,12 +56,21 @@ final class SpeechEngine: NSObject {
 
     func start() {
         guard !isRunning else { return }
-        guard FileManager.default.fileExists(atPath: modelPath) else {
-            onStateChange?(.error("Whisper model not found at \(modelPath)"))
-            return
-        }
         isRunning = true
-        startAudioEngine()
+        // whisper-server runs as a LaunchAgent — just wait for it to be ready.
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            let ready = self.waitForServer()
+            DispatchQueue.main.async {
+                if ready {
+                    self.startAudioEngine()
+                } else {
+                    self.onStateChange?(.error(
+                        "whisper-server not reachable on port \(self.serverPort). " +
+                        "Run: launchctl load ~/Library/LaunchAgents/com.voicecoder.whisper.plist"))
+                }
+            }
+        }
     }
 
     func stop() {
@@ -76,64 +85,69 @@ final class SpeechEngine: NSObject {
         onStateChange?(.idle)
     }
 
+    // Returns true when whisper-server responds to a GET /.
+    private func waitForServer(attempts: Int = 60) -> Bool {
+        let healthURL = URL(string: "http://127.0.0.1:\(serverPort)/")!
+        for _ in 0..<attempts {
+            var req = URLRequest(url: healthURL, timeoutInterval: 1.0)
+            req.httpMethod = "GET"
+            let sem = DispatchSemaphore(value: 0)
+            var responded = false
+            URLSession.shared.dataTask(with: req) { _, resp, _ in
+                responded = (resp as? HTTPURLResponse) != nil
+                sem.signal()
+            }.resume()
+            _ = sem.wait(timeout: .now() + 1.5)
+            if responded { return true }
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+        return false
+    }
+
     // ---------------------------------------------------------------------------
-    // Private — audio capture
+    // Audio capture
     // ---------------------------------------------------------------------------
 
     private func startAudioEngine() {
-        let inputNode = audioEngine.inputNode
-        // Whisper wants 16 kHz mono. Request that directly from the tap.
-        let whisperFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32,
-                                         sampleRate: 16000,
-                                         channels: 1,
-                                         interleaved: false)!
-        let nativeFormat  = inputNode.outputFormat(forBus: 0)
+        guard isRunning else { return }
 
-        // AVAudioEngine will SRC from nativeFormat → whisperFormat automatically
-        // when the tap format differs from the bus format.
+        let inputNode    = audioEngine.inputNode
+        let nativeFormat = inputNode.outputFormat(forBus: 0)
+        let whisperFmt   = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                         sampleRate: 16_000, channels: 1,
+                                         interleaved: false)!
+        converter = AVAudioConverter(from: nativeFormat, to: whisperFmt)
+
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: nativeFormat) {
             [weak self] buffer, _ in
             guard let self, self.isRunning else { return }
-
-            // Convert to 16 kHz mono in-place using AVAudioConverter.
-            if let converted = self.convert(buffer, to: whisperFormat) {
-                DispatchQueue.main.async { self.received(converted) }
+            if let buf = self.resample(buffer, to: whisperFmt) {
+                DispatchQueue.main.async { self.receive(buf) }
             }
         }
 
         do {
             try audioEngine.start()
-            NSLog("[VoiceCoder] audioEngine started (Whisper backend)")
+            NSLog("[VoiceCoder] audioEngine started (Whisper/server backend)")
             onStateChange?(.listening)
         } catch {
-            NSLog("[VoiceCoder] audioEngine.start() threw: %@", error.localizedDescription)
+            NSLog("[VoiceCoder] audioEngine error: %@", error.localizedDescription)
             onStateChange?(.error(error.localizedDescription))
         }
     }
 
-    // AVAudioConverter wrapper — reuse a converter per unique format pair.
-    private var converter: AVAudioConverter?
-    private var converterOutputFormat: AVAudioFormat?
-
-    private func convert(_ buffer: AVAudioPCMBuffer, to outFormat: AVAudioFormat) -> AVAudioPCMBuffer? {
-        if converter == nil || converterOutputFormat != outFormat {
-            converter = AVAudioConverter(from: buffer.format, to: outFormat)
-            converterOutputFormat = outFormat
-        }
+    private func resample(_ buffer: AVAudioPCMBuffer,
+                          to format: AVAudioFormat) -> AVAudioPCMBuffer? {
         guard let conv = converter else { return nil }
-
-        let ratio       = outFormat.sampleRate / buffer.format.sampleRate
+        let ratio       = format.sampleRate / buffer.format.sampleRate
         let outCapacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 1
-        guard let out   = AVAudioPCMBuffer(pcmFormat: outFormat, frameCapacity: outCapacity) else { return nil }
-
-        var error: NSError?
+        guard let out   = AVAudioPCMBuffer(pcmFormat: format,
+                                           frameCapacity: outCapacity) else { return nil }
         var inputDone = false
-        conv.convert(to: out, error: &error) { _, outStatus in
-            if inputDone {
-                outStatus.pointee = .noDataNow
-            } else {
-                outStatus.pointee = .haveData
-                inputDone = true
+        var error: NSError?
+        conv.convert(to: out, error: &error) { _, status in
+            if inputDone { status.pointee = .noDataNow } else {
+                status.pointee = .haveData; inputDone = true
             }
             return buffer
         }
@@ -141,99 +155,106 @@ final class SpeechEngine: NSObject {
     }
 
     // ---------------------------------------------------------------------------
-    // Private — silence detection
+    // Silence detection
     // ---------------------------------------------------------------------------
 
-    private func received(_ buffer: AVAudioPCMBuffer) {
+    private func receive(_ buffer: AVAudioPCMBuffer) {
         frames.append(buffer)
-        resetSilenceTimer()
-    }
-
-    private func resetSilenceTimer() {
         silenceTimer?.cancel()
-        let item = DispatchWorkItem { [weak self] in
-            self?.flushToWhisper()
-        }
+        let item = DispatchWorkItem { [weak self] in self?.flush() }
         silenceTimer = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8, execute: item)
+        DispatchQueue.main.asyncAfter(deadline: .now() + silenceDelay, execute: item)
     }
 
-    // ---------------------------------------------------------------------------
-    // Private — Whisper transcription
-    // ---------------------------------------------------------------------------
-
-    private func flushToWhisper() {
+    private func flush() {
         guard isRunning, !frames.isEmpty else { return }
         let captured = frames
         frames.removeAll()
 
+        // Skip if audio is too quiet (mic noise / silence).
+        guard rms(captured) >= energyThreshold else { return }
+
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
-            guard let transcript = self.runWhisper(on: captured), !transcript.isEmpty else { return }
-            NSLog("[VoiceCoder] transcript: %@", transcript)
-            DispatchQueue.main.async { self.onTranscript?(transcript) }
+            guard let text = self.transcribe(captured), !text.isEmpty else { return }
+            NSLog("[VoiceCoder] transcript: %@", text)
+            DispatchQueue.main.async { self.onTranscript?(text) }
         }
     }
 
-    private func runWhisper(on buffers: [AVAudioPCMBuffer]) -> String? {
-        // Write PCM frames to a temp WAV file.
+    // RMS energy across all captured frames.
+    private func rms(_ buffers: [AVAudioPCMBuffer]) -> Float {
+        var sum: Float = 0; var count: Int = 0
+        for buf in buffers {
+            guard let ch = buf.floatChannelData?[0] else { continue }
+            let n = Int(buf.frameLength)
+            for i in 0..<n { sum += ch[i] * ch[i] }
+            count += n
+        }
+        return count > 0 ? sqrtf(sum / Float(count)) : 0
+    }
+
+    // ---------------------------------------------------------------------------
+    // Whisper transcription via HTTP server
+    // ---------------------------------------------------------------------------
+
+    private func transcribe(_ buffers: [AVAudioPCMBuffer]) -> String? {
         let tmpURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("voicecoder_\(arc4random()).wav")
+            .appendingPathComponent("vc_\(arc4random()).wav")
         defer { try? FileManager.default.removeItem(at: tmpURL) }
+        guard writeWAV(buffers, to: tmpURL),
+              let wavData = try? Data(contentsOf: tmpURL) else { return nil }
 
-        guard writeWAV(buffers: buffers, to: tmpURL) else {
-            NSLog("[VoiceCoder] failed to write WAV")
-            return nil
-        }
+        // Build multipart/form-data body.
+        let boundary = "VoiceCoder\(arc4random())"
+        var body = Data()
+        func append(_ s: String) { body.append(Data(s.utf8)) }
 
-        // Run whisper-cli.
-        let proc   = Process()
-        let stdout = Pipe()
-        let stderr = Pipe()
-        proc.executableURL = URL(fileURLWithPath: whisperCLI)
-        proc.arguments     = [
-            "--model",    modelPath,
-            "--file",     tmpURL.path,
-            "--language", "en",
-            "--no-timestamps",
-            "--output-txt",
-            "--print-special", "false",
-        ]
-        proc.standardOutput = stdout
-        proc.standardError  = stderr
+        append("--\(boundary)\r\n")
+        append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.wav\"\r\n")
+        append("Content-Type: audio/wav\r\n\r\n")
+        body.append(wavData)
+        append("\r\n--\(boundary)\r\n")
+        append("Content-Disposition: form-data; name=\"temperature\"\r\n\r\n0\r\n")
+        append("--\(boundary)\r\n")
+        append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\njson\r\n")
+        append("--\(boundary)\r\n")
+        append("Content-Disposition: form-data; name=\"language\"\r\n\r\nen\r\n")
+        append("--\(boundary)--\r\n")
 
-        do {
-            try proc.run()
-            proc.waitUntilExit()
-        } catch {
-            NSLog("[VoiceCoder] whisper-cli launch failed: %@", error.localizedDescription)
-            return nil
-        }
+        var req = URLRequest(url: serverURL, timeoutInterval: 15)
+        req.httpMethod = "POST"
+        req.setValue("multipart/form-data; boundary=\(boundary)",
+                     forHTTPHeaderField: "Content-Type")
+        req.httpBody = body
 
-        if proc.terminationStatus != 0 {
-            let err = String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            NSLog("[VoiceCoder] whisper-cli error: %@", err)
-            return nil
-        }
-
-        let raw = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        return cleanWhisperOutput(raw)
-    }
-
-    // Strip leading/trailing whitespace, [BLANK_AUDIO], and timestamp tokens.
-    private func cleanWhisperOutput(_ raw: String) -> String {
-        raw.components(separatedBy: "\n")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty && $0 != "[BLANK_AUDIO]" && !$0.hasPrefix("[") }
-            .joined(separator: " ")
-            .trimmingCharacters(in: .whitespaces)
+        let sem  = DispatchSemaphore(value: 0)
+        var text: String?
+        URLSession.shared.dataTask(with: req) { data, _, _ in
+            defer { sem.signal() }
+            guard let data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let raw  = json["text"] as? String else { return }
+            let cleaned = raw
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: #"<\|[^|]+\|>"#, with: "",
+                                      options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            // Filter common Whisper hallucinations on near-silence.
+            let lower = cleaned.lowercased()
+            let hallucinations = ["you", "thank you", "thanks", ".", ""]
+            if hallucinations.contains(lower) { return }
+            text = cleaned
+        }.resume()
+        sem.wait()
+        return text
     }
 
     // ---------------------------------------------------------------------------
-    // Private — WAV writer
+    // WAV writer
     // ---------------------------------------------------------------------------
 
-    private func writeWAV(buffers: [AVAudioPCMBuffer], to url: URL) -> Bool {
+    private func writeWAV(_ buffers: [AVAudioPCMBuffer], to url: URL) -> Bool {
         guard let first = buffers.first else { return false }
         do {
             let file = try AVAudioFile(forWriting: url,
@@ -243,7 +264,7 @@ final class SpeechEngine: NSObject {
             for buf in buffers { try file.write(from: buf) }
             return true
         } catch {
-            NSLog("[VoiceCoder] AVAudioFile write error: %@", error.localizedDescription)
+            NSLog("[VoiceCoder] WAV write error: %@", error.localizedDescription)
             return false
         }
     }

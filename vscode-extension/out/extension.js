@@ -349,101 +349,85 @@ async function selectToken(token) {
 
 // src/fastPath.ts
 var n = (s) => parseInt(s, 10);
+function rule(src, build) {
+  return {
+    exact: new RegExp("^(?:" + src + ")$", "i"),
+    prefix: new RegExp("^(?:" + src + ")(?=\\s|$)", "i"),
+    build
+  };
+}
 var RULES = [
-  // Navigation — word on line (must be before bare "line N" rule)
-  // "word 3 on line 68" / "go to word 3 on line 68"
-  {
-    pattern: /^(?:go\s+to\s+)?word\s+(\d+)\s+(?:on\s+)?line\s+(\d+)$/i,
-    build: (m) => ({ cmd: "gotoWordOnLine", word: n(m[1]), line: n(m[2]) })
-  },
-  // "go to 3rd word on line 68" / "3rd word on line 68"
-  {
-    pattern: /^(?:go\s+to\s+)?(\d+)(?:st|nd|rd|th)\s+word\s+(?:on\s+)?line\s+(\d+)$/i,
-    build: (m) => ({ cmd: "gotoWordOnLine", word: n(m[1]), line: n(m[2]) })
-  },
+  // Navigation — word on line (before bare "line N")
+  rule(
+    "(?:go\\s+to\\s+)?word\\s+(\\d+)\\s+(?:on\\s+)?line\\s+(\\d+)",
+    (m) => ({ cmd: "gotoWordOnLine", word: n(m[1]), line: n(m[2]) })
+  ),
+  rule(
+    "(?:go\\s+to\\s+)?(\\d+)(?:st|nd|rd|th)\\s+word\\s+(?:on\\s+)?line\\s+(\\d+)",
+    (m) => ({ cmd: "gotoWordOnLine", word: n(m[1]), line: n(m[2]) })
+  ),
   // Navigation — line
-  {
-    pattern: /^(?:go\s+to\s+|goto\s+|jump\s+to\s+)?line\s+(\d+)$/i,
-    build: (m) => ({ cmd: "gotoLine", line: n(m[1]) })
-  },
-  // Navigation — cursor up/down with count
-  {
-    pattern: /^(?:cursor\s+)?up\s+(\d+)(?:\s+lines?)?$/i,
-    build: (m) => ({ cmd: "cursorUp", n: n(m[1]) })
-  },
-  {
-    pattern: /^(?:cursor\s+)?up$/i,
-    build: (_) => ({ cmd: "cursorUp", n: 1 })
-  },
-  {
-    pattern: /^(?:cursor\s+)?down\s+(\d+)(?:\s+lines?)?$/i,
-    build: (m) => ({ cmd: "cursorDown", n: n(m[1]) })
-  },
-  {
-    pattern: /^(?:cursor\s+)?down$/i,
-    build: (_) => ({ cmd: "cursorDown", n: 1 })
-  },
+  rule(
+    "(?:go\\s+to\\s+|goto\\s+|jump\\s+to\\s+)?line\\s+(\\d+)",
+    (m) => ({ cmd: "gotoLine", line: n(m[1]) })
+  ),
+  // Navigation — cursor up/down
+  rule(
+    "(?:cursor\\s+)?up\\s+(\\d+)(?:\\s+lines?)?",
+    (m) => ({ cmd: "cursorUp", n: n(m[1]) })
+  ),
+  rule(
+    "(?:cursor\\s+)?up",
+    (_) => ({ cmd: "cursorUp", n: 1 })
+  ),
+  rule(
+    "(?:cursor\\s+)?down\\s+(\\d+)(?:\\s+lines?)?",
+    (m) => ({ cmd: "cursorDown", n: n(m[1]) })
+  ),
+  rule(
+    "(?:cursor\\s+)?down",
+    (_) => ({ cmd: "cursorDown", n: 1 })
+  ),
   // Navigation — cursor movement
-  { pattern: /^cursor\s+left$/i, build: (_) => ({ cmd: "cursorLeft" }) },
-  { pattern: /^cursor\s+right$/i, build: (_) => ({ cmd: "cursorRight" }) },
-  { pattern: /^(?:cursor\s+)?home$/i, build: (_) => ({ cmd: "cursorHome" }) },
-  { pattern: /^(?:cursor\s+)?end(?:\s+of\s+line)?$/i, build: (_) => ({ cmd: "cursorEnd" }) },
-  { pattern: /^(?:(?:cursor|go)\s+to\s+)?top$/i, build: (_) => ({ cmd: "cursorTop" }) },
-  { pattern: /^(?:(?:cursor|go)\s+to\s+)?bottom$/i, build: (_) => ({ cmd: "cursorBottom" }) },
-  { pattern: /^page\s+up$/i, build: (_) => ({ cmd: "pageUp" }) },
-  { pattern: /^page\s+down$/i, build: (_) => ({ cmd: "pageDown" }) },
+  rule("cursor\\s+left", (_) => ({ cmd: "cursorLeft" })),
+  rule("cursor\\s+right", (_) => ({ cmd: "cursorRight" })),
+  rule("(?:cursor\\s+)?home", (_) => ({ cmd: "cursorHome" })),
+  rule("(?:cursor\\s+)?end(?:\\s+of\\s+line)?", (_) => ({ cmd: "cursorEnd" })),
+  rule("(?:(?:cursor|go)\\s+to\\s+)?top", (_) => ({ cmd: "cursorTop" })),
+  rule("(?:(?:cursor|go)\\s+to\\s+)?bottom", (_) => ({ cmd: "cursorBottom" })),
+  rule("page\\s+up", (_) => ({ cmd: "pageUp" })),
+  rule("page\\s+down", (_) => ({ cmd: "pageDown" })),
   // Cache pad
-  {
-    pattern: /^cache\s+(\d+)$/i,
-    build: (m) => ({ cmd: "insertCacheItem", index: n(m[1]) })
-  },
-  {
-    pattern: /^insert\s+cache(?:\s+item)?\s+(\d+)$/i,
-    build: (m) => ({ cmd: "insertCacheItem", index: n(m[1]) })
-  },
+  rule(
+    "cache\\s+(\\d+)",
+    (m) => ({ cmd: "insertCacheItem", index: n(m[1]) })
+  ),
+  rule(
+    "insert\\s+cache(?:\\s+item)?\\s+(\\d+)",
+    (m) => ({ cmd: "insertCacheItem", index: n(m[1]) })
+  ),
   // Deletion
-  {
-    pattern: /^delete\s+(?:this\s+)?line$/i,
-    build: (_) => ({ cmd: "deleteLine" })
-  },
-  {
-    pattern: /^delete\s+(\d+)\s+words?$/i,
-    build: (m) => ({ cmd: "deleteWords", n: n(m[1]) })
-  },
-  {
-    pattern: /^delete\s+(?:a\s+)?word$/i,
-    build: (_) => ({ cmd: "deleteWords", n: 1 })
-  },
-  {
-    pattern: /^delete\s+(\d+)\s+chars?(?:acters?)?$/i,
-    build: (m) => ({ cmd: "deleteChars", n: n(m[1]) })
-  },
-  {
-    pattern: /^delete\s+(?:to\s+)?end(?:\s+of\s+(?:the\s+)?line)?$/i,
-    build: (_) => ({ cmd: "deleteToEndOfLine" })
-  },
+  rule("delete\\s+(?:this\\s+)?line", (_) => ({ cmd: "deleteLine" })),
+  rule("delete\\s+(\\d+)\\s+words?", (m) => ({ cmd: "deleteWords", n: n(m[1]) })),
+  rule("delete\\s+(?:a\\s+)?word", (_) => ({ cmd: "deleteWords", n: 1 })),
+  rule("delete\\s+(\\d+)\\s+chars?(?:acters?)?", (m) => ({ cmd: "deleteChars", n: n(m[1]) })),
+  rule(
+    "delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?",
+    (_) => ({ cmd: "deleteToEndOfLine" })
+  ),
   // Transactions
-  { pattern: /^set\s+mark$/i, build: (_) => ({ cmd: "setMark" }) },
-  { pattern: /^undo\s+transaction$/i, build: (_) => ({ cmd: "undoTransaction" }) },
+  rule("set\\s+mark", (_) => ({ cmd: "setMark" })),
+  rule("undo\\s+transaction", (_) => ({ cmd: "undoTransaction" })),
   // Document ops
-  {
-    pattern: /^save(?:\s+(?:the\s+)?(?:file|document))?$/i,
-    build: (_) => ({ cmd: "save" })
-  },
-  { pattern: /^undo(?:\s+that)?$/i, build: (_) => ({ cmd: "undo" }) },
-  { pattern: /^redo$/i, build: (_) => ({ cmd: "redo" }) },
-  {
-    pattern: /^format(?:\s+(?:the\s+)?(?:file|document))?$/i,
-    build: (_) => ({ cmd: "formatDocument" })
-  },
-  {
-    pattern: /^(?:toggle\s+)?comment(?:\s+line)?$/i,
-    build: (_) => ({ cmd: "toggleLineComment" })
-  },
-  { pattern: /^select\s+all$/i, build: (_) => ({ cmd: "selectAll" }) },
-  { pattern: /^copy$/i, build: (_) => ({ cmd: "copy" }) },
-  { pattern: /^cut$/i, build: (_) => ({ cmd: "cut" }) },
-  { pattern: /^paste$/i, build: (_) => ({ cmd: "paste" }) }
+  rule("save(?:\\s+(?:the\\s+)?(?:file|document))?", (_) => ({ cmd: "save" })),
+  rule("undo(?:\\s+that)?", (_) => ({ cmd: "undo" })),
+  rule("redo", (_) => ({ cmd: "redo" })),
+  rule("format(?:\\s+(?:the\\s+)?(?:file|document))?", (_) => ({ cmd: "formatDocument" })),
+  rule("(?:toggle\\s+)?comment(?:\\s+line)?", (_) => ({ cmd: "toggleLineComment" })),
+  rule("select\\s+all", (_) => ({ cmd: "selectAll" })),
+  rule("copy", (_) => ({ cmd: "copy" })),
+  rule("cut", (_) => ({ cmd: "cut" })),
+  rule("paste", (_) => ({ cmd: "paste" }))
 ];
 var WORD_NUMBERS = {
   zero: 0,
@@ -486,13 +470,26 @@ function normalizeNumbers(text) {
   );
   return t;
 }
-function fastInterpret(utterance) {
-  const text = normalizeNumbers(utterance.trim().replace(/[.,!?]+$/, ""));
-  for (const { pattern, build } of RULES) {
-    const m = text.match(pattern);
-    if (m) return build(m);
+function prepare(utterance) {
+  return normalizeNumbers(utterance.trim().replace(/[.,!?]+$/, ""));
+}
+function fastInterpretMulti(utterance) {
+  let text = prepare(utterance);
+  const commands3 = [];
+  while (text.length > 0) {
+    let matched = false;
+    for (const { prefix, build } of RULES) {
+      const m = text.match(prefix);
+      if (m) {
+        commands3.push(build(m));
+        text = text.slice(m[0].length).replace(/^\s+/, "");
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) break;
   }
-  return null;
+  return { commands: commands3, remainder: text };
 }
 
 // src/codeTransform.ts
@@ -674,15 +671,17 @@ var IpcServer = class {
           return;
         }
         const raw = msg.text;
-        const fast = fastInterpret(raw);
-        if (fast) {
-          vscode4.window.setStatusBarMessage(
-            `$(mic) "${raw}" \u2192 ${this.describeCmd(fast)}`,
-            5e3
-          );
-          await this.dispatch(fast, _socket);
-          return;
+        const { commands: commands3, remainder } = fastInterpretMulti(raw);
+        if (commands3.length > 0) {
+          const labels = commands3.map((c) => this.describeCmd(c)).join(" | ");
+          vscode4.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 ${labels}`, 5e3);
+          for (const cmd of commands3) {
+            await this.dispatch(cmd, _socket);
+          }
+          if (!remainder) return;
         }
+        const llmInput = remainder || raw;
+        if (commands3.length > 0 && !remainder) return;
         const snap = this.editorSnapshot();
         if (snap.selectedText) {
           const transformed = tryTransform(raw, snap.selectedText, snap.language);
@@ -700,19 +699,19 @@ var IpcServer = class {
         const savedSelection = vscode4.window.activeTextEditor?.selection;
         const abort = new AbortController();
         this.llmAbort = abort;
-        const status = vscode4.window.setStatusBarMessage(`$(loading~spin) "${raw}" \u2192 thinking\u2026`);
-        const command = await this.claude.interpret(raw, snap, abort.signal);
+        const status = vscode4.window.setStatusBarMessage(`$(loading~spin) "${llmInput}" \u2192 thinking\u2026`);
+        const command = await this.claude.interpret(llmInput, snap, abort.signal);
         status.dispose();
         this.llmAbort = null;
         if (abort.signal.aborted) return;
         if (!command) {
-          vscode4.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 (no command)`, 5e3);
+          vscode4.window.setStatusBarMessage(`$(mic) "${llmInput}" \u2192 (no command)`, 5e3);
           return;
         }
         if (command) {
           const cmd = command;
           vscode4.window.setStatusBarMessage(
-            `$(mic) "${raw}" \u2192 ${this.describeCmd(cmd)}`,
+            `$(mic) "${llmInput}" \u2192 ${this.describeCmd(cmd)}`,
             5e3
           );
           const isBufferEdit = cmd.cmd === "replaceSelection" || cmd.cmd === "insertText";

@@ -5,7 +5,7 @@ import { CachePad } from './cachepad';
 import { ModeStatusBar } from './statusbar';
 import { gotoLine, gotoWordOnLine, selectToken } from './navigator';
 import { ClaudeClient, EditorSnapshot } from './claudeClient';
-import { fastInterpret } from './fastPath';
+import { fastInterpret, fastInterpretMulti } from './fastPath';
 import { tryTransform } from './codeTransform';
 
 // Map action names from core.yaml to built-in VSCode command IDs.
@@ -148,13 +148,20 @@ export class IpcServer {
                     return;
                 }
                 const raw = msg.text;
-                const fast = fastInterpret(raw);
-                if (fast) {
-                    vscode.window.setStatusBarMessage(
-                        `$(mic) "${raw}" → ${this.describeCmd(fast as InboundMessage)}`, 5000);
-                    await this.dispatch(fast as InboundMessage, _socket);
-                    return;
+                const { commands, remainder } = fastInterpretMulti(raw);
+                if (commands.length > 0) {
+                    const labels = commands.map(c => this.describeCmd(c as InboundMessage)).join(' | ');
+                    vscode.window.setStatusBarMessage(`$(mic) "${raw}" → ${labels}`, 5000);
+                    for (const cmd of commands) {
+                        await this.dispatch(cmd as InboundMessage, _socket);
+                    }
+                    if (!remainder) return;
+                    // Non-empty remainder falls through to LLM below.
                 }
+                // Use remainder for LLM if fast path consumed a prefix,
+                // or the full utterance if nothing was consumed.
+                const llmInput = remainder || raw;
+                if (commands.length > 0 && !remainder) return;
                 const snap = this.editorSnapshot();
 
                 // Rule-based transform fast path (selected text + known utterance).
@@ -174,19 +181,19 @@ export class IpcServer {
                 const savedSelection = vscode.window.activeTextEditor?.selection;
                 const abort = new AbortController();
                 this.llmAbort = abort;
-                const status = vscode.window.setStatusBarMessage(`$(loading~spin) "${raw}" → thinking…`);
-                const command = await this.claude.interpret(raw, snap, abort.signal);
+                const status = vscode.window.setStatusBarMessage(`$(loading~spin) "${llmInput}" → thinking…`);
+                const command = await this.claude.interpret(llmInput, snap, abort.signal);
                 status.dispose();
                 this.llmAbort = null;
                 if (abort.signal.aborted) return;
                 if (!command) {
-                    vscode.window.setStatusBarMessage(`$(mic) "${raw}" → (no command)`, 5000);
+                    vscode.window.setStatusBarMessage(`$(mic) "${llmInput}" → (no command)`, 5000);
                     return;
                 }
                 if (command) {
                     const cmd = command as InboundMessage;
                     vscode.window.setStatusBarMessage(
-                        `$(mic) "${raw}" → ${this.describeCmd(cmd)}`, 5000);
+                        `$(mic) "${llmInput}" → ${this.describeCmd(cmd)}`, 5000);
                     const isBufferEdit = cmd.cmd === 'replaceSelection' || cmd.cmd === 'insertText';
 
                     // Warn if selected text was present but LLM returned a non-editing command.
