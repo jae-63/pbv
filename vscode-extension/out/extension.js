@@ -459,8 +459,34 @@ var WORD_NUMBERS = {
   eighty: 80,
   ninety: 90
 };
+var ORDINAL_WORDS = {
+  first: "1st",
+  second: "2nd",
+  third: "3rd",
+  fourth: "4th",
+  fifth: "5th",
+  sixth: "6th",
+  seventh: "7th",
+  eighth: "8th",
+  ninth: "9th",
+  tenth: "10th",
+  eleventh: "11th",
+  twelfth: "12th",
+  thirteenth: "13th",
+  fourteenth: "14th",
+  fifteenth: "15th",
+  sixteenth: "16th",
+  seventeenth: "17th",
+  eighteenth: "18th",
+  nineteenth: "19th",
+  twentieth: "20th"
+};
 function normalizeNumbers(text) {
   let t = text.replace(
+    /\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth)\b/gi,
+    (w) => ORDINAL_WORDS[w.toLowerCase()] ?? w
+  );
+  t = t.replace(
     /\b(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)[\s-](one|two|three|four|five|six|seven|eight|nine)\b/gi,
     (_, tens, ones) => String((WORD_NUMBERS[tens.toLowerCase()] ?? 0) + (WORD_NUMBERS[ones.toLowerCase()] ?? 0))
   );
@@ -471,7 +497,8 @@ function normalizeNumbers(text) {
   return t;
 }
 function prepare(utterance) {
-  return normalizeNumbers(utterance.trim().replace(/[.,!?]+$/, ""));
+  const stripped = utterance.trim().replace(/^[.…,!?\s]+/, "").replace(/[.…,!?]+$/, "");
+  return normalizeNumbers(stripped);
 }
 function fastInterpretMulti(utterance) {
   let text = prepare(utterance);
@@ -674,7 +701,7 @@ var IpcServer = class {
         const { commands: commands3, remainder } = fastInterpretMulti(raw);
         if (commands3.length > 0) {
           const labels = commands3.map((c) => this.describeCmd(c)).join(" | ");
-          vscode4.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 ${labels}`, 5e3);
+          vscode4.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 ${labels}`, 1e4);
           for (const cmd of commands3) {
             await this.dispatch(cmd, _socket);
           }
@@ -690,7 +717,7 @@ var IpcServer = class {
             if (editor2) {
               this.mark = { uri: editor2.document.uri.toString(), text: editor2.document.getText(), cursor: editor2.selection.active };
               editor2.selection = vscode4.window.activeTextEditor.selection;
-              vscode4.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 replaceSelection`, 5e3);
+              vscode4.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 replaceSelection`, 1e4);
               await this.dispatch({ cmd: "replaceSelection", text: transformed }, _socket);
             }
             return;
@@ -705,14 +732,14 @@ var IpcServer = class {
         this.llmAbort = null;
         if (abort.signal.aborted) return;
         if (!command) {
-          vscode4.window.setStatusBarMessage(`$(mic) "${llmInput}" \u2192 (no command)`, 5e3);
+          vscode4.window.setStatusBarMessage(`$(mic) "${llmInput}" \u2192 (no command)`, 1e4);
           return;
         }
         if (command) {
           const cmd = command;
           vscode4.window.setStatusBarMessage(
             `$(mic) "${llmInput}" \u2192 ${this.describeCmd(cmd)}`,
-            5e3
+            1e4
           );
           const isBufferEdit = cmd.cmd === "replaceSelection" || cmd.cmd === "insertText";
           if (snap.selectedText && !isBufferEdit) {

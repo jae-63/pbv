@@ -151,7 +151,7 @@ export class IpcServer {
                 const { commands, remainder } = fastInterpretMulti(raw);
                 if (commands.length > 0) {
                     const labels = commands.map(c => this.describeCmd(c as InboundMessage)).join(' | ');
-                    vscode.window.setStatusBarMessage(`$(mic) "${raw}" → ${labels}`, 5000);
+                    vscode.window.setStatusBarMessage(`$(mic) "${raw}" → ${labels}`, 10000);
                     for (const cmd of commands) {
                         await this.dispatch(cmd as InboundMessage, _socket);
                     }
@@ -172,7 +172,7 @@ export class IpcServer {
                         if (editor) {
                             this.mark = { uri: editor.document.uri.toString(), text: editor.document.getText(), cursor: editor.selection.active };
                             editor.selection = vscode.window.activeTextEditor!.selection;
-                            vscode.window.setStatusBarMessage(`$(mic) "${raw}" → replaceSelection`, 5000);
+                            vscode.window.setStatusBarMessage(`$(mic) "${raw}" → replaceSelection`, 10000);
                             await this.dispatch({ cmd: 'replaceSelection', text: transformed } as InboundMessage, _socket);
                         }
                         return;
@@ -187,13 +187,13 @@ export class IpcServer {
                 this.llmAbort = null;
                 if (abort.signal.aborted) return;
                 if (!command) {
-                    vscode.window.setStatusBarMessage(`$(mic) "${llmInput}" → (no command)`, 5000);
+                    vscode.window.setStatusBarMessage(`$(mic) "${llmInput}" → (no command)`, 10000);
                     return;
                 }
                 if (command) {
                     const cmd = command as InboundMessage;
                     vscode.window.setStatusBarMessage(
-                        `$(mic) "${llmInput}" → ${this.describeCmd(cmd)}`, 5000);
+                        `$(mic) "${llmInput}" → ${this.describeCmd(cmd)}`, 10000);
                     const isBufferEdit = cmd.cmd === 'replaceSelection' || cmd.cmd === 'insertText';
 
                     // Warn if selected text was present but LLM returned a non-editing command.

@@ -99,11 +99,27 @@ const WORD_NUMBERS: Record<string, number> = {
     thirty:30, forty:40, fifty:50, sixty:60, seventy:70, eighty:80, ninety:90,
 };
 
+// Ordinal words → digit+suffix  ("fourth" → "4th", "twenty-first" → "21st")
+const ORDINAL_WORDS: Record<string, string> = {
+    first:'1st', second:'2nd', third:'3rd', fourth:'4th', fifth:'5th',
+    sixth:'6th', seventh:'7th', eighth:'8th', ninth:'9th', tenth:'10th',
+    eleventh:'11th', twelfth:'12th', thirteenth:'13th', fourteenth:'14th',
+    fifteenth:'15th', sixteenth:'16th', seventeenth:'17th', eighteenth:'18th',
+    nineteenth:'19th', twentieth:'20th',
+};
+
 function normalizeNumbers(text: string): string {
+    // Ordinal words → digit+suffix first
     let t = text.replace(
+        /\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth)\b/gi,
+        w => ORDINAL_WORDS[w.toLowerCase()] ?? w,
+    );
+    // Tens+ones compounds ("twenty five" → "25")
+    t = t.replace(
         /\b(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)[\s-](one|two|three|four|five|six|seven|eight|nine)\b/gi,
         (_, tens, ones) => String((WORD_NUMBERS[tens.toLowerCase()] ?? 0) + (WORD_NUMBERS[ones.toLowerCase()] ?? 0)),
     );
+    // Single number words
     t = t.replace(
         /\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b/gi,
         w => String(WORD_NUMBERS[w.toLowerCase()] ?? w),
@@ -112,7 +128,9 @@ function normalizeNumbers(text: string): string {
 }
 
 function prepare(utterance: string): string {
-    return normalizeNumbers(utterance.trim().replace(/[.,!?]+$/, ''));
+    // Strip leading AND trailing punctuation/whitespace that Whisper sometimes adds.
+    const stripped = utterance.trim().replace(/^[.…,!?\s]+/, '').replace(/[.…,!?]+$/, '');
+    return normalizeNumbers(stripped);
 }
 
 // ---------------------------------------------------------------------------

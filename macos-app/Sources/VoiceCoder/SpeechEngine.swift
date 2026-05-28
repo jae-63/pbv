@@ -21,6 +21,15 @@ final class SpeechEngine: NSObject {
 
     // whisper-server runs as a LaunchAgent (com.voicecoder.whisper) on this port.
     private let serverPort  = 8765
+
+    // Initial prompt — biases Whisper toward our command vocabulary.
+    // Phrased as natural command utterances so the model learns the pattern.
+    private static let whisperPrompt =
+        "Go to line 75. Line 32. Cursor up 5. Cursor down 3. Page up. Page down. " +
+        "Delete word. Delete line. Delete 3 words. Delete to end. " +
+        "Set mark. Undo transaction. Undo. Redo. Save. Format document. " +
+        "Comment line. Select all. Copy. Cut. Paste. " +
+        "Word 3 on line 68. Go to top. Go to bottom. End of line. Home."
     private var serverURL:  URL { URL(string: "http://127.0.0.1:\(serverPort)/inference")! }
 
     // RMS below this level is treated as silence and not sent to Whisper.
@@ -300,7 +309,10 @@ final class SpeechEngine: NSObject {
         append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\njson\r\n")
         append("--\(boundary)\r\n")
         append("Content-Disposition: form-data; name=\"language\"\r\n\r\nen\r\n")
-        append("--\(boundary)--\r\n")
+        append("--\(boundary)\r\n")
+        append("Content-Disposition: form-data; name=\"prompt\"\r\n\r\n")
+        append(Self.whisperPrompt)
+        append("\r\n--\(boundary)--\r\n")
 
         var req = URLRequest(url: serverURL, timeoutInterval: 15)
         req.httpMethod = "POST"
