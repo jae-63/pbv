@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-const SYSTEM_PROMPT = 'You are a voice coding assistant. Map each utterance to exactly one JSON command object.';
+const SYSTEM_PROMPT = 'You are a voice coding assistant. Map each utterance to exactly one JSON command object. If a "Selected code:" block is present, the utterance is a transformation request — return replaceSelection with the transformed code.';
 
 // Few-shot examples injected as conversation turns — stronger signal than system prompt text
 // for small models. Keep in sync with the command set in OUTPUT_SCHEMA.
@@ -66,13 +66,16 @@ export class ClaudeClient {
     }
 
     async interpret(transcript: string, snap: EditorSnapshot): Promise<object | null> {
-        const userMsg = [
+        const parts = [
             `Language: ${snap.language}`,
             `Cursor: line ${snap.cursorLine}, char ${snap.cursorChar}`,
-            `Selection: ${snap.selectedText || '(none)'}`,
             `Cache pad: ${snap.cachePad.length ? snap.cachePad.join(', ') : '(empty)'}`,
             `Utterance: "${transcript}"`,
-        ].join('\n');
+        ];
+        if (snap.selectedText) {
+            parts.push(`Selected code:\n${snap.selectedText}`);
+        }
+        const userMsg = parts.join('\n');
 
         const messages = [
             ...FEW_SHOT,

@@ -6,6 +6,7 @@ import { ModeStatusBar } from './statusbar';
 import { gotoLine, gotoWordOnLine, selectToken } from './navigator';
 import { ClaudeClient, EditorSnapshot } from './claudeClient';
 import { fastInterpret } from './fastPath';
+import { tryTransform } from './codeTransform';
 
 // Map action names from core.yaml to built-in VSCode command IDs.
 const VSCODE_COMMANDS: Record<string, string> = {
@@ -147,6 +148,20 @@ export class IpcServer {
                     return;
                 }
                 const snap = this.editorSnapshot();
+
+                // Rule-based transform fast path (selected text + known utterance).
+                if (snap.selectedText) {
+                    const transformed = tryTransform(msg.text, snap.selectedText, snap.language);
+                    if (transformed !== null) {
+                        const editor = vscode.window.activeTextEditor;
+                        if (editor) {
+                            this.mark = { uri: editor.document.uri.toString(), text: editor.document.getText(), cursor: editor.selection.active };
+                            editor.selection = vscode.window.activeTextEditor!.selection;
+                            await this.dispatch({ cmd: 'replaceSelection', text: transformed } as InboundMessage, _socket);
+                        }
+                        return;
+                    }
+                }
                 const savedSelection = vscode.window.activeTextEditor?.selection;
                 const status = vscode.window.setStatusBarMessage('$(loading~spin) Voice Coder: thinking…');
                 const command = await this.claude.interpret(msg.text, snap);

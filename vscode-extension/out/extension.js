@@ -433,6 +433,70 @@ function fastInterpret(utterance) {
   return null;
 }
 
+// src/codeTransform.ts
+var COMMENT_CHAR = {
+  python: "#",
+  go: "//",
+  typescript: "//",
+  javascript: "//",
+  terraform: "#",
+  yaml: "#",
+  shellscript: "#"
+};
+var DECORATOR_ALIASES = {
+  "static method": "staticmethod",
+  "class method": "classmethod",
+  "abstract method": "abstractmethod",
+  "abstract": "abstractmethod",
+  "property": "property",
+  "cached property": "cached_property",
+  "override": "override",
+  "dataclass": "dataclass",
+  "data class": "dataclass"
+};
+function addDecoratorToSelection(decorator, selected) {
+  return selected.replace(
+    /^(\s*)((?:async\s+)?def |class )/m,
+    (_match, indent, kw) => `${indent}@${decorator}
+${indent}${kw}`
+  );
+}
+function tryTransform(utterance, selected, language) {
+  const utt = utterance.trim().toLowerCase();
+  if (/\b(make|convert|add)\b.*\basync\b/.test(utt)) {
+    return selected.replace(/^(\s*)def\s/m, "$1async def ");
+  }
+  if (/\b(make|convert)\b.*\bsync(hronous)?\b/.test(utt) || /\bremove\b.*\basync\b/.test(utt)) {
+    return selected.replace(/^(\s*)async\s+def\s/m, "$1def ");
+  }
+  const decMatch = utt.match(/^add\s+decorator\s+(.+)$/) || utt.match(/^add\s+(.+?)\s+decorator$/) || utt.match(/^add\s+@?(\w[\w\s]*)$/);
+  if (decMatch) {
+    const spoken = decMatch[1].trim();
+    const decorator = DECORATOR_ALIASES[spoken] ?? spoken.replace(/\s+/g, "_");
+    return addDecoratorToSelection(decorator, selected);
+  }
+  if (/\badd\b.*\bdocstring\b/.test(utt) && language === "python") {
+    return selected.replace(
+      /((?:async\s+)?def\s+[^:]+:)\n(\s*)/,
+      (_m, sig, indent) => `${sig}
+${indent}"""TODO"""
+${indent}`
+    );
+  }
+  if (/\bcomment\b.*\bout\b/.test(utt) || /\bcomment\s+(?:this|these)\b/.test(utt)) {
+    const ch = COMMENT_CHAR[language] ?? "//";
+    return selected.split("\n").map((l) => l.length ? `${ch} ${l}` : l).join("\n");
+  }
+  if (/\bun\s*comment\b/.test(utt)) {
+    const ch = COMMENT_CHAR[language] ?? "//";
+    const re = new RegExp(`^${ch}\\s?`);
+    return selected.split("\n").map((l) => l.replace(re, "")).join("\n");
+  }
+  if (/\b(make\s+)?upper\s*(case)?\b/.test(utt)) return selected.toUpperCase();
+  if (/\b(make\s+)?lower\s*(case)?\b/.test(utt)) return selected.toLowerCase();
+  return null;
+}
+
 // src/server.ts
 var VSCODE_COMMANDS = {
   undo: "undo",
@@ -550,6 +614,18 @@ var IpcServer = class {
           return;
         }
         const snap = this.editorSnapshot();
+        if (snap.selectedText) {
+          const transformed = tryTransform(msg.text, snap.selectedText, snap.language);
+          if (transformed !== null) {
+            const editor2 = vscode4.window.activeTextEditor;
+            if (editor2) {
+              this.mark = { uri: editor2.document.uri.toString(), text: editor2.document.getText(), cursor: editor2.selection.active };
+              editor2.selection = vscode4.window.activeTextEditor.selection;
+              await this.dispatch({ cmd: "replaceSelection", text: transformed }, _socket);
+            }
+            return;
+          }
+        }
         const savedSelection = vscode4.window.activeTextEditor?.selection;
         const status = vscode4.window.setStatusBarMessage("$(loading~spin) Voice Coder: thinking\u2026");
         const command = await this.claude.interpret(msg.text, snap);
@@ -724,7 +800,7 @@ var IpcServer = class {
 
 // src/claudeClient.ts
 var vscode5 = __toESM(require("vscode"));
-var SYSTEM_PROMPT = "You are a voice coding assistant. Map each utterance to exactly one JSON command object.";
+var SYSTEM_PROMPT = 'You are a voice coding assistant. Map each utterance to exactly one JSON command object. If a "Selected code:" block is present, the utterance is a transformation request \u2014 return replaceSelection with the transformed code.';
 var FEW_SHOT = [
   { role: "user", content: 'Utterance: "set mark"' },
   { role: "assistant", content: '{"cmd":"setMark"}' },
@@ -787,13 +863,17 @@ var ClaudeClient = class {
     this.baseUrl = baseUrl.replace(/\/$/, "");
   }
   async interpret(transcript, snap) {
-    const userMsg = [
+    const parts = [
       `Language: ${snap.language}`,
       `Cursor: line ${snap.cursorLine}, char ${snap.cursorChar}`,
-      `Selection: ${snap.selectedText || "(none)"}`,
       `Cache pad: ${snap.cachePad.length ? snap.cachePad.join(", ") : "(empty)"}`,
       `Utterance: "${transcript}"`
-    ].join("\n");
+    ];
+    if (snap.selectedText) {
+      parts.push(`Selected code:
+${snap.selectedText}`);
+    }
+    const userMsg = parts.join("\n");
     const messages = [
       ...FEW_SHOT,
       { role: "user", content: userMsg }
