@@ -641,6 +641,34 @@ function prepare(utterance) {
   const stripped = utterance.trim().replace(/^[.…,!?\s]+/, "").replace(/[.…,!?]+$/, "");
   return normalizeNumbers(stripped);
 }
+var FORMATTERS = {
+  snake: (ts) => ts.map((t) => t.toLowerCase()).join("_"),
+  camel: (ts) => ts[0].toLowerCase() + ts.slice(1).map(capFirst).join(""),
+  hammer: (ts) => ts.map(capFirst).join(""),
+  // PascalCase
+  pascal: (ts) => ts.map(capFirst).join(""),
+  constant: (ts) => ts.map((t) => t.toUpperCase()).join("_"),
+  smash: (ts) => ts.map((t) => t.toLowerCase()).join(""),
+  kebab: (ts) => ts.map((t) => t.toLowerCase()).join("-"),
+  dotted: (ts) => ts.map((t) => t.toLowerCase()).join("."),
+  packed: (ts) => ts.map((t) => t.toLowerCase()).join("::"),
+  slasher: (ts) => "/" + ts.map((t) => t.toLowerCase()).join("/")
+};
+var FORMATTER_PATTERN = new RegExp(
+  "^(" + Object.keys(FORMATTERS).join("|") + ")\\s+(.+)$",
+  "i"
+);
+function capFirst(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+function applyFormatter(utterance) {
+  const m = utterance.match(FORMATTER_PATTERN);
+  if (!m) return null;
+  const fn = FORMATTERS[m[1].toLowerCase()];
+  if (!fn) return null;
+  const tokens = m[2].trim().split(/\s+/);
+  return { cmd: "insertText", text: fn(tokens) };
+}
 function fastInterpretMulti(utterance) {
   let text = prepare(utterance);
   const commands3 = [];
@@ -653,6 +681,14 @@ function fastInterpretMulti(utterance) {
         text = text.slice(m[0].length).replace(/^\s+/, "");
         matched = true;
         break;
+      }
+    }
+    if (!matched) {
+      const fmt = applyFormatter(text);
+      if (fmt) {
+        commands3.push(fmt);
+        text = "";
+        matched = true;
       }
     }
     if (!matched) break;

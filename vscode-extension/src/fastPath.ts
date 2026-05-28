@@ -218,6 +218,40 @@ export function fastInterpret(utterance: string): Command | null {
 }
 
 // ---------------------------------------------------------------------------
+// Talon-style formatters
+// ---------------------------------------------------------------------------
+
+const FORMATTERS: Record<string, (tokens: string[]) => string> = {
+    snake:    ts => ts.map(t => t.toLowerCase()).join('_'),
+    camel:    ts => ts[0].toLowerCase() + ts.slice(1).map(capFirst).join(''),
+    hammer:   ts => ts.map(capFirst).join(''),       // PascalCase
+    pascal:   ts => ts.map(capFirst).join(''),
+    constant: ts => ts.map(t => t.toUpperCase()).join('_'),
+    smash:    ts => ts.map(t => t.toLowerCase()).join(''),
+    kebab:    ts => ts.map(t => t.toLowerCase()).join('-'),
+    dotted:   ts => ts.map(t => t.toLowerCase()).join('.'),
+    packed:   ts => ts.map(t => t.toLowerCase()).join('::'),
+    slasher:  ts => '/' + ts.map(t => t.toLowerCase()).join('/'),
+};
+
+const FORMATTER_PATTERN = new RegExp(
+    '^(' + Object.keys(FORMATTERS).join('|') + ')\\s+(.+)$', 'i'
+);
+
+function capFirst(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+function applyFormatter(utterance: string): Command | null {
+    const m = utterance.match(FORMATTER_PATTERN);
+    if (!m) return null;
+    const fn = FORMATTERS[m[1].toLowerCase()];
+    if (!fn) return null;
+    const tokens = m[2].trim().split(/\s+/);
+    return { cmd: 'insertText', text: fn(tokens) };
+}
+
+// ---------------------------------------------------------------------------
 // Greedy multi-command parser — Dragon-style continuous speech
 // ---------------------------------------------------------------------------
 
@@ -240,6 +274,11 @@ export function fastInterpretMulti(utterance: string): MultiResult {
                 matched = true;
                 break;
             }
+        }
+        if (!matched) {
+            // Formatter consumes the rest of the utterance — must be last.
+            const fmt = applyFormatter(text);
+            if (fmt) { commands.push(fmt); text = ''; matched = true; }
         }
         if (!matched) break;
     }
