@@ -136,7 +136,7 @@ export class IpcServer {
             case 'transcript': {
                 if (!this.claude) {
                     vscode.window.showWarningMessage(
-                        'Voice Coder: set voiceCoder.anthropicApiKey to enable Claude interpretation'
+                        'Voice Coder: LLM client not initialized (check voiceCoder.ollamaModel setting)'
                     );
                     return;
                 }

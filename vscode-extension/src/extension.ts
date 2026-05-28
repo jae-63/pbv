@@ -6,10 +6,11 @@ import { OutboundMessage } from './types';
 import { ClaudeClient } from './claudeClient';
 
 export function activate(context: vscode.ExtensionContext): void {
-    const config   = vscode.workspace.getConfiguration('voiceCoder');
-    const port     = config.get<number>('port', 7890);
-    const maxItems = config.get<number>('maxCacheItems', 20);
-    const apiKey   = config.get<string>('anthropicApiKey', '');
+    const config      = vscode.workspace.getConfiguration('voiceCoder');
+    const port        = config.get<number>('port', 7890);
+    const maxItems    = config.get<number>('maxCacheItems', 20);
+    const ollamaModel = config.get<string>('ollamaModel', 'phi4-mini:latest');
+    const ollamaUrl   = config.get<string>('ollamaUrl', 'http://localhost:11434');
 
     const statusBar = new ModeStatusBar();
 
@@ -18,7 +19,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const cache = new CachePad(maxItems, (msg) => broadcastFn(msg));
 
     // IPC server
-    const claude = apiKey ? new ClaudeClient(apiKey) : undefined;
+    const claude = new ClaudeClient(ollamaModel, ollamaUrl);
     const server = new IpcServer(port, cache, statusBar, claude);
     broadcastFn  = (msg) => server.broadcast(msg as OutboundMessage);
 

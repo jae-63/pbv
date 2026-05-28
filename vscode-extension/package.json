@@ -55,10 +55,15 @@
           "default": 20,
           "description": "Maximum number of items in the cache pad"
         },
-        "voiceCoder.anthropicApiKey": {
+        "voiceCoder.ollamaModel": {
           "type": "string",
-          "default": "",
-          "description": "Anthropic API key for Claude voice interpretation (store in settings.json or env)"
+          "default": "phi4-mini:latest",
+          "description": "Ollama model name to use for voice interpretation (must be pulled locally)"
+        },
+        "voiceCoder.ollamaUrl": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Base URL of the local Ollama server"
         }
       }
     }
@@ -68,9 +73,7 @@
     "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18 --watch",
     "package": "vsce package"
   },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.36.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
