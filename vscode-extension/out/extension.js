@@ -833,13 +833,20 @@ var IpcServer = class {
       case "transcript": {
         this.llmAbort?.abort();
         this.llmAbort = null;
+        const raw = msg.text;
+        if (this.statusBar.getMode() === "dictation") {
+          if (editor) {
+            await editor.edit((eb) => eb.insert(editor.selection.active, raw + " "));
+            vscode4.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 1e4);
+          }
+          return;
+        }
         if (!this.claude) {
           vscode4.window.showWarningMessage(
             "Voice Coder: LLM client not initialized (check voiceCoder.ollamaModel setting)"
           );
           return;
         }
-        const raw = msg.text;
         const { commands: commands3, remainder } = fastInterpretMulti(raw);
         if (commands3.length > 0) {
           const labels = commands3.map((c) => this.describeCmd(c)).join(" | ");

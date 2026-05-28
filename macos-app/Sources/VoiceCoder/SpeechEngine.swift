@@ -87,11 +87,32 @@ final class SpeechEngine: NSObject {
         silenceTimer?.cancel()
         silenceTimer = nil
         frames.removeAll()
+        NotificationCenter.default.removeObserver(
+            self, name: .AVAudioEngineConfigurationChange, object: audioEngine)
         if audioEngine.isRunning {
             audioEngine.stop()
             audioEngine.inputNode.removeTap(onBus: 0)
         }
         onStateChange?(.idle)
+    }
+
+    private func restartAudioEngine() {
+        guard isRunning else { return }
+        // Signal not-ready while we reconfigure.
+        onStateChange?(.idle)
+        frames.removeAll()
+        silenceTimer?.cancel()
+        silenceTimer = nil
+        NotificationCenter.default.removeObserver(
+            self, name: .AVAudioEngineConfigurationChange, object: audioEngine)
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
+        audioEngine.inputNode.removeTap(onBus: 0)
+        // Brief pause so macOS finishes reconfiguring the device.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.startAudioEngine()
+        }
     }
 
     // Returns true when whisper-server is accepting TCP connections on serverPort.
@@ -133,6 +154,17 @@ final class SpeechEngine: NSObject {
 
     private func startAudioEngine() {
         guard isRunning else { return }
+
+        // Listen for device changes (AirPods connect/disconnect, USB mic plug/unplug).
+        // When the engine reconfigures, tear down and restart cleanly.
+        NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object:  audioEngine,
+            queue:   .main
+        ) { [weak self] _ in
+            NSLog("[VoiceCoder] audio device changed — restarting engine")
+            self?.restartAudioEngine()
+        }
 
         let inputNode    = audioEngine.inputNode
         // Always tap at the hardware's native format — requesting an arbitrary

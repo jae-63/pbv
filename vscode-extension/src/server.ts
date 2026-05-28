@@ -142,13 +142,23 @@ export class IpcServer {
                 this.llmAbort?.abort();
                 this.llmAbort = null;
 
+                const raw = msg.text;
+
+                // Dictation mode: insert transcript verbatim, no LLM.
+                if (this.statusBar.getMode() === 'dictation') {
+                    if (editor) {
+                        await editor.edit(eb => eb.insert(editor.selection.active, raw + ' '));
+                        vscode.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 10000);
+                    }
+                    return;
+                }
+
                 if (!this.claude) {
                     vscode.window.showWarningMessage(
                         'Voice Coder: LLM client not initialized (check voiceCoder.ollamaModel setting)'
                     );
                     return;
                 }
-                const raw = msg.text;
                 const { commands, remainder } = fastInterpretMulti(raw);
                 if (commands.length > 0) {
                     const labels = commands.map(c => this.describeCmd(c as InboundMessage)).join(' | ');
