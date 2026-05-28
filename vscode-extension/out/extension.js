@@ -879,7 +879,7 @@ var IpcServer = class {
         }
         if (!this.claude) {
           vscode4.window.showWarningMessage(
-            "Voice Coder: LLM client not initialized (check voiceCoder.ollamaModel setting)"
+            "Voice Coder: LLM client not initialized (check pbv.ollamaModel setting)"
           );
           return;
         }
@@ -1492,7 +1492,7 @@ function showCommandsPanel(context) {
     return;
   }
   panel = vscode6.window.createWebviewPanel(
-    "voiceCoder.commands",
+    "pbv.commands",
     "VoiceCoder Commands",
     vscode6.ViewColumn.Beside,
     { enableScripts: true, retainContextWhenHidden: true }
@@ -1512,10 +1512,10 @@ function showCommandsPanel(context) {
 
 // src/extension.ts
 function activate(context) {
-  const config = vscode7.workspace.getConfiguration("voiceCoder");
+  const config = vscode7.workspace.getConfiguration("pbv");
   const port = config.get("port", 7890);
   const maxItems = config.get("maxCacheItems", 20);
-  const ollamaModel = config.get("ollamaModel", "phi4-mini:latest");
+  const ollamaModel = config.get("ollamaModel", "qwen2.5:3b");
   const ollamaUrl = config.get("ollamaUrl", "http://localhost:11434");
   const statusBar = new ModeStatusBar();
   let broadcastFn = () => {
@@ -1524,22 +1524,22 @@ function activate(context) {
   const claude = new ClaudeClient(ollamaModel, ollamaUrl);
   const server = new IpcServer(port, cache, statusBar, claude);
   broadcastFn = (msg) => server.broadcast(msg);
-  const treeView = vscode7.window.createTreeView("voiceCoder.cachePad", {
+  const treeView = vscode7.window.createTreeView("pbv.cachePad", {
     treeDataProvider: cache,
     showCollapseAll: false
   });
   const cmds = [
-    vscode7.commands.registerCommand("voiceCoder.refreshCachePad", () => {
+    vscode7.commands.registerCommand("pbv.refreshCachePad", () => {
       const editor = vscode7.window.activeTextEditor;
       if (editor) cache.absorbDocument(editor.document);
     }),
-    vscode7.commands.registerCommand("voiceCoder.cacheCurrentWord", () => {
+    vscode7.commands.registerCommand("pbv.cacheCurrentWord", () => {
       cache.cacheWordAtCursor();
     }),
-    vscode7.commands.registerCommand("voiceCoder.clearCachePad", () => {
+    vscode7.commands.registerCommand("pbv.clearCachePad", () => {
       cache.clear();
     }),
-    vscode7.commands.registerCommand("voiceCoder.showCommands", () => {
+    vscode7.commands.registerCommand("pbv.showCommands", () => {
       showCommandsPanel(context);
     })
   ];

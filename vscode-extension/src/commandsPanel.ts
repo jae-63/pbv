@@ -242,7 +242,7 @@ export function showCommandsPanel(context: vscode.ExtensionContext): void {
     }
 
     panel = vscode.window.createWebviewPanel(
-        'voiceCoder.commands',
+        'pbv.commands',
         'VoiceCoder Commands',
         vscode.ViewColumn.Beside,
         { enableScripts: true, retainContextWhenHidden: true },

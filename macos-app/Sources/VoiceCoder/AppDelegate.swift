@@ -71,7 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // ---------------------------------------------------------------------------
 
     private func handle(transcript: String) {
-        NSLog("[VoiceCoder] transcript: %@", transcript)
+        NSLog("[PBV] transcript: %@", transcript)
         overlay.showUtterance(transcript)
         client.sendTranscript(transcript)
     }

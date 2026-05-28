@@ -155,7 +155,7 @@ export class IpcServer {
 
                 if (!this.claude) {
                     vscode.window.showWarningMessage(
-                        'Voice Coder: LLM client not initialized (check voiceCoder.ollamaModel setting)'
+                        'Voice Coder: LLM client not initialized (check pbv.ollamaModel setting)'
                     );
                     return;
                 }

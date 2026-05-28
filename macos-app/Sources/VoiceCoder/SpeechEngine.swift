@@ -52,9 +52,9 @@ final class SpeechEngine: NSObject {
     // ---------------------------------------------------------------------------
 
     func requestPermissions(completion: @escaping (Bool) -> Void) {
-        NSLog("[VoiceCoder] requestPermissions: asking mic auth")
+        NSLog("[PBV] requestPermissions: asking mic auth")
         AVCaptureDevice.requestAccess(for: .audio) { granted in
-            NSLog("[VoiceCoder] requestPermissions: mic granted=%d", granted ? 1 : 0)
+            NSLog("[PBV] requestPermissions: mic granted=%d", granted ? 1 : 0)
             DispatchQueue.main.async { completion(granted) }
         }
     }
@@ -162,7 +162,7 @@ final class SpeechEngine: NSObject {
             object:  audioEngine,
             queue:   .main
         ) { [weak self] _ in
-            NSLog("[VoiceCoder] audio device changed — restarting engine")
+            NSLog("[PBV] audio device changed — restarting engine")
             self?.restartAudioEngine()
         }
 
@@ -179,11 +179,11 @@ final class SpeechEngine: NSObject {
 
         do {
             try audioEngine.start()
-            NSLog("[VoiceCoder] audioEngine started — %.0f Hz, %u ch",
+            NSLog("[PBV] audioEngine started — %.0f Hz, %u ch",
                   nativeFormat.sampleRate, nativeFormat.channelCount)
             onStateChange?(.listening)
         } catch {
-            NSLog("[VoiceCoder] audioEngine error: %@", error.localizedDescription)
+            NSLog("[PBV] audioEngine error: %@", error.localizedDescription)
             onStateChange?(.error(error.localizedDescription))
         }
     }
@@ -224,7 +224,7 @@ final class SpeechEngine: NSObject {
 
         // --- Step 2: resample mono → 16 kHz ---
         guard let conv = AVAudioConverter(from: monoFmt, to: targetFmt) else {
-            NSLog("[VoiceCoder] AVAudioConverter nil for %.0f→16000 Hz", monoFmt.sampleRate)
+            NSLog("[PBV] AVAudioConverter nil for %.0f→16000 Hz", monoFmt.sampleRate)
             return nil
         }
         let ratio       = targetFmt.sampleRate / monoFmt.sampleRate
@@ -273,13 +273,13 @@ final class SpeechEngine: NSObject {
         let captured = frames
         frames.removeAll()
         let energy = rms(captured)
-        NSLog("[VoiceCoder] flush: %d frames rms=%.4f", captured.count, energy)
+        NSLog("[PBV] flush: %d frames rms=%.4f", captured.count, energy)
         guard energy >= energyThreshold else { return }
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
             guard let text = self.transcribe(captured), !text.isEmpty else { return }
-            NSLog("[VoiceCoder] transcript: %@", text)
+            NSLog("[PBV] transcript: %@", text)
             DispatchQueue.main.async { self.onTranscript?(text) }
         }
     }
@@ -393,12 +393,12 @@ final class SpeechEngine: NSObject {
         do {
             let file = try AVAudioFile(forWriting: url, settings: settings)
             for buf in buffers { try file.write(from: buf) }
-            NSLog("[VoiceCoder] wrote WAV: %d frames, %.0f Hz, %u ch",
+            NSLog("[PBV] wrote WAV: %d frames, %.0f Hz, %u ch",
                   buffers.reduce(0) { $0 + Int($1.frameLength) },
                   first.format.sampleRate, first.format.channelCount)
             return true
         } catch {
-            NSLog("[VoiceCoder] WAV write error: %@", error.localizedDescription)
+            NSLog("[PBV] WAV write error: %@", error.localizedDescription)
             return false
         }
     }

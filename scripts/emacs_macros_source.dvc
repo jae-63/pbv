@@ -1,0 +1,28 @@
+MENU "EMACS" {
+  STATE "Emacs" {
+    LIST "Ordinal" {
+        "-2\\penultimate"
+        "-1\\last"
+        "1\\first"
+        "2\\second"
+        "3\\third"
+        "4\\fourth"
+        "5\\fifth"
+        "6\\sixth"
+    }
+    LIST "Symbols" {
+        "a\\alpha"  "b\\bravo"  "c\\charlie" "d\\delta"  "e\\echo"
+        "f\\foxtrot" "g\\golf"  "h\\hotel"   "i\\india"  "j\\juliett"
+        "k\\kilo"   "l\\lima"   "m\\mike"    "n\\november" "o\\oscar"
+        "p\\papa"   "q\\quebec" "r\\romeo"   "s\\sierra"  "t\\tango"
+        "u\\uniform" "v\\victor" "w\\whiskey" "x\\xray"  "y\\yankee"
+        "z\\zulu"   "0\\zero"
+        "!" "@" "#" "$" "%" "^" "&" "*" "(" ")" "`" "~"
+        "-" "_" "=" "+" "\\" "|" "[" "{" "]" "}" ";" ":" "'" "\""
+        "," "<" "." ">" "/" "?"
+    }
+    LIST "CurrNextPrev" {
+        "-3\\previous"
+        "-2\\current"
+        "-1\\next"
+    }
