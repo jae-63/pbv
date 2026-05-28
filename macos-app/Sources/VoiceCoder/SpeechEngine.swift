@@ -162,7 +162,7 @@ final class SpeechEngine: NSObject {
                 self.recognitionReq?.endAudio()
             }
             self.silenceTimer = item
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: item)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7, execute: item)
         }
     }
 }
