@@ -13,6 +13,14 @@ interface Rule {
 const n = (s: string) => parseInt(s, 10);
 
 const RULES: Rule[] = [
+    // Navigation — word on line (must be before bare "line N" rule)
+    // "word 3 on line 68" / "go to word 3 on line 68"
+    { pattern: /^(?:go\s+to\s+)?word\s+(\d+)\s+(?:on\s+)?line\s+(\d+)$/i,
+      build: m => ({ cmd: 'gotoWordOnLine', word: n(m[1]), line: n(m[2]) }) },
+    // "go to 3rd word on line 68" / "3rd word on line 68"
+    { pattern: /^(?:go\s+to\s+)?(\d+)(?:st|nd|rd|th)\s+word\s+(?:on\s+)?line\s+(\d+)$/i,
+      build: m => ({ cmd: 'gotoWordOnLine', word: n(m[1]), line: n(m[2]) }) },
+
     // Navigation — line
     { pattern: /^(?:go\s+to\s+|goto\s+|jump\s+to\s+)?line\s+(\d+)$/i,
       build: m => ({ cmd: 'gotoLine', line: n(m[1]) }) },

@@ -45,6 +45,7 @@ export class IpcServer {
     private sockets = new Set<net.Socket>();
     private port: number;
     private mark: Mark | undefined;
+    private llmAbort: AbortController | null = null;
 
     constructor(
         port: number,
@@ -136,14 +137,21 @@ export class IpcServer {
 
             // --- Voice transcript — interpreted by Claude ---
             case 'transcript': {
+                // Cancel any in-flight LLM call so its stale result is never dispatched.
+                this.llmAbort?.abort();
+                this.llmAbort = null;
+
                 if (!this.claude) {
                     vscode.window.showWarningMessage(
                         'Voice Coder: LLM client not initialized (check voiceCoder.ollamaModel setting)'
                     );
                     return;
                 }
-                const fast = fastInterpret(msg.text);
+                const raw = msg.text;
+                const fast = fastInterpret(raw);
                 if (fast) {
+                    vscode.window.setStatusBarMessage(
+                        `$(mic) "${raw}" → ${this.describeCmd(fast as InboundMessage)}`, 5000);
                     await this.dispatch(fast as InboundMessage, _socket);
                     return;
                 }
@@ -151,23 +159,34 @@ export class IpcServer {
 
                 // Rule-based transform fast path (selected text + known utterance).
                 if (snap.selectedText) {
-                    const transformed = tryTransform(msg.text, snap.selectedText, snap.language);
+                    const transformed = tryTransform(raw, snap.selectedText, snap.language);
                     if (transformed !== null) {
                         const editor = vscode.window.activeTextEditor;
                         if (editor) {
                             this.mark = { uri: editor.document.uri.toString(), text: editor.document.getText(), cursor: editor.selection.active };
                             editor.selection = vscode.window.activeTextEditor!.selection;
+                            vscode.window.setStatusBarMessage(`$(mic) "${raw}" → replaceSelection`, 5000);
                             await this.dispatch({ cmd: 'replaceSelection', text: transformed } as InboundMessage, _socket);
                         }
                         return;
                     }
                 }
                 const savedSelection = vscode.window.activeTextEditor?.selection;
-                const status = vscode.window.setStatusBarMessage('$(loading~spin) Voice Coder: thinking…');
-                const command = await this.claude.interpret(msg.text, snap);
+                const abort = new AbortController();
+                this.llmAbort = abort;
+                const status = vscode.window.setStatusBarMessage(`$(loading~spin) "${raw}" → thinking…`);
+                const command = await this.claude.interpret(raw, snap, abort.signal);
                 status.dispose();
+                this.llmAbort = null;
+                if (abort.signal.aborted) return;
+                if (!command) {
+                    vscode.window.setStatusBarMessage(`$(mic) "${raw}" → (no command)`, 5000);
+                    return;
+                }
                 if (command) {
                     const cmd = command as InboundMessage;
+                    vscode.window.setStatusBarMessage(
+                        `$(mic) "${raw}" → ${this.describeCmd(cmd)}`, 5000);
                     const isBufferEdit = cmd.cmd === 'replaceSelection' || cmd.cmd === 'insertText';
 
                     // Warn if selected text was present but LLM returned a non-editing command.
@@ -271,9 +290,12 @@ export class IpcServer {
                 this.cache.sync(msg.items);
                 break;
 
-            // --- Mode ---
+            // --- Mode / readiness ---
             case 'setMode':
                 this.statusBar.setMode(msg.mode);
+                break;
+            case 'setReady':
+                this.statusBar.setReady(msg.ready);
                 break;
 
             // --- Transaction mark ---
@@ -350,6 +372,23 @@ export class IpcServer {
                 if (vcCmd) await vscode.commands.executeCommand(vcCmd);
                 break;
             }
+        }
+    }
+
+    private describeCmd(cmd: InboundMessage): string {
+        const c = cmd as Record<string, unknown>;
+        switch (cmd.cmd) {
+            case 'gotoLine':         return `gotoLine ${c.line}`;
+            case 'gotoWordOnLine':   return `word ${c.word} on line ${c.line}`;
+            case 'cursorUp':         return `up ${c.n ?? 1}`;
+            case 'cursorDown':       return `down ${c.n ?? 1}`;
+            case 'insertCacheItem':  return `cache[${c.index}]`;
+            case 'deleteChars':      return `deleteChars ${c.n}`;
+            case 'deleteWords':      return `deleteWords ${c.n}`;
+            case 'insertText':       return `insertText "${String(c.text).slice(0, 30)}"`;
+            case 'replaceSelection': return `replaceSelection`;
+            case 'selectToken':      return `selectToken "${c.token}"`;
+            default:                 return cmd.cmd;
         }
     }
 }

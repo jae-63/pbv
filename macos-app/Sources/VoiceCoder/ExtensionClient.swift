@@ -6,7 +6,8 @@ import Network
 
 final class ExtensionClient {
 
-    var onCacheUpdate: (([String]) -> Void)?
+    var onCacheUpdate:     (([String]) -> Void)?
+    var onConnectionReady: (() -> Void)?
 
     private let host: NWEndpoint.Host
     private let port: NWEndpoint.Port
@@ -53,6 +54,10 @@ final class ExtensionClient {
         send(["cmd": "setMode", "mode": mode])
     }
 
+    func sendSetReady(_ ready: Bool) {
+        send(["cmd": "setReady", "ready": ready])
+    }
+
     // ---------------------------------------------------------------------------
     // Private — connection lifecycle
     // ---------------------------------------------------------------------------
@@ -65,6 +70,7 @@ final class ExtensionClient {
             switch state {
             case .ready:
                 self?.startReceiving()
+                DispatchQueue.main.async { self?.onConnectionReady?() }
             case .failed, .cancelled:
                 self?.scheduleReconnect()
             default:

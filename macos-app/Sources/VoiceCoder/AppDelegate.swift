@@ -1,6 +1,6 @@
 import AppKit
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // ---------------------------------------------------------------------------
     // Components
@@ -18,7 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             updateMenuModeItem()
         }
     }
+    private var speechReady = false
     private var modeMenuItem: NSMenuItem?
+    private var micMenuItem:  NSMenuItem?
 
     enum Mode: String { case command, dictation }
 
@@ -31,11 +33,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         overlay = UtteranceOverlay()
         client  = ExtensionClient()
-        // Sync initial mode to overlay and VSCode (didSet doesn't fire on declaration)
+        // Sync initial mode to overlay (didSet doesn't fire on declaration)
         overlay.setMode(mode.rawValue)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+        // Re-sync mode and ready state whenever the connection (re)establishes.
+        client.onConnectionReady = { [weak self] in
             guard let self else { return }
             self.client.sendSetMode(self.mode.rawValue)
+            self.client.sendSetReady(self.speechReady)
         }
         // F5 hotkey requires a .app bundle — disabled for plain-binary testing.
         // hotkey  = HotkeyMonitor()
@@ -90,6 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
+        menu.delegate = self
 
         let titleItem = NSMenuItem(title: "Voice Coder", action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
@@ -100,6 +105,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         modeItem.target = self
         modeMenuItem = modeItem
         menu.addItem(modeItem)
+
+        menu.addItem(.separator())
+
+        let micItem = NSMenuItem(title: micLabel, action: nil, keyEquivalent: "")
+        micItem.isEnabled = false
+        micMenuItem = micItem
+        menu.addItem(micItem)
 
         menu.addItem(.separator())
 
@@ -116,6 +128,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleModeFromMenu() { toggleMode() }
     @objc private func reconnect() { client = ExtensionClient() }
 
+    private var micLabel: String {
+        let name = AVCaptureDevice.default(for: .audio)?.localizedName ?? "Unknown"
+        return "Mic: \(name)"
+    }
+
     private var modeTitle: String {
         mode == .command ? "● Command mode (F5 to switch)" : "○ Dictation mode (F5 to switch)"
     }
@@ -131,11 +148,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func handleSpeechState(_ state: SpeechEngine.State) {
         switch state {
         case .idle:
+            speechReady = false
             statusItem.button?.image = NSImage(systemSymbolName: "mic.slash", accessibilityDescription: "Voice Coder (idle)")
+            client.sendSetReady(false)
         case .listening:
+            speechReady = true
             statusItem.button?.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Voice Coder (listening)")
+            client.sendSetReady(true)
         case .error(let msg):
+            speechReady = false
             statusItem.button?.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: "Voice Coder (error)")
+            client.sendSetReady(false)
             showError("Speech engine error: \(msg)")
         }
     }
@@ -143,6 +166,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
+
+    func menuWillOpen(_ menu: NSMenu) {
+        micMenuItem?.title = micLabel
+    }
 
     private func showError(_ msg: String) {
         DispatchQueue.main.async {

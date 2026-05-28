@@ -227,7 +227,8 @@ var CachePad = class {
 var vscode2 = __toESM(require("vscode"));
 var ModeStatusBar = class {
   constructor() {
-    this.mode = "dictation";
+    this.mode = "command";
+    this.ready = false;
     this.item = vscode2.window.createStatusBarItem(vscode2.StatusBarAlignment.Left, 1e3);
     this.item.command = void 0;
     this.render();
@@ -235,6 +236,10 @@ var ModeStatusBar = class {
   }
   setMode(mode) {
     this.mode = mode;
+    this.render();
+  }
+  setReady(ready) {
+    this.ready = ready;
     this.render();
   }
   getMode() {
@@ -249,8 +254,13 @@ var ModeStatusBar = class {
   render() {
     if (this.mode === "command") {
       this.item.text = "$(mic) COMMAND";
-      this.item.backgroundColor = new vscode2.ThemeColor("statusBarItem.warningBackground");
-      this.item.tooltip = "Voice Coder: command mode \u2014 utterances are interpreted as commands";
+      if (this.ready) {
+        this.item.backgroundColor = new vscode2.ThemeColor("statusBarItem.warningBackground");
+        this.item.tooltip = "Voice Coder: listening \u2014 utterances are interpreted as commands";
+      } else {
+        this.item.backgroundColor = new vscode2.ThemeColor("statusBarItem.errorBackground");
+        this.item.tooltip = "Voice Coder: initializing speech recognition\u2026";
+      }
     } else {
       this.item.text = "$(keyboard) DICTATION";
       this.item.backgroundColor = void 0;
@@ -340,6 +350,17 @@ async function selectToken(token) {
 // src/fastPath.ts
 var n = (s) => parseInt(s, 10);
 var RULES = [
+  // Navigation — word on line (must be before bare "line N" rule)
+  // "word 3 on line 68" / "go to word 3 on line 68"
+  {
+    pattern: /^(?:go\s+to\s+)?word\s+(\d+)\s+(?:on\s+)?line\s+(\d+)$/i,
+    build: (m) => ({ cmd: "gotoWordOnLine", word: n(m[1]), line: n(m[2]) })
+  },
+  // "go to 3rd word on line 68" / "3rd word on line 68"
+  {
+    pattern: /^(?:go\s+to\s+)?(\d+)(?:st|nd|rd|th)\s+word\s+(?:on\s+)?line\s+(\d+)$/i,
+    build: (m) => ({ cmd: "gotoWordOnLine", word: n(m[1]), line: n(m[2]) })
+  },
   // Navigation — line
   {
     pattern: /^(?:go\s+to\s+|goto\s+|jump\s+to\s+)?line\s+(\d+)$/i,
@@ -569,6 +590,7 @@ var IpcServer = class {
     this.statusBar = statusBar;
     this.claude = claude;
     this.sockets = /* @__PURE__ */ new Set();
+    this.llmAbort = null;
     this.port = port;
     this.server = net.createServer((socket) => this.onConnection(socket));
     this.server.listen(port, "127.0.0.1", () => {
@@ -643,36 +665,56 @@ var IpcServer = class {
     switch (msg.cmd) {
       // --- Voice transcript — interpreted by Claude ---
       case "transcript": {
+        this.llmAbort?.abort();
+        this.llmAbort = null;
         if (!this.claude) {
           vscode4.window.showWarningMessage(
             "Voice Coder: LLM client not initialized (check voiceCoder.ollamaModel setting)"
           );
           return;
         }
-        const fast = fastInterpret(msg.text);
+        const raw = msg.text;
+        const fast = fastInterpret(raw);
         if (fast) {
+          vscode4.window.setStatusBarMessage(
+            `$(mic) "${raw}" \u2192 ${this.describeCmd(fast)}`,
+            5e3
+          );
           await this.dispatch(fast, _socket);
           return;
         }
         const snap = this.editorSnapshot();
         if (snap.selectedText) {
-          const transformed = tryTransform(msg.text, snap.selectedText, snap.language);
+          const transformed = tryTransform(raw, snap.selectedText, snap.language);
           if (transformed !== null) {
             const editor2 = vscode4.window.activeTextEditor;
             if (editor2) {
               this.mark = { uri: editor2.document.uri.toString(), text: editor2.document.getText(), cursor: editor2.selection.active };
               editor2.selection = vscode4.window.activeTextEditor.selection;
+              vscode4.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 replaceSelection`, 5e3);
               await this.dispatch({ cmd: "replaceSelection", text: transformed }, _socket);
             }
             return;
           }
         }
         const savedSelection = vscode4.window.activeTextEditor?.selection;
-        const status = vscode4.window.setStatusBarMessage("$(loading~spin) Voice Coder: thinking\u2026");
-        const command = await this.claude.interpret(msg.text, snap);
+        const abort = new AbortController();
+        this.llmAbort = abort;
+        const status = vscode4.window.setStatusBarMessage(`$(loading~spin) "${raw}" \u2192 thinking\u2026`);
+        const command = await this.claude.interpret(raw, snap, abort.signal);
         status.dispose();
+        this.llmAbort = null;
+        if (abort.signal.aborted) return;
+        if (!command) {
+          vscode4.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 (no command)`, 5e3);
+          return;
+        }
         if (command) {
           const cmd = command;
+          vscode4.window.setStatusBarMessage(
+            `$(mic) "${raw}" \u2192 ${this.describeCmd(cmd)}`,
+            5e3
+          );
           const isBufferEdit = cmd.cmd === "replaceSelection" || cmd.cmd === "insertText";
           if (snap.selectedText && !isBufferEdit) {
             vscode4.window.showWarningMessage(
@@ -761,9 +803,12 @@ var IpcServer = class {
       case "syncCacheItems":
         this.cache.sync(msg.items);
         break;
-      // --- Mode ---
+      // --- Mode / readiness ---
       case "setMode":
         this.statusBar.setMode(msg.mode);
+        break;
+      case "setReady":
+        this.statusBar.setReady(msg.ready);
         break;
       // --- Transaction mark ---
       case "setMark": {
@@ -837,6 +882,33 @@ var IpcServer = class {
       }
     }
   }
+  describeCmd(cmd) {
+    const c = cmd;
+    switch (cmd.cmd) {
+      case "gotoLine":
+        return `gotoLine ${c.line}`;
+      case "gotoWordOnLine":
+        return `word ${c.word} on line ${c.line}`;
+      case "cursorUp":
+        return `up ${c.n ?? 1}`;
+      case "cursorDown":
+        return `down ${c.n ?? 1}`;
+      case "insertCacheItem":
+        return `cache[${c.index}]`;
+      case "deleteChars":
+        return `deleteChars ${c.n}`;
+      case "deleteWords":
+        return `deleteWords ${c.n}`;
+      case "insertText":
+        return `insertText "${String(c.text).slice(0, 30)}"`;
+      case "replaceSelection":
+        return `replaceSelection`;
+      case "selectToken":
+        return `selectToken "${c.token}"`;
+      default:
+        return cmd.cmd;
+    }
+  }
 };
 
 // src/claudeClient.ts
@@ -903,7 +975,7 @@ var ClaudeClient = class {
     this.model = model;
     this.baseUrl = baseUrl.replace(/\/$/, "");
   }
-  async interpret(transcript, snap) {
+  async interpret(transcript, snap, signal) {
     const parts = [
       `Language: ${snap.language}`,
       `Cursor: line ${snap.cursorLine}, char ${snap.cursorChar}`,
@@ -919,17 +991,20 @@ ${snap.selectedText}`);
       ...FEW_SHOT,
       { role: "user", content: userMsg }
     ];
+    const timeout = AbortSignal.timeout(1e4);
+    const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
     try {
       const res = await fetch(`${this.baseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: combined,
         body: JSON.stringify({
           model: this.model,
           system: SYSTEM_PROMPT,
           messages,
           stream: false,
           format: OUTPUT_SCHEMA,
-          options: { temperature: 0 }
+          options: { temperature: 0, num_predict: 60 }
         })
       });
       if (!res.ok) {
@@ -938,7 +1013,13 @@ ${snap.selectedText}`);
       const data = await res.json();
       return JSON.parse(data.message.content.trim());
     } catch (err) {
-      vscode5.window.showWarningMessage(`Voice Coder: LLM error \u2014 ${err}`);
+      const name = err instanceof Error ? err.name : "";
+      if (name === "AbortError") return null;
+      if (name === "TimeoutError") {
+        vscode5.window.showWarningMessage("Voice Coder: LLM timed out (Ollama took >10 s)");
+      } else {
+        vscode5.window.showWarningMessage(`Voice Coder: LLM error \u2014 ${err}`);
+      }
       return null;
     }
   }

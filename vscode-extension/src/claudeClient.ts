@@ -65,7 +65,7 @@ export class ClaudeClient {
         this.baseUrl = baseUrl.replace(/\/$/, '');
     }
 
-    async interpret(transcript: string, snap: EditorSnapshot): Promise<object | null> {
+    async interpret(transcript: string, snap: EditorSnapshot, signal?: AbortSignal): Promise<object | null> {
         const parts = [
             `Language: ${snap.language}`,
             `Cursor: line ${snap.cursorLine}, char ${snap.cursorChar}`,
@@ -82,17 +82,23 @@ export class ClaudeClient {
             { role: 'user' as const, content: userMsg },
         ];
 
+        const timeout = AbortSignal.timeout(10_000);
+        const combined = signal
+            ? AbortSignal.any([signal, timeout])
+            : timeout;
+
         try {
             const res = await fetch(`${this.baseUrl}/api/chat`, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal:  combined,
                 body: JSON.stringify({
                     model:    this.model,
                     system:   SYSTEM_PROMPT,
                     messages,
                     stream:   false,
                     format:   OUTPUT_SCHEMA,
-                    options:  { temperature: 0 },
+                    options:  { temperature: 0, num_predict: 60 },
                 }),
             });
 
@@ -102,8 +108,14 @@ export class ClaudeClient {
 
             const data = await res.json() as OllamaResponse;
             return JSON.parse(data.message.content.trim());
-        } catch (err) {
-            vscode.window.showWarningMessage(`Voice Coder: LLM error — ${err}`);
+        } catch (err: unknown) {
+            const name = err instanceof Error ? err.name : '';
+            if (name === 'AbortError') return null; // intentional cancel by new command
+            if (name === 'TimeoutError') {
+                vscode.window.showWarningMessage('Voice Coder: LLM timed out (Ollama took >10 s)');
+            } else {
+                vscode.window.showWarningMessage(`Voice Coder: LLM error — ${err}`);
+            }
             return null;
         }
     }
