@@ -58,11 +58,27 @@ const RULES: Rule[] = [
     rule('page\\s+up',   _ => ({ cmd: 'pageUp' })),
     rule('page\\s+down', _ => ({ cmd: 'pageDown' })),
 
-    // Cache pad
+    // Cache pad — retrieval
     rule('cache\\s+(\\d+)',
          m => ({ cmd: 'insertCacheItem', index: n(m[1]) })),
     rule('insert\\s+cache(?:\\s+item)?\\s+(\\d+)',
          m => ({ cmd: 'insertCacheItem', index: n(m[1]) })),
+    // "recent N" — Dragon-era vocabulary for bare cache insertion
+    rule('recent\\s+(\\d+)',
+         m => ({ cmd: 'insertCacheItem', index: n(m[1]) })),
+    // "at sign recent N" — insert @identifier (Perl arrays, Python decorators, etc.)
+    rule('at\\s+sign\\s+recent\\s+(\\d+)',
+         m => ({ cmd: 'insertCacheItem', index: n(m[1]), prefix: '@' })),
+
+    // NATO phonetic navigation — "jump to first tango on 21" = find 't' on line 21
+    // Also handles named punctuation tokens.
+    rule('jump\\s+to\\s+(first|last)\\s+(.+?)\\s+on\\s+(?:current\\s+line|(\\d+))',
+         m => {
+             const which = m[1].toLowerCase() as 'first' | 'last';
+             const char  = natoToChar(m[2]);
+             const line  = m[3] ? n(m[3]) : -1; // -1 = current line
+             return { cmd: 'jumpToCharOnLine', which, char, line };
+         }),
 
     // Deletion
     rule('delete\\s+(?:this\\s+)?line',         _ => ({ cmd: 'deleteLine' })),
@@ -87,6 +103,32 @@ const RULES: Rule[] = [
     rule('cut',   _ => ({ cmd: 'cut' })),
     rule('paste', _ => ({ cmd: 'paste' })),
 ];
+
+// ---------------------------------------------------------------------------
+// NATO phonetic alphabet + named punctuation → single character
+// ---------------------------------------------------------------------------
+
+const NATO: Record<string, string> = {
+    alpha:'a', bravo:'b', charlie:'c', delta:'d', echo:'e', foxtrot:'f',
+    golf:'g', hotel:'h', india:'i', juliet:'j', kilo:'k', lima:'l',
+    mike:'m', november:'n', oscar:'o', papa:'p', quebec:'q', romeo:'r',
+    sierra:'s', tango:'t', uniform:'u', victor:'v', whiskey:'w',
+    'x-ray':'x', xray:'x', yankee:'y', zulu:'z',
+    // Named punctuation
+    underscore:'_', 'at sign':'@', 'at':'@', 'percent sign':'%',
+    asterisk:'*', 'dollar sign':'$', 'equals sign':'=', 'equal sign':'=',
+    'open paren':'(', 'close paren':')', 'left paren':'(', 'right paren':')',
+    'open bracket':'[', 'close bracket':']',
+    'open brace':'{', 'close brace':'}',
+    semicolon:';', colon:':', comma:',', period:'.', slash:'/',
+    backslash:'\\', 'exclamation mark':'!', 'question mark':'?',
+    'less than':'<', 'greater than':'>', dash:'-', hyphen:'-',
+};
+
+function natoToChar(word: string): string {
+    const key = word.trim().toLowerCase();
+    return NATO[key] ?? key[0] ?? '';
+}
 
 // ---------------------------------------------------------------------------
 // Number normalisation

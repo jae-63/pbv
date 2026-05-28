@@ -328,6 +328,18 @@ async function gotoWordOnLine(wordIndex, targetMod) {
   editor.selection = new vscode3.Selection(pos, pos);
   editor.revealRange(new vscode3.Range(pos, pos), vscode3.TextEditorRevealType.InCenter);
 }
+async function jumpToCharOnLine(which, char, targetMod) {
+  const editor = vscode3.window.activeTextEditor;
+  if (!editor) return;
+  const line = targetMod === -1 ? editor.selection.active.line : resolveModLine(targetMod, editor);
+  if (line === null) return;
+  const text = editor.document.lineAt(line).text;
+  const col = which === "first" ? text.indexOf(char) : text.lastIndexOf(char);
+  if (col === -1) return;
+  const pos = new vscode3.Position(line, col);
+  editor.selection = new vscode3.Selection(pos, pos);
+  editor.revealRange(new vscode3.Range(pos, pos), vscode3.TextEditorRevealType.InCenter);
+}
 async function selectToken(token) {
   const editor = vscode3.window.activeTextEditor;
   if (!editor) return;
@@ -397,7 +409,7 @@ var RULES = [
   rule("(?:(?:cursor|go)\\s+to\\s+)?bottom", (_) => ({ cmd: "cursorBottom" })),
   rule("page\\s+up", (_) => ({ cmd: "pageUp" })),
   rule("page\\s+down", (_) => ({ cmd: "pageDown" })),
-  // Cache pad
+  // Cache pad — retrieval
   rule(
     "cache\\s+(\\d+)",
     (m) => ({ cmd: "insertCacheItem", index: n(m[1]) })
@@ -405,6 +417,27 @@ var RULES = [
   rule(
     "insert\\s+cache(?:\\s+item)?\\s+(\\d+)",
     (m) => ({ cmd: "insertCacheItem", index: n(m[1]) })
+  ),
+  // "recent N" — Dragon-era vocabulary for bare cache insertion
+  rule(
+    "recent\\s+(\\d+)",
+    (m) => ({ cmd: "insertCacheItem", index: n(m[1]) })
+  ),
+  // "at sign recent N" — insert @identifier (Perl arrays, Python decorators, etc.)
+  rule(
+    "at\\s+sign\\s+recent\\s+(\\d+)",
+    (m) => ({ cmd: "insertCacheItem", index: n(m[1]), prefix: "@" })
+  ),
+  // NATO phonetic navigation — "jump to first tango on 21" = find 't' on line 21
+  // Also handles named punctuation tokens.
+  rule(
+    "jump\\s+to\\s+(first|last)\\s+(.+?)\\s+on\\s+(?:current\\s+line|(\\d+))",
+    (m) => {
+      const which = m[1].toLowerCase();
+      const char = natoToChar(m[2]);
+      const line = m[3] ? n(m[3]) : -1;
+      return { cmd: "jumpToCharOnLine", which, char, line };
+    }
   ),
   // Deletion
   rule("delete\\s+(?:this\\s+)?line", (_) => ({ cmd: "deleteLine" })),
@@ -429,6 +462,68 @@ var RULES = [
   rule("cut", (_) => ({ cmd: "cut" })),
   rule("paste", (_) => ({ cmd: "paste" }))
 ];
+var NATO = {
+  alpha: "a",
+  bravo: "b",
+  charlie: "c",
+  delta: "d",
+  echo: "e",
+  foxtrot: "f",
+  golf: "g",
+  hotel: "h",
+  india: "i",
+  juliet: "j",
+  kilo: "k",
+  lima: "l",
+  mike: "m",
+  november: "n",
+  oscar: "o",
+  papa: "p",
+  quebec: "q",
+  romeo: "r",
+  sierra: "s",
+  tango: "t",
+  uniform: "u",
+  victor: "v",
+  whiskey: "w",
+  "x-ray": "x",
+  xray: "x",
+  yankee: "y",
+  zulu: "z",
+  // Named punctuation
+  underscore: "_",
+  "at sign": "@",
+  "at": "@",
+  "percent sign": "%",
+  asterisk: "*",
+  "dollar sign": "$",
+  "equals sign": "=",
+  "equal sign": "=",
+  "open paren": "(",
+  "close paren": ")",
+  "left paren": "(",
+  "right paren": ")",
+  "open bracket": "[",
+  "close bracket": "]",
+  "open brace": "{",
+  "close brace": "}",
+  semicolon: ";",
+  colon: ":",
+  comma: ",",
+  period: ".",
+  slash: "/",
+  backslash: "\\",
+  "exclamation mark": "!",
+  "question mark": "?",
+  "less than": "<",
+  "greater than": ">",
+  dash: "-",
+  hyphen: "-"
+};
+function natoToChar(word) {
+  const key = word.trim().toLowerCase();
+  return NATO[key] ?? key[0] ?? "";
+}
 var WORD_NUMBERS = {
   zero: 0,
   one: 1,
@@ -795,6 +890,9 @@ var IpcServer = class {
       case "gotoWordOnLine":
         await gotoWordOnLine(msg.word, msg.line);
         break;
+      case "jumpToCharOnLine":
+        await jumpToCharOnLine(msg.which, msg.char, msg.line);
+        break;
       case "selectToken":
         await selectToken(msg.token);
         break;
@@ -810,7 +908,8 @@ var IpcServer = class {
       case "insertCacheItem": {
         const sym = this.cache.insertAt(msg.index);
         if (sym && editor) {
-          await editor.edit((eb) => eb.insert(editor.selection.active, sym));
+          const text = (msg.prefix ?? "") + sym;
+          await editor.edit((eb) => eb.insert(editor.selection.active, text));
         }
         break;
       }
@@ -920,7 +1019,9 @@ var IpcServer = class {
       case "cursorDown":
         return `down ${c.n ?? 1}`;
       case "insertCacheItem":
-        return `cache[${c.index}]`;
+        return `${c.prefix ?? ""}cache[${c.index}]`;
+      case "jumpToCharOnLine":
+        return `jump ${c.which} '${c.char}' on line ${c.line}`;
       case "deleteChars":
         return `deleteChars ${c.n}`;
       case "deleteWords":
@@ -946,7 +1047,12 @@ var FEW_SHOT = [
   { role: "user", content: 'Utterance: "undo transaction"' },
   { role: "assistant", content: '{"cmd":"undoTransaction"}' },
   { role: "user", content: 'Utterance: "cache 2"' },
-  { role: "assistant", content: '{"cmd":"insertCacheItem","index":2}' }
+  { role: "assistant", content: '{"cmd":"insertCacheItem","index":2}' },
+  // camelCase / snake_case aware selection — resolve spoken form to actual token
+  { role: "user", content: 'Utterance: "select my variable name"\nLanguage: python\nContent excerpt: result = myVariableName + offset' },
+  { role: "assistant", content: '{"cmd":"selectToken","token":"myVariableName"}' },
+  { role: "user", content: 'Utterance: "select output file name"\nLanguage: python\nContent excerpt: open(output_file_name, "r")' },
+  { role: "assistant", content: '{"cmd":"selectToken","token":"output_file_name"}' }
 ];
 var OUTPUT_SCHEMA = {
   type: "object",

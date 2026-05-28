@@ -7,7 +7,8 @@ export type InboundMessage =
   | { cmd: 'gotoLine';         line: number }
   | { cmd: 'gotoWordOnLine';   word: number; line: number }
   | { cmd: 'selectToken';      token: string }
-  | { cmd: 'insertCacheItem';  index: number }
+  | { cmd: 'insertCacheItem';  index: number; prefix?: string }
+  | { cmd: 'jumpToCharOnLine'; which: 'first' | 'last'; char: string; line: number }
   | { cmd: 'cacheCurrentWord' }
   | { cmd: 'refreshCachePad' }
   | { cmd: 'evictCacheItem';   index: number }

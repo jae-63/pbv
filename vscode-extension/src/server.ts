@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { InboundMessage, OutboundMessage } from './types';
 import { CachePad } from './cachepad';
 import { ModeStatusBar } from './statusbar';
-import { gotoLine, gotoWordOnLine, selectToken } from './navigator';
+import { gotoLine, gotoWordOnLine, selectToken, jumpToCharOnLine } from './navigator';
 import { ClaudeClient, EditorSnapshot } from './claudeClient';
 import { fastInterpret, fastInterpretMulti } from './fastPath';
 import { tryTransform } from './codeTransform';
@@ -261,6 +261,9 @@ export class IpcServer {
             case 'gotoWordOnLine':
                 await gotoWordOnLine(msg.word, msg.line);
                 break;
+            case 'jumpToCharOnLine':
+                await jumpToCharOnLine(msg.which, msg.char, msg.line);
+                break;
             case 'selectToken':
                 await selectToken(msg.token);
                 break;
@@ -277,7 +280,8 @@ export class IpcServer {
             case 'insertCacheItem': {
                 const sym = this.cache.insertAt(msg.index);
                 if (sym && editor) {
-                    await editor.edit(eb => eb.insert(editor.selection.active, sym));
+                    const text = (msg.prefix ?? '') + sym;
+                    await editor.edit(eb => eb.insert(editor.selection.active, text));
                 }
                 break;
             }
@@ -389,7 +393,8 @@ export class IpcServer {
             case 'gotoWordOnLine':   return `word ${c.word} on line ${c.line}`;
             case 'cursorUp':         return `up ${c.n ?? 1}`;
             case 'cursorDown':       return `down ${c.n ?? 1}`;
-            case 'insertCacheItem':  return `cache[${c.index}]`;
+            case 'insertCacheItem':  return `${c.prefix ?? ''}cache[${c.index}]`;
+            case 'jumpToCharOnLine': return `jump ${c.which} '${c.char}' on line ${c.line}`;
             case 'deleteChars':      return `deleteChars ${c.n}`;
             case 'deleteWords':      return `deleteWords ${c.n}`;
             case 'insertText':       return `insertText "${String(c.text).slice(0, 30)}"`;

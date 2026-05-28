@@ -12,6 +12,11 @@ const FEW_SHOT: { role: 'user' | 'assistant'; content: string }[] = [
     { role: 'assistant', content: '{"cmd":"undoTransaction"}' },
     { role: 'user',      content: 'Utterance: "cache 2"' },
     { role: 'assistant', content: '{"cmd":"insertCacheItem","index":2}' },
+    // camelCase / snake_case aware selection — resolve spoken form to actual token
+    { role: 'user',      content: 'Utterance: "select my variable name"\nLanguage: python\nContent excerpt: result = myVariableName + offset' },
+    { role: 'assistant', content: '{"cmd":"selectToken","token":"myVariableName"}' },
+    { role: 'user',      content: 'Utterance: "select output file name"\nLanguage: python\nContent excerpt: open(output_file_name, "r")' },
+    { role: 'assistant', content: '{"cmd":"selectToken","token":"output_file_name"}' },
 ];
 
 const OUTPUT_SCHEMA = {

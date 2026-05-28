@@ -66,6 +66,32 @@ export async function gotoWordOnLine(wordIndex: number, targetMod: number): Prom
     editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
 }
 
+// Jump to the first or last occurrence of a single character on a target line.
+// `char` is a literal character (e.g. '_', '@', 't'). Uses the same mod-100
+// line resolution as gotoLine.
+export async function jumpToCharOnLine(
+    which: 'first' | 'last',
+    char: string,
+    targetMod: number,
+): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    // targetMod === -1 means current line
+    const line = targetMod === -1
+        ? editor.selection.active.line
+        : resolveModLine(targetMod, editor);
+    if (line === null) return;
+
+    const text = editor.document.lineAt(line).text;
+    const col  = which === 'first' ? text.indexOf(char) : text.lastIndexOf(char);
+    if (col === -1) return;
+
+    const pos = new vscode.Position(line, col);
+    editor.selection = new vscode.Selection(pos, pos);
+    editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
+}
+
 // Find the first occurrence of `token` in the current document at or after the cursor
 // and select it. Wraps to top of file if not found below cursor.
 export async function selectToken(token: string): Promise<void> {
