@@ -24,6 +24,7 @@ const VSCODE_COMMANDS: Record<string, string> = {
     toggleLineComment:  'editor.action.commentLine',
     find:               'actions.find',
     replace:            'editor.action.startFindReplaceAction',
+    matchParen:         'editor.action.jumpToBracket',
     cursorLeft:         'cursorLeft',
     cursorRight:        'cursorRight',
     cursorHome:         'cursorHome',
@@ -318,6 +319,29 @@ export class IpcServer {
                     cursor: editor.selection.active,
                 };
                 vscode.window.setStatusBarMessage('$(bookmark) Voice Coder: mark set', 2000);
+                break;
+            }
+            case 'jumpToMark': {
+                if (!this.mark) {
+                    vscode.window.showWarningMessage('Voice Coder: no mark set');
+                    return;
+                }
+                if (!editor || editor.document.uri.toString() !== this.mark.uri) {
+                    vscode.window.showWarningMessage('Voice Coder: mark is from a different file');
+                    return;
+                }
+                editor.selection = new vscode.Selection(this.mark.cursor, this.mark.cursor);
+                editor.revealRange(new vscode.Range(this.mark.cursor, this.mark.cursor),
+                    vscode.TextEditorRevealType.InCenter);
+                vscode.window.setStatusBarMessage('$(bookmark) Voice Coder: jumped to mark', 2000);
+                break;
+            }
+            case 'selectWord': {
+                if (!editor) return;
+                const wordRange = editor.document.getWordRangeAtPosition(
+                    editor.selection.active);
+                if (wordRange) editor.selection = new vscode.Selection(
+                    wordRange.start, wordRange.end);
                 break;
             }
             case 'undoTransaction': {

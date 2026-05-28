@@ -88,9 +88,16 @@ const RULES: Rule[] = [
     rule('delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?',
          _ => ({ cmd: 'deleteToEndOfLine' })),
 
-    // Transactions
+    // Transactions & mark navigation
     rule('set\\s+mark',        _ => ({ cmd: 'setMark' })),
     rule('undo\\s+transaction', _ => ({ cmd: 'undoTransaction' })),
+    rule('jump\\s+to\\s+mark', _ => ({ cmd: 'jumpToMark' })),
+
+    // Word selection & bracket matching
+    rule('select\\s+word',     _ => ({ cmd: 'selectWord' })),
+    rule('double\\s+select',   _ => ({ cmd: 'selectWord' })),
+    rule('match\\s+(?:this\\s+)?paren(?:thesis)?|match\\s+bracket',
+         _ => ({ cmd: 'matchParen' })),
 
     // Document ops
     rule('save(?:\\s+(?:the\\s+)?(?:file|document))?', _ => ({ cmd: 'save' })),

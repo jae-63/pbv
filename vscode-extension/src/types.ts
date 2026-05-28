@@ -21,6 +21,9 @@ export type InboundMessage =
   | { cmd: 'startUndoGroup' }
   | { cmd: 'endUndoGroup' }
   | { cmd: 'setMark' }
+  | { cmd: 'jumpToMark' }
+  | { cmd: 'selectWord' }
+  | { cmd: 'matchParen' }
   | { cmd: 'undoTransaction' }
   | { cmd: 'deleteChars';      n: number }
   | { cmd: 'selectChars';      n: number }

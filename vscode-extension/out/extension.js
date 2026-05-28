@@ -448,9 +448,17 @@ var RULES = [
     "delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?",
     (_) => ({ cmd: "deleteToEndOfLine" })
   ),
-  // Transactions
+  // Transactions & mark navigation
   rule("set\\s+mark", (_) => ({ cmd: "setMark" })),
   rule("undo\\s+transaction", (_) => ({ cmd: "undoTransaction" })),
+  rule("jump\\s+to\\s+mark", (_) => ({ cmd: "jumpToMark" })),
+  // Word selection & bracket matching
+  rule("select\\s+word", (_) => ({ cmd: "selectWord" })),
+  rule("double\\s+select", (_) => ({ cmd: "selectWord" })),
+  rule(
+    "match\\s+(?:this\\s+)?paren(?:thesis)?|match\\s+bracket",
+    (_) => ({ cmd: "matchParen" })
+  ),
   // Document ops
   rule("save(?:\\s+(?:the\\s+)?(?:file|document))?", (_) => ({ cmd: "save" })),
   rule("undo(?:\\s+that)?", (_) => ({ cmd: "undo" })),
@@ -694,6 +702,7 @@ var VSCODE_COMMANDS = {
   toggleLineComment: "editor.action.commentLine",
   find: "actions.find",
   replace: "editor.action.startFindReplaceAction",
+  matchParen: "editor.action.jumpToBracket",
   cursorLeft: "cursorLeft",
   cursorRight: "cursorRight",
   cursorHome: "cursorHome",
@@ -944,6 +953,34 @@ var IpcServer = class {
           cursor: editor.selection.active
         };
         vscode4.window.setStatusBarMessage("$(bookmark) Voice Coder: mark set", 2e3);
+        break;
+      }
+      case "jumpToMark": {
+        if (!this.mark) {
+          vscode4.window.showWarningMessage("Voice Coder: no mark set");
+          return;
+        }
+        if (!editor || editor.document.uri.toString() !== this.mark.uri) {
+          vscode4.window.showWarningMessage("Voice Coder: mark is from a different file");
+          return;
+        }
+        editor.selection = new vscode4.Selection(this.mark.cursor, this.mark.cursor);
+        editor.revealRange(
+          new vscode4.Range(this.mark.cursor, this.mark.cursor),
+          vscode4.TextEditorRevealType.InCenter
+        );
+        vscode4.window.setStatusBarMessage("$(bookmark) Voice Coder: jumped to mark", 2e3);
+        break;
+      }
+      case "selectWord": {
+        if (!editor) return;
+        const wordRange = editor.document.getWordRangeAtPosition(
+          editor.selection.active
+        );
+        if (wordRange) editor.selection = new vscode4.Selection(
+          wordRange.start,
+          wordRange.end
+        );
         break;
       }
       case "undoTransaction": {
