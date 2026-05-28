@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import Network
 
 // Whisper-backed speech engine.
 //
@@ -23,7 +24,7 @@ final class SpeechEngine: NSObject {
     private var serverURL:  URL { URL(string: "http://127.0.0.1:\(serverPort)/inference")! }
 
     // RMS below this level is treated as silence and not sent to Whisper.
-    private let energyThreshold: Float = 0.01
+    private let energyThreshold: Float = 0.002
 
     // Silence timeout — wait this long after last audio before transcribing.
     private let silenceDelay: TimeInterval = 0.8
@@ -36,7 +37,6 @@ final class SpeechEngine: NSObject {
     private var frames       = [AVAudioPCMBuffer]()
     private var silenceTimer: DispatchWorkItem?
     private var isRunning    = false
-    private var converter:    AVAudioConverter?
 
     // ---------------------------------------------------------------------------
     // Permissions — only mic needed now (no SFSpeechRecognizer)
@@ -85,23 +85,37 @@ final class SpeechEngine: NSObject {
         onStateChange?(.idle)
     }
 
-    // Returns true when whisper-server responds to a GET /.
+    // Returns true when whisper-server is accepting TCP connections on serverPort.
+    // TCP connect is instant and doesn't block waiting for an HTTP response.
     private func waitForServer(attempts: Int = 60) -> Bool {
-        let healthURL = URL(string: "http://127.0.0.1:\(serverPort)/")!
         for _ in 0..<attempts {
-            var req = URLRequest(url: healthURL, timeoutInterval: 1.0)
-            req.httpMethod = "GET"
-            let sem = DispatchSemaphore(value: 0)
-            var responded = false
-            URLSession.shared.dataTask(with: req) { _, resp, _ in
-                responded = (resp as? HTTPURLResponse) != nil
-                sem.signal()
-            }.resume()
-            _ = sem.wait(timeout: .now() + 1.5)
-            if responded { return true }
+            if tcpPortOpen(port: UInt16(serverPort)) { return true }
             Thread.sleep(forTimeInterval: 0.5)
         }
         return false
+    }
+
+    private func tcpPortOpen(port: UInt16) -> Bool {
+        let sem  = DispatchSemaphore(value: 0)
+        var open = false
+        let conn = NWConnection(
+            host: "127.0.0.1",
+            port: NWEndpoint.Port(rawValue: port)!,
+            using: .tcp)
+        conn.stateUpdateHandler = { state in
+            switch state {
+            case .ready:
+                open = true
+                conn.cancel()
+                sem.signal()
+            case .failed, .cancelled:
+                sem.signal()
+            default: break
+            }
+        }
+        conn.start(queue: .global())
+        _ = sem.wait(timeout: .now() + 1.0)
+        return open
     }
 
     // ---------------------------------------------------------------------------
@@ -112,23 +126,20 @@ final class SpeechEngine: NSObject {
         guard isRunning else { return }
 
         let inputNode    = audioEngine.inputNode
+        // Always tap at the hardware's native format — requesting an arbitrary
+        // format (e.g. 16 kHz) crashes on devices that can't run at that rate.
         let nativeFormat = inputNode.outputFormat(forBus: 0)
-        let whisperFmt   = AVAudioFormat(commonFormat: .pcmFormatFloat32,
-                                         sampleRate: 16_000, channels: 1,
-                                         interleaved: false)!
-        converter = AVAudioConverter(from: nativeFormat, to: whisperFmt)
 
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: nativeFormat) {
             [weak self] buffer, _ in
             guard let self, self.isRunning else { return }
-            if let buf = self.resample(buffer, to: whisperFmt) {
-                DispatchQueue.main.async { self.receive(buf) }
-            }
+            DispatchQueue.main.async { self.receive(buffer) }
         }
 
         do {
             try audioEngine.start()
-            NSLog("[VoiceCoder] audioEngine started (Whisper/server backend)")
+            NSLog("[VoiceCoder] audioEngine started — %.0f Hz, %u ch",
+                  nativeFormat.sampleRate, nativeFormat.channelCount)
             onStateChange?(.listening)
         } catch {
             NSLog("[VoiceCoder] audioEngine error: %@", error.localizedDescription)
@@ -136,43 +147,93 @@ final class SpeechEngine: NSObject {
         }
     }
 
-    private func resample(_ buffer: AVAudioPCMBuffer,
-                          to format: AVAudioFormat) -> AVAudioPCMBuffer? {
-        guard let conv = converter else { return nil }
-        let ratio       = format.sampleRate / buffer.format.sampleRate
-        let outCapacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 1
-        guard let out   = AVAudioPCMBuffer(pcmFormat: format,
-                                           frameCapacity: outCapacity) else { return nil }
-        var inputDone = false
-        var error: NSError?
-        conv.convert(to: out, error: &error) { _, status in
-            if inputDone { status.pointee = .noDataNow } else {
-                status.pointee = .haveData; inputDone = true
+    // Downmix to mono then resample to 16 kHz float32 for Whisper.
+    private func toMono16k(_ buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        let targetFmt = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                      sampleRate: 16_000, channels: 1,
+                                      interleaved: false)!
+
+        // --- Step 1: downmix to mono at native sample rate ---
+        let monoFmt = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                    sampleRate: buffer.format.sampleRate,
+                                    channels: 1, interleaved: false)!
+        guard let mono = AVAudioPCMBuffer(pcmFormat: monoFmt,
+                                          frameCapacity: buffer.frameLength) else { return nil }
+        mono.frameLength = buffer.frameLength
+
+        if let src = buffer.floatChannelData, let dst = mono.floatChannelData {
+            let n  = Int(buffer.frameLength)
+            let ch = Int(buffer.format.channelCount)
+            // Convert to float first if needed, then average channels.
+            if buffer.format.commonFormat == .pcmFormatFloat32 {
+                let scale = 1.0 / Float(max(ch, 1))
+                for i in 0..<n { dst[0][i] = 0 }
+                for c in 0..<ch { for i in 0..<n { dst[0][i] += src[c][i] } }
+                for i in 0..<n { dst[0][i] *= scale }
+            } else {
+                // Int16 → float path
+                if let isrc = buffer.int16ChannelData {
+                    let scale = 1.0 / Float(max(ch, 1)) / 32768.0
+                    for i in 0..<n { dst[0][i] = 0 }
+                    for c in 0..<ch { for i in 0..<n { dst[0][i] += Float(isrc[c][i]) } }
+                    for i in 0..<n { dst[0][i] *= scale }
+                }
             }
-            return buffer
         }
-        return error == nil ? out : nil
+
+        // --- Step 2: resample mono → 16 kHz ---
+        guard let conv = AVAudioConverter(from: monoFmt, to: targetFmt) else {
+            NSLog("[VoiceCoder] AVAudioConverter nil for %.0f→16000 Hz", monoFmt.sampleRate)
+            return nil
+        }
+        let ratio       = targetFmt.sampleRate / monoFmt.sampleRate
+        let outCapacity = AVAudioFrameCount(Double(mono.frameLength) * ratio) + 1
+        guard let out   = AVAudioPCMBuffer(pcmFormat: targetFmt,
+                                           frameCapacity: outCapacity) else { return nil }
+        var done = false; var err: NSError?
+        conv.convert(to: out, error: &err) { _, status in
+            if done { status.pointee = .noDataNow }
+            else { status.pointee = .haveData; done = true }
+            return mono
+        }
+        return err == nil && out.frameLength > 0 ? out : nil
     }
 
     // ---------------------------------------------------------------------------
     // Silence detection
     // ---------------------------------------------------------------------------
 
+    private var speechDetected = false
+
     private func receive(_ buffer: AVAudioPCMBuffer) {
         frames.append(buffer)
-        silenceTimer?.cancel()
-        let item = DispatchWorkItem { [weak self] in self?.flush() }
-        silenceTimer = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + silenceDelay, execute: item)
+
+        if rmsBuffer(buffer) >= energyThreshold {
+            // Speech detected — reset the post-speech silence timer.
+            speechDetected = true
+            silenceTimer?.cancel()
+            let item = DispatchWorkItem { [weak self] in self?.flush() }
+            silenceTimer = item
+            DispatchQueue.main.asyncAfter(deadline: .now() + silenceDelay, execute: item)
+        }
+        // Low-energy buffer: if speechDetected, the running timer counts down.
+        // If never detected speech yet, don't start a timer — wait for voice first.
+
+        // Safety valve: flush after ~10 s even if energy stays below threshold,
+        // so the buffer doesn't grow unbounded.
+        let maxFrames = Int(48_000 * 10 / 4800) // ~10 s at 48 kHz / 4800 frames per buffer
+        if frames.count >= maxFrames { flush() }
     }
 
     private func flush() {
+        silenceTimer = nil
+        speechDetected = false
         guard isRunning, !frames.isEmpty else { return }
         let captured = frames
         frames.removeAll()
-
-        // Skip if audio is too quiet (mic noise / silence).
-        guard rms(captured) >= energyThreshold else { return }
+        let energy = rms(captured)
+        NSLog("[VoiceCoder] flush: %d frames rms=%.4f", captured.count, energy)
+        guard energy >= energyThreshold else { return }
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
@@ -182,13 +243,32 @@ final class SpeechEngine: NSObject {
         }
     }
 
-    // RMS energy across all captured frames.
+    // Per-buffer RMS for the silence gate in receive().
+    private func rmsBuffer(_ buffer: AVAudioPCMBuffer) -> Float {
+        let n = Int(buffer.frameLength)
+        guard n > 0 else { return 0 }
+        var sum: Float = 0
+        if let ch = buffer.floatChannelData?[0] {
+            for i in 0..<n { sum += ch[i] * ch[i] }
+        } else if let ch = buffer.int16ChannelData?[0] {
+            for i in 0..<n { let s = Float(ch[i]) / 32768.0; sum += s * s }
+        } else { return 1.0 }
+        return sqrtf(sum / Float(n))
+    }
+
+    // RMS energy — works with float32 or int16 native formats.
     private func rms(_ buffers: [AVAudioPCMBuffer]) -> Float {
         var sum: Float = 0; var count: Int = 0
         for buf in buffers {
-            guard let ch = buf.floatChannelData?[0] else { continue }
             let n = Int(buf.frameLength)
-            for i in 0..<n { sum += ch[i] * ch[i] }
+            if let ch = buf.floatChannelData?[0] {
+                for i in 0..<n { sum += ch[i] * ch[i] }
+            } else if let ch = buf.int16ChannelData?[0] {
+                for i in 0..<n { let s = Float(ch[i]) / 32768.0; sum += s * s }
+            } else {
+                // Unknown format — assume non-silent so we still send to Whisper.
+                return 1.0
+            }
             count += n
         }
         return count > 0 ? sqrtf(sum / Float(count)) : 0
@@ -256,12 +336,22 @@ final class SpeechEngine: NSObject {
 
     private func writeWAV(_ buffers: [AVAudioPCMBuffer], to url: URL) -> Bool {
         guard let first = buffers.first else { return false }
+        // Explicit 16-bit PCM WAV settings — whisper-server reads this reliably.
+        let settings: [String: Any] = [
+            AVFormatIDKey:             kAudioFormatLinearPCM,
+            AVSampleRateKey:           first.format.sampleRate,
+            AVNumberOfChannelsKey:     first.format.channelCount,
+            AVLinearPCMBitDepthKey:    16,
+            AVLinearPCMIsBigEndianKey: false,
+            AVLinearPCMIsFloatKey:     false,
+            AVLinearPCMIsNonInterleaved: false,
+        ]
         do {
-            let file = try AVAudioFile(forWriting: url,
-                                       settings: first.format.settings,
-                                       commonFormat: .pcmFormatFloat32,
-                                       interleaved: false)
+            let file = try AVAudioFile(forWriting: url, settings: settings)
             for buf in buffers { try file.write(from: buf) }
+            NSLog("[VoiceCoder] wrote WAV: %d frames, %.0f Hz, %u ch",
+                  buffers.reduce(0) { $0 + Int($1.frameLength) },
+                  first.format.sampleRate, first.format.channelCount)
             return true
         } catch {
             NSLog("[VoiceCoder] WAV write error: %@", error.localizedDescription)
