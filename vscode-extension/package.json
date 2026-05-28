@@ -9,12 +9,20 @@
   "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "voiceCoder",
+          "title": "Voice Coder",
+          "icon": "images/cachepad.svg"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "voiceCoder": [
         {
           "id": "voiceCoder.cachePad",
-          "name": "Cache Pad",
-          "icon": "$(symbol-keyword)"
+          "name": "Cache Pad"
         }
       ]
     },
@@ -57,7 +65,7 @@
         },
         "voiceCoder.ollamaModel": {
           "type": "string",
-          "default": "phi4-mini:latest",
+          "default": "qwen2.5:3b",
           "description": "Ollama model name to use for voice interpretation (must be pulled locally)"
         },
         "voiceCoder.ollamaUrl": {
