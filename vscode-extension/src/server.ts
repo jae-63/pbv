@@ -5,6 +5,7 @@ import { CachePad } from './cachepad';
 import { ModeStatusBar } from './statusbar';
 import { gotoLine, gotoWordOnLine, selectToken } from './navigator';
 import { ClaudeClient, EditorSnapshot } from './claudeClient';
+import { fastInterpret } from './fastPath';
 
 // Map action names from core.yaml to built-in VSCode command IDs.
 const VSCODE_COMMANDS: Record<string, string> = {
@@ -140,12 +141,47 @@ export class IpcServer {
                     );
                     return;
                 }
+                const fast = fastInterpret(msg.text);
+                if (fast) {
+                    await this.dispatch(fast as InboundMessage, _socket);
+                    return;
+                }
                 const snap = this.editorSnapshot();
+                const savedSelection = vscode.window.activeTextEditor?.selection;
                 const status = vscode.window.setStatusBarMessage('$(loading~spin) Voice Coder: thinking…');
                 const command = await this.claude.interpret(msg.text, snap);
                 status.dispose();
                 if (command) {
-                    await this.dispatch(command as InboundMessage, _socket);
+                    const cmd = command as InboundMessage;
+                    const isBufferEdit = cmd.cmd === 'replaceSelection' || cmd.cmd === 'insertText';
+
+                    // Warn if selected text was present but LLM returned a non-editing command.
+                    if (snap.selectedText && !isBufferEdit) {
+                        vscode.window.showWarningMessage(
+                            `Voice Coder: selection ignored — LLM returned "${cmd.cmd}" instead of an edit`
+                        );
+                        return;
+                    }
+
+                    // Auto-setMark before any LLM-generated buffer edit so "undo transaction"
+                    // always reverts it.
+                    if (isBufferEdit) {
+                        const editor = vscode.window.activeTextEditor;
+                        if (editor) {
+                            this.mark = {
+                                uri:    editor.document.uri.toString(),
+                                text:   editor.document.getText(),
+                                cursor: editor.selection.active,
+                            };
+                        }
+                        // Restore selection captured before the LLM wait.
+                        if (cmd.cmd === 'replaceSelection' && savedSelection) {
+                            const editor = vscode.window.activeTextEditor;
+                            if (editor) editor.selection = savedSelection;
+                        }
+                    }
+
+                    await this.dispatch(cmd, _socket);
                 }
                 return;
             }

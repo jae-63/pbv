@@ -337,6 +337,102 @@ async function selectToken(token) {
   editor.revealRange(new vscode3.Range(startPos, endPos), vscode3.TextEditorRevealType.InCenter);
 }
 
+// src/fastPath.ts
+var n = (s) => parseInt(s, 10);
+var RULES = [
+  // Navigation — line
+  {
+    pattern: /^(?:go\s+to\s+|goto\s+|jump\s+to\s+)?line\s+(\d+)$/i,
+    build: (m) => ({ cmd: "gotoLine", line: n(m[1]) })
+  },
+  // Navigation — cursor up/down with count
+  {
+    pattern: /^(?:cursor\s+)?up\s+(\d+)(?:\s+lines?)?$/i,
+    build: (m) => ({ cmd: "cursorUp", n: n(m[1]) })
+  },
+  {
+    pattern: /^(?:cursor\s+)?up$/i,
+    build: (_) => ({ cmd: "cursorUp", n: 1 })
+  },
+  {
+    pattern: /^(?:cursor\s+)?down\s+(\d+)(?:\s+lines?)?$/i,
+    build: (m) => ({ cmd: "cursorDown", n: n(m[1]) })
+  },
+  {
+    pattern: /^(?:cursor\s+)?down$/i,
+    build: (_) => ({ cmd: "cursorDown", n: 1 })
+  },
+  // Navigation — cursor movement
+  { pattern: /^cursor\s+left$/i, build: (_) => ({ cmd: "cursorLeft" }) },
+  { pattern: /^cursor\s+right$/i, build: (_) => ({ cmd: "cursorRight" }) },
+  { pattern: /^(?:cursor\s+)?home$/i, build: (_) => ({ cmd: "cursorHome" }) },
+  { pattern: /^(?:cursor\s+)?end(?:\s+of\s+line)?$/i, build: (_) => ({ cmd: "cursorEnd" }) },
+  { pattern: /^(?:(?:cursor|go)\s+to\s+)?top$/i, build: (_) => ({ cmd: "cursorTop" }) },
+  { pattern: /^(?:(?:cursor|go)\s+to\s+)?bottom$/i, build: (_) => ({ cmd: "cursorBottom" }) },
+  { pattern: /^page\s+up$/i, build: (_) => ({ cmd: "pageUp" }) },
+  { pattern: /^page\s+down$/i, build: (_) => ({ cmd: "pageDown" }) },
+  // Cache pad
+  {
+    pattern: /^cache\s+(\d+)$/i,
+    build: (m) => ({ cmd: "insertCacheItem", index: n(m[1]) })
+  },
+  {
+    pattern: /^insert\s+cache(?:\s+item)?\s+(\d+)$/i,
+    build: (m) => ({ cmd: "insertCacheItem", index: n(m[1]) })
+  },
+  // Deletion
+  {
+    pattern: /^delete\s+(?:this\s+)?line$/i,
+    build: (_) => ({ cmd: "deleteLine" })
+  },
+  {
+    pattern: /^delete\s+(\d+)\s+words?$/i,
+    build: (m) => ({ cmd: "deleteWords", n: n(m[1]) })
+  },
+  {
+    pattern: /^delete\s+(?:a\s+)?word$/i,
+    build: (_) => ({ cmd: "deleteWords", n: 1 })
+  },
+  {
+    pattern: /^delete\s+(\d+)\s+chars?(?:acters?)?$/i,
+    build: (m) => ({ cmd: "deleteChars", n: n(m[1]) })
+  },
+  {
+    pattern: /^delete\s+(?:to\s+)?end(?:\s+of\s+(?:the\s+)?line)?$/i,
+    build: (_) => ({ cmd: "deleteToEndOfLine" })
+  },
+  // Transactions
+  { pattern: /^set\s+mark$/i, build: (_) => ({ cmd: "setMark" }) },
+  { pattern: /^undo\s+transaction$/i, build: (_) => ({ cmd: "undoTransaction" }) },
+  // Document ops
+  {
+    pattern: /^save(?:\s+(?:the\s+)?(?:file|document))?$/i,
+    build: (_) => ({ cmd: "save" })
+  },
+  { pattern: /^undo(?:\s+that)?$/i, build: (_) => ({ cmd: "undo" }) },
+  { pattern: /^redo$/i, build: (_) => ({ cmd: "redo" }) },
+  {
+    pattern: /^format(?:\s+(?:the\s+)?(?:file|document))?$/i,
+    build: (_) => ({ cmd: "formatDocument" })
+  },
+  {
+    pattern: /^(?:toggle\s+)?comment(?:\s+line)?$/i,
+    build: (_) => ({ cmd: "toggleLineComment" })
+  },
+  { pattern: /^select\s+all$/i, build: (_) => ({ cmd: "selectAll" }) },
+  { pattern: /^copy$/i, build: (_) => ({ cmd: "copy" }) },
+  { pattern: /^cut$/i, build: (_) => ({ cmd: "cut" }) },
+  { pattern: /^paste$/i, build: (_) => ({ cmd: "paste" }) }
+];
+function fastInterpret(utterance) {
+  const text = utterance.trim();
+  for (const { pattern, build } of RULES) {
+    const m = text.match(pattern);
+    if (m) return build(m);
+  }
+  return null;
+}
+
 // src/server.ts
 var VSCODE_COMMANDS = {
   undo: "undo",
@@ -448,12 +544,40 @@ var IpcServer = class {
           );
           return;
         }
+        const fast = fastInterpret(msg.text);
+        if (fast) {
+          await this.dispatch(fast, _socket);
+          return;
+        }
         const snap = this.editorSnapshot();
+        const savedSelection = vscode4.window.activeTextEditor?.selection;
         const status = vscode4.window.setStatusBarMessage("$(loading~spin) Voice Coder: thinking\u2026");
         const command = await this.claude.interpret(msg.text, snap);
         status.dispose();
         if (command) {
-          await this.dispatch(command, _socket);
+          const cmd = command;
+          const isBufferEdit = cmd.cmd === "replaceSelection" || cmd.cmd === "insertText";
+          if (snap.selectedText && !isBufferEdit) {
+            vscode4.window.showWarningMessage(
+              `Voice Coder: selection ignored \u2014 LLM returned "${cmd.cmd}" instead of an edit`
+            );
+            return;
+          }
+          if (isBufferEdit) {
+            const editor2 = vscode4.window.activeTextEditor;
+            if (editor2) {
+              this.mark = {
+                uri: editor2.document.uri.toString(),
+                text: editor2.document.getText(),
+                cursor: editor2.selection.active
+              };
+            }
+            if (cmd.cmd === "replaceSelection" && savedSelection) {
+              const editor3 = vscode4.window.activeTextEditor;
+              if (editor3) editor3.selection = savedSelection;
+            }
+          }
+          await this.dispatch(cmd, _socket);
         }
         return;
       }
