@@ -263,7 +263,7 @@ export class IpcServer {
                 await gotoWordOnLine(msg.word, msg.line);
                 break;
             case 'jumpToCharOnLine':
-                await jumpToCharOnLine(msg.which, msg.char, msg.line);
+                await jumpToCharOnLine(msg.ordinal, msg.char, msg.line);
                 break;
             case 'selectToken':
                 await selectToken(msg.token);
@@ -418,7 +418,7 @@ export class IpcServer {
             case 'cursorUp':         return `up ${c.n ?? 1}`;
             case 'cursorDown':       return `down ${c.n ?? 1}`;
             case 'insertCacheItem':  return `${c.prefix ?? ''}cache[${c.index}]`;
-            case 'jumpToCharOnLine': return `jump ${c.which} '${c.char}' on line ${c.line}`;
+            case 'jumpToCharOnLine': return `jump [${c.ordinal}] '${c.char}' line ${c.line}`;
             case 'deleteChars':      return `deleteChars ${c.n}`;
             case 'deleteWords':      return `deleteWords ${c.n}`;
             case 'insertText':       return `insertText "${String(c.text).slice(0, 30)}"`;

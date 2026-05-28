@@ -328,14 +328,29 @@ async function gotoWordOnLine(wordIndex, targetMod) {
   editor.selection = new vscode3.Selection(pos, pos);
   editor.revealRange(new vscode3.Range(pos, pos), vscode3.TextEditorRevealType.InCenter);
 }
-async function jumpToCharOnLine(which, char, targetMod) {
+async function jumpToCharOnLine(ordinal, char, targetMod) {
   const editor = vscode3.window.activeTextEditor;
   if (!editor) return;
-  const line = targetMod === -1 ? editor.selection.active.line : resolveModLine(targetMod, editor);
-  if (line === null) return;
+  let line;
+  if (targetMod === -100) line = editor.selection.active.line;
+  else if (targetMod === -101) line = editor.selection.active.line + 1;
+  else if (targetMod === -102) line = editor.selection.active.line - 1;
+  else line = resolveModLine(targetMod, editor);
+  if (line === null || line < 0 || line >= editor.document.lineCount) return;
   const text = editor.document.lineAt(line).text;
-  const col = which === "first" ? text.indexOf(char) : text.lastIndexOf(char);
-  if (col === -1) return;
+  const positions = [];
+  let idx = text.indexOf(char);
+  while (idx !== -1) {
+    positions.push(idx);
+    idx = text.indexOf(char, idx + 1);
+  }
+  if (positions.length === 0) return;
+  let col;
+  if (ordinal > 0) {
+    col = positions[Math.min(ordinal - 1, positions.length - 1)];
+  } else {
+    col = positions[Math.max(positions.length + ordinal, 0)];
+  }
   const pos = new vscode3.Position(line, col);
   editor.selection = new vscode3.Selection(pos, pos);
   editor.revealRange(new vscode3.Range(pos, pos), vscode3.TextEditorRevealType.InCenter);
@@ -428,16 +443,17 @@ var RULES = [
     "at\\s+sign\\s+recent\\s+(\\d+)",
     (m) => ({ cmd: "insertCacheItem", index: n(m[1]), prefix: "@" })
   ),
-  // NATO phonetic navigation — "jump to first tango on 21" = find 't' on line 21
-  // Also handles named punctuation tokens.
+  // NATO phonetic navigation — full ordinal range + current/next/previous line
+  // "jump to third tango on 21"  "jump to last underscore on current line"
+  // "jump to second sierra on next line"
   rule(
-    "jump\\s+to\\s+(first|last)\\s+(.+?)\\s+on\\s+(?:current\\s+line|(\\d+))",
-    (m) => {
-      const which = m[1].toLowerCase();
-      const char = natoToChar(m[2]);
-      const line = m[3] ? n(m[3]) : -1;
-      return { cmd: "jumpToCharOnLine", which, char, line };
-    }
+    "jump\\s+to\\s+(first|second|third|fourth|fifth|sixth|last|penultimate)\\s+(.+?)\\s+on\\s+(?:(current|next|prev(?:ious)?)\\s+line|(\\d+))",
+    (m) => ({
+      cmd: "jumpToCharOnLine",
+      ordinal: ordinalToN(m[1]),
+      char: natoToChar(m[2]),
+      line: lineRef(m[3], m[4])
+    })
   ),
   // Deletion
   rule("delete\\s+(?:this\\s+)?line", (_) => ({ cmd: "deleteLine" })),
@@ -481,6 +497,7 @@ var NATO = {
   hotel: "h",
   india: "i",
   juliet: "j",
+  juliett: "j",
   kilo: "k",
   lima: "l",
   mike: "m",
@@ -501,7 +518,7 @@ var NATO = {
   // Named punctuation
   underscore: "_",
   "at sign": "@",
-  "at": "@",
+  at: "@",
   "percent sign": "%",
   asterisk: "*",
   "dollar sign": "$",
@@ -531,6 +548,27 @@ var NATO = {
 function natoToChar(word) {
   const key = word.trim().toLowerCase();
   return NATO[key] ?? key[0] ?? "";
+}
+var ORDINAL_MAP = {
+  first: 1,
+  second: 2,
+  third: 3,
+  fourth: 4,
+  fifth: 5,
+  sixth: 6,
+  last: -1,
+  penultimate: -2
+};
+function ordinalToN(word) {
+  return ORDINAL_MAP[word.toLowerCase()] ?? 1;
+}
+function lineRef(word, absNum) {
+  if (!word && absNum) return n(absNum);
+  const w = (word ?? "").toLowerCase();
+  if (w === "current") return -100;
+  if (w === "next") return -101;
+  if (w === "previous" || w === "prev") return -102;
+  return absNum ? n(absNum) : -100;
 }
 var WORD_NUMBERS = {
   zero: 0,
@@ -900,7 +938,7 @@ var IpcServer = class {
         await gotoWordOnLine(msg.word, msg.line);
         break;
       case "jumpToCharOnLine":
-        await jumpToCharOnLine(msg.which, msg.char, msg.line);
+        await jumpToCharOnLine(msg.ordinal, msg.char, msg.line);
         break;
       case "selectToken":
         await selectToken(msg.token);
@@ -1058,7 +1096,7 @@ var IpcServer = class {
       case "insertCacheItem":
         return `${c.prefix ?? ""}cache[${c.index}]`;
       case "jumpToCharOnLine":
-        return `jump ${c.which} '${c.char}' on line ${c.line}`;
+        return `jump [${c.ordinal}] '${c.char}' line ${c.line}`;
       case "deleteChars":
         return `deleteChars ${c.n}`;
       case "deleteWords":

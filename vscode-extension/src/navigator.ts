@@ -66,26 +66,40 @@ export async function gotoWordOnLine(wordIndex: number, targetMod: number): Prom
     editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
 }
 
-// Jump to the first or last occurrence of a single character on a target line.
-// `char` is a literal character (e.g. '_', '@', 't'). Uses the same mod-100
-// line resolution as gotoLine.
+// Jump to the Nth occurrence of a character on a target line.
+// `ordinal` is 1-based (1=first, 2=second, …) or negative (-1=last, -2=penultimate, …).
+// `targetMod` is the mod-100 line number, or a special value:
+//   -100 = current line,  -101 = next line,  -102 = previous line
 export async function jumpToCharOnLine(
-    which: 'first' | 'last',
+    ordinal: number,
     char: string,
     targetMod: number,
 ): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
 
-    // targetMod === -1 means current line
-    const line = targetMod === -1
-        ? editor.selection.active.line
-        : resolveModLine(targetMod, editor);
-    if (line === null) return;
+    let line: number | null;
+    if      (targetMod === -100) line = editor.selection.active.line;
+    else if (targetMod === -101) line = editor.selection.active.line + 1;
+    else if (targetMod === -102) line = editor.selection.active.line - 1;
+    else                         line = resolveModLine(targetMod, editor);
+    if (line === null || line < 0 || line >= editor.document.lineCount) return;
 
     const text = editor.document.lineAt(line).text;
-    const col  = which === 'first' ? text.indexOf(char) : text.lastIndexOf(char);
-    if (col === -1) return;
+
+    // Collect all occurrence indices.
+    const positions: number[] = [];
+    let idx = text.indexOf(char);
+    while (idx !== -1) { positions.push(idx); idx = text.indexOf(char, idx + 1); }
+    if (positions.length === 0) return;
+
+    // Resolve ordinal: 1=first, -1=last, -2=penultimate, etc.
+    let col: number;
+    if (ordinal > 0) {
+        col = positions[Math.min(ordinal - 1, positions.length - 1)];
+    } else {
+        col = positions[Math.max(positions.length + ordinal, 0)];
+    }
 
     const pos = new vscode.Position(line, col);
     editor.selection = new vscode.Selection(pos, pos);

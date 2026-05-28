@@ -70,15 +70,16 @@ const RULES: Rule[] = [
     rule('at\\s+sign\\s+recent\\s+(\\d+)',
          m => ({ cmd: 'insertCacheItem', index: n(m[1]), prefix: '@' })),
 
-    // NATO phonetic navigation — "jump to first tango on 21" = find 't' on line 21
-    // Also handles named punctuation tokens.
-    rule('jump\\s+to\\s+(first|last)\\s+(.+?)\\s+on\\s+(?:current\\s+line|(\\d+))',
-         m => {
-             const which = m[1].toLowerCase() as 'first' | 'last';
-             const char  = natoToChar(m[2]);
-             const line  = m[3] ? n(m[3]) : -1; // -1 = current line
-             return { cmd: 'jumpToCharOnLine', which, char, line };
-         }),
+    // NATO phonetic navigation — full ordinal range + current/next/previous line
+    // "jump to third tango on 21"  "jump to last underscore on current line"
+    // "jump to second sierra on next line"
+    rule('jump\\s+to\\s+(first|second|third|fourth|fifth|sixth|last|penultimate)\\s+(.+?)\\s+on\\s+(?:(current|next|prev(?:ious)?)\\s+line|(\\d+))',
+         m => ({
+             cmd:     'jumpToCharOnLine',
+             ordinal: ordinalToN(m[1]),
+             char:    natoToChar(m[2]),
+             line:    lineRef(m[3], m[4]),
+         })),
 
     // Deletion
     rule('delete\\s+(?:this\\s+)?line',         _ => ({ cmd: 'deleteLine' })),
@@ -117,12 +118,12 @@ const RULES: Rule[] = [
 
 const NATO: Record<string, string> = {
     alpha:'a', bravo:'b', charlie:'c', delta:'d', echo:'e', foxtrot:'f',
-    golf:'g', hotel:'h', india:'i', juliet:'j', kilo:'k', lima:'l',
+    golf:'g', hotel:'h', india:'i', juliet:'j', juliett:'j', kilo:'k', lima:'l',
     mike:'m', november:'n', oscar:'o', papa:'p', quebec:'q', romeo:'r',
     sierra:'s', tango:'t', uniform:'u', victor:'v', whiskey:'w',
     'x-ray':'x', xray:'x', yankee:'y', zulu:'z',
     // Named punctuation
-    underscore:'_', 'at sign':'@', 'at':'@', 'percent sign':'%',
+    underscore:'_', 'at sign':'@', at:'@', 'percent sign':'%',
     asterisk:'*', 'dollar sign':'$', 'equals sign':'=', 'equal sign':'=',
     'open paren':'(', 'close paren':')', 'left paren':'(', 'right paren':')',
     'open bracket':'[', 'close bracket':']',
@@ -135,6 +136,27 @@ const NATO: Record<string, string> = {
 function natoToChar(word: string): string {
     const key = word.trim().toLowerCase();
     return NATO[key] ?? key[0] ?? '';
+}
+
+// Ordinal word → signed integer (1=first, -1=last, -2=penultimate, etc.)
+const ORDINAL_MAP: Record<string, number> = {
+    first:1, second:2, third:3, fourth:4, fifth:5, sixth:6,
+    last:-1, penultimate:-2,
+};
+
+function ordinalToN(word: string): number {
+    return ORDINAL_MAP[word.toLowerCase()] ?? 1;
+}
+
+// Line reference → special constant or number for mod-100 resolution.
+// -100 = current, -101 = next, -102 = previous
+function lineRef(word: string | undefined, absNum: string | undefined): number {
+    if (!word && absNum) return n(absNum);
+    const w = (word ?? '').toLowerCase();
+    if (w === 'current') return -100;
+    if (w === 'next')    return -101;
+    if (w === 'previous' || w === 'prev') return -102;
+    return absNum ? n(absNum) : -100;
 }
 
 // ---------------------------------------------------------------------------
