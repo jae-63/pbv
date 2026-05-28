@@ -1,5 +1,12 @@
 import AVFoundation
-import Speech
+import Foundation
+
+// Whisper-backed speech engine.
+//
+// AVAudioEngine captures mic audio into a ring of PCM frames. When the
+// silence timer fires, the accumulated frames are written to a temp WAV file
+// and whisper-cli is invoked. The resulting transcript is passed to the
+// onTranscript callback, then the buffer is cleared and listening resumes.
 
 final class SpeechEngine: NSObject {
 
@@ -8,31 +15,38 @@ final class SpeechEngine: NSObject {
 
     enum State { case idle, listening, error(String) }
 
-    private let recognizer  = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))!
-    private let audioEngine = AVAudioEngine()
-    private var recognitionReq:  SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionTask: SFSpeechRecognitionTask?
-    private var isRunning = false
+    private let audioEngine  = AVAudioEngine()
+    private var frames       = [AVAudioPCMBuffer]()
     private var silenceTimer: DispatchWorkItem?
-    private var lastPartial = ""
-    private var sessionGeneration = 0
+    private var isRunning    = false
+
+    // Locate whisper-cli and the model once at init time.
+    private let whisperCLI:  String
+    private let modelPath:   String
+
+    override init() {
+        // whisper-cli is installed by Homebrew at a fixed path.
+        whisperCLI = "/opt/homebrew/bin/whisper-cli"
+
+        // Model lives where whisper-cpp-download-ggml-model puts it.
+        let candidates = [
+            "/opt/homebrew/share/whisper-cpp/models/ggml-small.en.bin",
+            (NSHomeDirectory() as NSString).appendingPathComponent(
+                "Library/Caches/whisper/ggml-small.en.bin"),
+        ]
+        modelPath = candidates.first { FileManager.default.fileExists(atPath: $0) } ?? candidates[0]
+        super.init()
+    }
 
     // ---------------------------------------------------------------------------
     // Permissions
     // ---------------------------------------------------------------------------
 
     func requestPermissions(completion: @escaping (Bool) -> Void) {
-        NSLog("[VoiceCoder] requestPermissions: asking speech auth")
-        SFSpeechRecognizer.requestAuthorization { authStatus in
-            NSLog("[VoiceCoder] requestPermissions: speech authStatus=%d", authStatus.rawValue)
-            guard authStatus == .authorized else {
-                DispatchQueue.main.async { completion(false) }
-                return
-            }
-            AVCaptureDevice.requestAccess(for: .audio) { granted in
-                NSLog("[VoiceCoder] requestPermissions: mic granted=%d", granted ? 1 : 0)
-                DispatchQueue.main.async { completion(granted) }
-            }
+        NSLog("[VoiceCoder] requestPermissions: asking mic auth")
+        AVCaptureDevice.requestAccess(for: .audio) { granted in
+            NSLog("[VoiceCoder] requestPermissions: mic granted=%d", granted ? 1 : 0)
+            DispatchQueue.main.async { completion(granted) }
         }
     }
 
@@ -42,6 +56,10 @@ final class SpeechEngine: NSObject {
 
     func start() {
         guard !isRunning else { return }
+        guard FileManager.default.fileExists(atPath: modelPath) else {
+            onStateChange?(.error("Whisper model not found at \(modelPath)"))
+            return
+        }
         isRunning = true
         startAudioEngine()
     }
@@ -50,10 +68,7 @@ final class SpeechEngine: NSObject {
         isRunning = false
         silenceTimer?.cancel()
         silenceTimer = nil
-        recognitionTask?.cancel()
-        recognitionTask = nil
-        recognitionReq?.endAudio()
-        recognitionReq = nil
+        frames.removeAll()
         if audioEngine.isRunning {
             audioEngine.stop()
             audioEngine.inputNode.removeTap(onBus: 0)
@@ -62,107 +77,174 @@ final class SpeechEngine: NSObject {
     }
 
     // ---------------------------------------------------------------------------
-    // Private
+    // Private — audio capture
     // ---------------------------------------------------------------------------
 
-    // Called once — starts the audio engine and installs the tap permanently.
     private func startAudioEngine() {
-        guard isRunning else { return }
-
         let inputNode = audioEngine.inputNode
-        let format    = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            self?.recognitionReq?.append(buffer)
+        // Whisper wants 16 kHz mono. Request that directly from the tap.
+        let whisperFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                         sampleRate: 16000,
+                                         channels: 1,
+                                         interleaved: false)!
+        let nativeFormat  = inputNode.outputFormat(forBus: 0)
+
+        // AVAudioEngine will SRC from nativeFormat → whisperFormat automatically
+        // when the tap format differs from the bus format.
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: nativeFormat) {
+            [weak self] buffer, _ in
+            guard let self, self.isRunning else { return }
+
+            // Convert to 16 kHz mono in-place using AVAudioConverter.
+            if let converted = self.convert(buffer, to: whisperFormat) {
+                DispatchQueue.main.async { self.received(converted) }
+            }
         }
 
         do {
             try audioEngine.start()
-            NSLog("[VoiceCoder] audioEngine started")
+            NSLog("[VoiceCoder] audioEngine started (Whisper backend)")
             onStateChange?(.listening)
         } catch {
             NSLog("[VoiceCoder] audioEngine.start() threw: %@", error.localizedDescription)
             onStateChange?(.error(error.localizedDescription))
-            return
         }
-
-        startRecognitionSession()
     }
 
-    // Opens a new recognition session on the already-running audio engine.
-    // The engine tap keeps feeding buffers; we just swap the request object.
-    private func startRecognitionSession() {
-        guard isRunning else { return }
+    // AVAudioConverter wrapper — reuse a converter per unique format pair.
+    private var converter: AVAudioConverter?
+    private var converterOutputFormat: AVAudioFormat?
 
-        // Cancel any in-flight session first (fires callback with "canceled" — ignored below).
-        recognitionTask?.cancel()
-        recognitionTask = nil
-        recognitionReq?.endAudio()
+    private func convert(_ buffer: AVAudioPCMBuffer, to outFormat: AVAudioFormat) -> AVAudioPCMBuffer? {
+        if converter == nil || converterOutputFormat != outFormat {
+            converter = AVAudioConverter(from: buffer.format, to: outFormat)
+            converterOutputFormat = outFormat
+        }
+        guard let conv = converter else { return nil }
 
-        lastPartial = ""
+        let ratio       = outFormat.sampleRate / buffer.format.sampleRate
+        let outCapacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 1
+        guard let out   = AVAudioPCMBuffer(pcmFormat: outFormat, frameCapacity: outCapacity) else { return nil }
+
+        var error: NSError?
+        var inputDone = false
+        conv.convert(to: out, error: &error) { _, outStatus in
+            if inputDone {
+                outStatus.pointee = .noDataNow
+            } else {
+                outStatus.pointee = .haveData
+                inputDone = true
+            }
+            return buffer
+        }
+        return error == nil ? out : nil
+    }
+
+    // ---------------------------------------------------------------------------
+    // Private — silence detection
+    // ---------------------------------------------------------------------------
+
+    private func received(_ buffer: AVAudioPCMBuffer) {
+        frames.append(buffer)
+        resetSilenceTimer()
+    }
+
+    private func resetSilenceTimer() {
         silenceTimer?.cancel()
-        silenceTimer = nil
+        let item = DispatchWorkItem { [weak self] in
+            self?.flushToWhisper()
+        }
+        silenceTimer = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8, execute: item)
+    }
 
-        sessionGeneration += 1
-        let myGen = sessionGeneration
+    // ---------------------------------------------------------------------------
+    // Private — Whisper transcription
+    // ---------------------------------------------------------------------------
 
-        let request = SFSpeechAudioBufferRecognitionRequest()
-        request.shouldReportPartialResults = true
-        recognitionReq = request
+    private func flushToWhisper() {
+        guard isRunning, !frames.isEmpty else { return }
+        let captured = frames
+        frames.removeAll()
 
-        NSLog("[VoiceCoder] startRecognitionSession gen=%d", myGen)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            guard let transcript = self.runWhisper(on: captured), !transcript.isEmpty else { return }
+            NSLog("[VoiceCoder] transcript: %@", transcript)
+            DispatchQueue.main.async { self.onTranscript?(transcript) }
+        }
+    }
 
-        recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
-            guard let self, self.sessionGeneration == myGen else { return }
+    private func runWhisper(on buffers: [AVAudioPCMBuffer]) -> String? {
+        // Write PCM frames to a temp WAV file.
+        let tmpURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("voicecoder_\(arc4random()).wav")
+        defer { try? FileManager.default.removeItem(at: tmpURL) }
 
-            if let error {
-                let msg = error.localizedDescription
-                NSLog("[VoiceCoder] recognition error: %@", msg)
-                // "canceled" fires when we call .cancel() ourselves — ignore.
-                // Any other error (e.g. session expired) → restart session after a delay.
-                if !msg.lowercased().contains("cancel") {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
-                        self?.startRecognitionSession()
-                    }
-                }
-                return
-            }
+        guard writeWAV(buffers: buffers, to: tmpURL) else {
+            NSLog("[VoiceCoder] failed to write WAV")
+            return nil
+        }
 
-            guard let result else { return }
-            let text = result.bestTranscription.formattedString
-            guard !text.isEmpty else { return }
+        // Run whisper-cli.
+        let proc   = Process()
+        let stdout = Pipe()
+        let stderr = Pipe()
+        proc.executableURL = URL(fileURLWithPath: whisperCLI)
+        proc.arguments     = [
+            "--model",    modelPath,
+            "--file",     tmpURL.path,
+            "--language", "en",
+            "--no-timestamps",
+            "--output-txt",
+            "--print-special", "false",
+        ]
+        proc.standardOutput = stdout
+        proc.standardError  = stderr
 
-            NSLog("[VoiceCoder] partial: %@", text)
-            self.lastPartial = text
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+        } catch {
+            NSLog("[VoiceCoder] whisper-cli launch failed: %@", error.localizedDescription)
+            return nil
+        }
 
-            if result.isFinal {
-                // endAudio() triggered this — dispatch the transcript, open next session.
-                NSLog("[VoiceCoder] transcript (final): %@", text)
-                self.silenceTimer?.cancel()
-                self.silenceTimer = nil
-                self.lastPartial  = ""
-                DispatchQueue.main.async { self.onTranscript?(text) }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    self.startRecognitionSession()
-                }
-                return
-            }
+        if proc.terminationStatus != 0 {
+            let err = String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            NSLog("[VoiceCoder] whisper-cli error: %@", err)
+            return nil
+        }
 
-            // Not final — reset the silence timer.
-            self.silenceTimer?.cancel()
-            let item = DispatchWorkItem { [weak self] in
-                guard let self else { return }
-                let captured      = self.lastPartial
-                self.lastPartial  = ""
-                self.silenceTimer = nil
-                if !captured.isEmpty {
-                    NSLog("[VoiceCoder] transcript (silence): %@", captured)
-                    DispatchQueue.main.async { self.onTranscript?(captured) }
-                }
-                // Signal end-of-audio; isFinal will fire and open the next session.
-                self.recognitionReq?.endAudio()
-            }
-            self.silenceTimer = item
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7, execute: item)
+        let raw = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        return cleanWhisperOutput(raw)
+    }
+
+    // Strip leading/trailing whitespace, [BLANK_AUDIO], and timestamp tokens.
+    private func cleanWhisperOutput(_ raw: String) -> String {
+        raw.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && $0 != "[BLANK_AUDIO]" && !$0.hasPrefix("[") }
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    // ---------------------------------------------------------------------------
+    // Private — WAV writer
+    // ---------------------------------------------------------------------------
+
+    private func writeWAV(buffers: [AVAudioPCMBuffer], to url: URL) -> Bool {
+        guard let first = buffers.first else { return false }
+        do {
+            let file = try AVAudioFile(forWriting: url,
+                                       settings: first.format.settings,
+                                       commonFormat: .pcmFormatFloat32,
+                                       interleaved: false)
+            for buf in buffers { try file.write(from: buf) }
+            return true
+        } catch {
+            NSLog("[VoiceCoder] AVAudioFile write error: %@", error.localizedDescription)
+            return false
         }
     }
 }

@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
