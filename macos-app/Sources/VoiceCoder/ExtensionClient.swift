@@ -6,7 +6,8 @@ import Network
 
 final class ExtensionClient {
 
-    var onCacheUpdate: (([String]) -> Void)?
+    var onCacheUpdate:     (([String]) -> Void)?
+    var onConnectionReady: (() -> Void)?
 
     private let host: NWEndpoint.Host
     private let port: NWEndpoint.Port
@@ -45,8 +46,16 @@ final class ExtensionClient {
         send(["cmd": "insertText", "text": text])
     }
 
+    func sendTranscript(_ text: String) {
+        send(["cmd": "transcript", "text": text])
+    }
+
     func sendSetMode(_ mode: String) {
         send(["cmd": "setMode", "mode": mode])
+    }
+
+    func sendSetReady(_ ready: Bool) {
+        send(["cmd": "setReady", "ready": ready])
     }
 
     // ---------------------------------------------------------------------------
@@ -61,6 +70,7 @@ final class ExtensionClient {
             switch state {
             case .ready:
                 self?.startReceiving()
+                DispatchQueue.main.async { self?.onConnectionReady?() }
             case .failed, .cancelled:
                 self?.scheduleReconnect()
             default:

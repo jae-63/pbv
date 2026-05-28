@@ -1,71 +1,96 @@
 {
-  "name": "voice-coder",
+  "name": "pbv",
   "publisher": "local",
-  "displayName": "Voice Coder",
-  "description": "Voice coding assistant — cache pad, navigation, mode indicator, Swift app IPC",
+  "displayName": "PBV",
+  "description": "PBV — Programming By Voice: Whisper speech recognition + LLM command interpretation for VSCode",
   "version": "0.1.0",
   "engines": {"vscode": "^1.85.0"},
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "contributes": {
-    "views": {
-      "explorer": [
+    "viewsContainers": {
+      "activitybar": [
         {
-          "id": "voiceCoder.cachePad",
-          "name": "Cache Pad",
-          "icon": "$(symbol-keyword)"
+          "id": "pbv",
+          "title": "PBV",
+          "icon": "images/cachepad.svg"
+        }
+      ]
+    },
+    "views": {
+      "pbv": [
+        {
+          "id": "pbv.cachePad",
+          "name": "Cache Pad"
         }
       ]
     },
     "commands": [
       {
-        "command": "voiceCoder.refreshCachePad",
-        "title": "Voice Coder: Refresh Cache Pad",
+        "command": "pbv.refreshCachePad",
+        "title": "PBV: Refresh Cache Pad",
         "icon": "$(refresh)"
       },
       {
-        "command": "voiceCoder.cacheCurrentWord",
-        "title": "Voice Coder: Cache Word Under Cursor"
+        "command": "pbv.cacheCurrentWord",
+        "title": "PBV: Cache Word Under Cursor"
       },
       {
-        "command": "voiceCoder.clearCachePad",
-        "title": "Voice Coder: Clear Cache Pad"
+        "command": "pbv.clearCachePad",
+        "title": "PBV: Clear Cache Pad"
+      },
+      {
+        "command": "pbv.showCommands",
+        "title": "PBV: Show Commands",
+        "icon": "$(question)"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "voiceCoder.refreshCachePad",
-          "when": "view == voiceCoder.cachePad",
+          "command": "pbv.refreshCachePad",
+          "when": "view == pbv.cachePad",
           "group": "navigation"
         }
       ]
     },
     "configuration": {
-      "title": "Voice Coder",
+      "title": "PBV",
       "properties": {
-        "voiceCoder.port": {
+        "pbv.port": {
           "type": "number",
           "default": 7890,
           "description": "TCP port the extension listens on for Swift app commands"
         },
-        "voiceCoder.maxCacheItems": {
+        "pbv.maxCacheItems": {
           "type": "number",
           "default": 20,
           "description": "Maximum number of items in the cache pad"
+        },
+        "pbv.ollamaModel": {
+          "type": "string",
+          "default": "qwen2.5:3b",
+          "description": "Ollama model name to use for voice interpretation (must be pulled locally)"
+        },
+        "pbv.ollamaUrl": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Base URL of the local Ollama server"
         }
       }
     }
   },
   "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18",
+    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18 --watch",
     "package": "vsce package"
   },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
+    "esbuild": "^0.24.0",
     "typescript": "^5.3.0"
   }
 }

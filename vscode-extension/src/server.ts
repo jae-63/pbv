@@ -3,7 +3,10 @@ import * as vscode from 'vscode';
 import { InboundMessage, OutboundMessage } from './types';
 import { CachePad } from './cachepad';
 import { ModeStatusBar } from './statusbar';
-import { gotoLine, gotoWordOnLine, selectToken } from './navigator';
+import { gotoLine, gotoWordOnLine, selectToken, jumpToCharOnLine } from './navigator';
+import { ClaudeClient, EditorSnapshot } from './claudeClient';
+import { fastInterpret, fastInterpretMulti } from './fastPath';
+import { tryTransform } from './codeTransform';
 
 // Map action names from core.yaml to built-in VSCode command IDs.
 const VSCODE_COMMANDS: Record<string, string> = {
@@ -21,6 +24,7 @@ const VSCODE_COMMANDS: Record<string, string> = {
     toggleLineComment:  'editor.action.commentLine',
     find:               'actions.find',
     replace:            'editor.action.startFindReplaceAction',
+    matchParen:         'editor.action.jumpToBracket',
     cursorLeft:         'cursorLeft',
     cursorRight:        'cursorRight',
     cursorHome:         'cursorHome',
@@ -31,12 +35,25 @@ const VSCODE_COMMANDS: Record<string, string> = {
     pageDown:           'scrollPageDown',
 };
 
+interface Mark {
+    uri:    string;
+    text:   string;
+    cursor: vscode.Position;
+}
+
 export class IpcServer {
     private server: net.Server;
     private sockets = new Set<net.Socket>();
     private port: number;
+    private mark: Mark | undefined;
+    private llmAbort: AbortController | null = null;
 
-    constructor(port: number, private cache: CachePad, private statusBar: ModeStatusBar) {
+    constructor(
+        port: number,
+        private cache: CachePad,
+        private statusBar: ModeStatusBar,
+        private claude?: ClaudeClient,
+    ) {
         this.port   = port;
         this.server = net.createServer(socket => this.onConnection(socket));
         this.server.listen(port, '127.0.0.1', () => {
@@ -101,10 +118,125 @@ export class IpcServer {
         if (!socket.destroyed) socket.write(JSON.stringify(msg) + '\n');
     }
 
+    private editorSnapshot(): EditorSnapshot {
+        const editor = vscode.window.activeTextEditor;
+        return {
+            fileName:     editor?.document.fileName.split('/').pop() ?? 'untitled',
+            language:     editor?.document.languageId ?? 'plaintext',
+            content:      editor?.document.getText() ?? '',
+            cursorLine:   (editor?.selection.active.line ?? 0) + 1,
+            cursorChar:   (editor?.selection.active.character ?? 0) + 1,
+            selectedText: editor ? editor.document.getText(editor.selection) : '',
+            cachePad:     this.cache.getItems(),
+        };
+    }
+
     private async dispatch(msg: InboundMessage, _socket: net.Socket): Promise<void> {
         const editor = vscode.window.activeTextEditor;
 
         switch (msg.cmd) {
+
+            // --- Voice transcript — interpreted by Claude ---
+            case 'transcript': {
+                // Cancel any in-flight LLM call so its stale result is never dispatched.
+                this.llmAbort?.abort();
+                this.llmAbort = null;
+
+                const raw = msg.text;
+
+                // Dictation mode: insert transcript verbatim, no LLM.
+                if (this.statusBar.getMode() === 'dictation') {
+                    if (editor) {
+                        await editor.edit(eb => eb.insert(editor.selection.active, raw + ' '));
+                        vscode.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 10000);
+                    }
+                    return;
+                }
+
+                if (!this.claude) {
+                    vscode.window.showWarningMessage(
+                        'Voice Coder: LLM client not initialized (check pbv.ollamaModel setting)'
+                    );
+                    return;
+                }
+                const { commands, remainder } = fastInterpretMulti(raw);
+                if (commands.length > 0) {
+                    const labels = commands.map(c => this.describeCmd(c as InboundMessage)).join(' | ');
+                    vscode.window.setStatusBarMessage(`$(mic) "${raw}" → ${labels}`, 10000);
+                    for (const cmd of commands) {
+                        await this.dispatch(cmd as InboundMessage, _socket);
+                    }
+                    if (!remainder) return;
+                    // Non-empty remainder falls through to LLM below.
+                }
+                // Use remainder for LLM if fast path consumed a prefix,
+                // or the full utterance if nothing was consumed.
+                const llmInput = remainder || raw;
+                if (commands.length > 0 && !remainder) return;
+                const snap = this.editorSnapshot();
+
+                // Rule-based transform fast path (selected text + known utterance).
+                if (snap.selectedText) {
+                    const transformed = tryTransform(raw, snap.selectedText, snap.language);
+                    if (transformed !== null) {
+                        const editor = vscode.window.activeTextEditor;
+                        if (editor) {
+                            this.mark = { uri: editor.document.uri.toString(), text: editor.document.getText(), cursor: editor.selection.active };
+                            editor.selection = vscode.window.activeTextEditor!.selection;
+                            vscode.window.setStatusBarMessage(`$(mic) "${raw}" → replaceSelection`, 10000);
+                            await this.dispatch({ cmd: 'replaceSelection', text: transformed } as InboundMessage, _socket);
+                        }
+                        return;
+                    }
+                }
+                const savedSelection = vscode.window.activeTextEditor?.selection;
+                const abort = new AbortController();
+                this.llmAbort = abort;
+                const status = vscode.window.setStatusBarMessage(`$(loading~spin) "${llmInput}" → thinking…`);
+                const command = await this.claude.interpret(llmInput, snap, abort.signal);
+                status.dispose();
+                this.llmAbort = null;
+                if (abort.signal.aborted) return;
+                if (!command) {
+                    vscode.window.setStatusBarMessage(`$(mic) "${llmInput}" → (no command)`, 10000);
+                    return;
+                }
+                if (command) {
+                    const cmd = command as InboundMessage;
+                    vscode.window.setStatusBarMessage(
+                        `$(mic) "${llmInput}" → ${this.describeCmd(cmd)}`, 10000);
+                    const isBufferEdit = cmd.cmd === 'replaceSelection' || cmd.cmd === 'insertText';
+
+                    // Warn if selected text was present but LLM returned a non-editing command.
+                    if (snap.selectedText && !isBufferEdit) {
+                        vscode.window.showWarningMessage(
+                            `Voice Coder: selection ignored — LLM returned "${cmd.cmd}" instead of an edit`
+                        );
+                        return;
+                    }
+
+                    // Auto-setMark before any LLM-generated buffer edit so "undo transaction"
+                    // always reverts it.
+                    if (isBufferEdit) {
+                        const editor = vscode.window.activeTextEditor;
+                        if (editor) {
+                            this.mark = {
+                                uri:    editor.document.uri.toString(),
+                                text:   editor.document.getText(),
+                                cursor: editor.selection.active,
+                            };
+                        }
+                        // Restore selection captured before the LLM wait.
+                        if (cmd.cmd === 'replaceSelection' && savedSelection) {
+                            const editor = vscode.window.activeTextEditor;
+                            if (editor) editor.selection = savedSelection;
+                        }
+                    }
+
+                    await this.dispatch(cmd, _socket);
+                }
+                return;
+            }
 
             // --- Text insertion ---
             case 'insertText': {
@@ -126,12 +258,22 @@ export class IpcServer {
                 break;
             }
 
+            // --- Selection replacement (Claude code transforms) ---
+            case 'replaceSelection': {
+                if (!editor) return;
+                await editor.edit(eb => eb.replace(editor.selection, msg.text));
+                break;
+            }
+
             // --- Navigation ---
             case 'gotoLine':
                 await gotoLine(msg.line);
                 break;
             case 'gotoWordOnLine':
                 await gotoWordOnLine(msg.word, msg.line);
+                break;
+            case 'jumpToCharOnLine':
+                await jumpToCharOnLine(msg.ordinal, msg.char, msg.line);
                 break;
             case 'selectToken':
                 await selectToken(msg.token);
@@ -149,7 +291,8 @@ export class IpcServer {
             case 'insertCacheItem': {
                 const sym = this.cache.insertAt(msg.index);
                 if (sym && editor) {
-                    await editor.edit(eb => eb.insert(editor.selection.active, sym));
+                    const text = (msg.prefix ?? '') + sym;
+                    await editor.edit(eb => eb.insert(editor.selection.active, text));
                 }
                 break;
             }
@@ -169,10 +312,68 @@ export class IpcServer {
                 this.cache.sync(msg.items);
                 break;
 
-            // --- Mode ---
+            // --- Mode / readiness ---
             case 'setMode':
                 this.statusBar.setMode(msg.mode);
                 break;
+            case 'setReady':
+                this.statusBar.setReady(msg.ready);
+                break;
+
+            // --- Transaction mark ---
+            case 'setMark': {
+                if (!editor) return;
+                this.mark = {
+                    uri:    editor.document.uri.toString(),
+                    text:   editor.document.getText(),
+                    cursor: editor.selection.active,
+                };
+                vscode.window.setStatusBarMessage('$(bookmark) Voice Coder: mark set', 2000);
+                break;
+            }
+            case 'jumpToMark': {
+                if (!this.mark) {
+                    vscode.window.showWarningMessage('Voice Coder: no mark set');
+                    return;
+                }
+                if (!editor || editor.document.uri.toString() !== this.mark.uri) {
+                    vscode.window.showWarningMessage('Voice Coder: mark is from a different file');
+                    return;
+                }
+                editor.selection = new vscode.Selection(this.mark.cursor, this.mark.cursor);
+                editor.revealRange(new vscode.Range(this.mark.cursor, this.mark.cursor),
+                    vscode.TextEditorRevealType.InCenter);
+                vscode.window.setStatusBarMessage('$(bookmark) Voice Coder: jumped to mark', 2000);
+                break;
+            }
+            case 'selectWord': {
+                if (!editor) return;
+                const wordRange = editor.document.getWordRangeAtPosition(
+                    editor.selection.active);
+                if (wordRange) editor.selection = new vscode.Selection(
+                    wordRange.start, wordRange.end);
+                break;
+            }
+            case 'undoTransaction': {
+                if (!this.mark) {
+                    vscode.window.showWarningMessage('Voice Coder: no mark set');
+                    return;
+                }
+                if (!editor || editor.document.uri.toString() !== this.mark.uri) {
+                    vscode.window.showWarningMessage('Voice Coder: mark is from a different file');
+                    return;
+                }
+                const { text, cursor } = this.mark;
+                this.mark = undefined;
+                const fullRange = new vscode.Range(
+                    editor.document.positionAt(0),
+                    editor.document.positionAt(editor.document.getText().length),
+                );
+                await editor.edit(eb => eb.replace(fullRange, text));
+                editor.selection = new vscode.Selection(cursor, cursor);
+                vscode.window.setStatusBarMessage('$(discard) Voice Coder: transaction undone', 2000);
+                break;
+            }
 
             // --- Undo grouping ---
             case 'startUndoGroup':
@@ -216,6 +417,24 @@ export class IpcServer {
                 if (vcCmd) await vscode.commands.executeCommand(vcCmd);
                 break;
             }
+        }
+    }
+
+    private describeCmd(cmd: InboundMessage): string {
+        const c = cmd as Record<string, unknown>;
+        switch (cmd.cmd) {
+            case 'gotoLine':         return `gotoLine ${c.line}`;
+            case 'gotoWordOnLine':   return `word ${c.word} on line ${c.line}`;
+            case 'cursorUp':         return `up ${c.n ?? 1}`;
+            case 'cursorDown':       return `down ${c.n ?? 1}`;
+            case 'insertCacheItem':  return `${c.prefix ?? ''}cache[${c.index}]`;
+            case 'jumpToCharOnLine': return `jump [${c.ordinal}] '${c.char}' line ${c.line}`;
+            case 'deleteChars':      return `deleteChars ${c.n}`;
+            case 'deleteWords':      return `deleteWords ${c.n}`;
+            case 'insertText':       return `insertText "${String(c.text).slice(0, 30)}"`;
+            case 'replaceSelection': return `replaceSelection`;
+            case 'selectToken':      return `selectToken "${c.token}"`;
+            default:                 return cmd.cmd;
         }
     }
 }

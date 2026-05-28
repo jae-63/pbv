@@ -1,21 +1,30 @@
 // All messages Swift app → extension are newline-delimited JSON on the TCP socket.
 
 export type InboundMessage =
+  | { cmd: 'transcript';       text: string }
   | { cmd: 'insertText';       text: string }
+  | { cmd: 'replaceSelection'; text: string }
   | { cmd: 'gotoLine';         line: number }
   | { cmd: 'gotoWordOnLine';   word: number; line: number }
   | { cmd: 'selectToken';      token: string }
-  | { cmd: 'insertCacheItem';  index: number }
+  | { cmd: 'insertCacheItem';  index: number; prefix?: string }
+  | { cmd: 'jumpToCharOnLine'; ordinal: number; char: string; line: number }
   | { cmd: 'cacheCurrentWord' }
   | { cmd: 'refreshCachePad' }
   | { cmd: 'evictCacheItem';   index: number }
   | { cmd: 'clearCachePad' }
   | { cmd: 'syncCacheItems'; items: string[] }
   | { cmd: 'setMode';          mode: 'command' | 'dictation' }
+  | { cmd: 'setReady';         ready: boolean }
   | { cmd: 'undo' }
   | { cmd: 'redo' }
   | { cmd: 'startUndoGroup' }
   | { cmd: 'endUndoGroup' }
+  | { cmd: 'setMark' }
+  | { cmd: 'jumpToMark' }
+  | { cmd: 'selectWord' }
+  | { cmd: 'matchParen' }
+  | { cmd: 'undoTransaction' }
   | { cmd: 'deleteChars';      n: number }
   | { cmd: 'selectChars';      n: number }
   | { cmd: 'deleteWords';      n: number }

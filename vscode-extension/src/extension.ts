@@ -3,11 +3,15 @@ import { CachePad } from './cachepad';
 import { ModeStatusBar } from './statusbar';
 import { IpcServer } from './server';
 import { OutboundMessage } from './types';
+import { ClaudeClient } from './claudeClient';
+import { showCommandsPanel } from './commandsPanel';
 
 export function activate(context: vscode.ExtensionContext): void {
-    const config   = vscode.workspace.getConfiguration('voiceCoder');
-    const port     = config.get<number>('port', 7890);
-    const maxItems = config.get<number>('maxCacheItems', 20);
+    const config      = vscode.workspace.getConfiguration('pbv');
+    const port        = config.get<number>('port', 7890);
+    const maxItems    = config.get<number>('maxCacheItems', 20);
+    const ollamaModel = config.get<string>('ollamaModel', 'qwen2.5:3b');
+    const ollamaUrl   = config.get<string>('ollamaUrl', 'http://localhost:11434');
 
     const statusBar = new ModeStatusBar();
 
@@ -16,26 +20,30 @@ export function activate(context: vscode.ExtensionContext): void {
     const cache = new CachePad(maxItems, (msg) => broadcastFn(msg));
 
     // IPC server
-    const server = new IpcServer(port, cache, statusBar);
+    const claude = new ClaudeClient(ollamaModel, ollamaUrl);
+    const server = new IpcServer(port, cache, statusBar, claude);
     broadcastFn  = (msg) => server.broadcast(msg as OutboundMessage);
 
     // Register cache pad tree view
-    const treeView = vscode.window.createTreeView('voiceCoder.cachePad', {
+    const treeView = vscode.window.createTreeView('pbv.cachePad', {
         treeDataProvider: cache,
         showCollapseAll:  false,
     });
 
     // Register commands (also callable from command palette for testing)
     const cmds = [
-        vscode.commands.registerCommand('voiceCoder.refreshCachePad', () => {
+        vscode.commands.registerCommand('pbv.refreshCachePad', () => {
             const editor = vscode.window.activeTextEditor;
             if (editor) cache.absorbDocument(editor.document);
         }),
-        vscode.commands.registerCommand('voiceCoder.cacheCurrentWord', () => {
+        vscode.commands.registerCommand('pbv.cacheCurrentWord', () => {
             cache.cacheWordAtCursor();
         }),
-        vscode.commands.registerCommand('voiceCoder.clearCachePad', () => {
+        vscode.commands.registerCommand('pbv.clearCachePad', () => {
             cache.clear();
+        }),
+        vscode.commands.registerCommand('pbv.showCommands', () => {
+            showCommandsPanel(context);
         }),
     ];
 
