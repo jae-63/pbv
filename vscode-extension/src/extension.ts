@@ -4,6 +4,7 @@ import { ModeStatusBar } from './statusbar';
 import { IpcServer } from './server';
 import { OutboundMessage } from './types';
 import { ClaudeClient } from './claudeClient';
+import { showCommandsPanel } from './commandsPanel';
 
 export function activate(context: vscode.ExtensionContext): void {
     const config      = vscode.workspace.getConfiguration('voiceCoder');
@@ -40,6 +41,9 @@ export function activate(context: vscode.ExtensionContext): void {
         }),
         vscode.commands.registerCommand('voiceCoder.clearCachePad', () => {
             cache.clear();
+        }),
+        vscode.commands.registerCommand('voiceCoder.showCommands', () => {
+            showCommandsPanel(context);
         }),
     ];
 

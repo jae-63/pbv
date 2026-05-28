@@ -39,6 +39,11 @@
       {
         "command": "voiceCoder.clearCachePad",
         "title": "Voice Coder: Clear Cache Pad"
+      },
+      {
+        "command": "voiceCoder.showCommands",
+        "title": "Voice Coder: Show Commands",
+        "icon": "$(question)"
       }
     ],
     "menus": {
