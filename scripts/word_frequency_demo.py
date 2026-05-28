@@ -2,18 +2,81 @@
 """
 Word Frequency Counter — Programming-by-Voice Demo Script
 ==========================================================
-Counts word frequencies in a text file, with filtering and
-sorted output.  Designed to exercise the full VoiceCoder
-command vocabulary when dictated from scratch.
+Counts word frequencies in a text file, with filtering and sorted output.
+Designed to be dictated from scratch to demonstrate the full VoiceCoder
+command vocabulary.
 
-Voice commands exercised while building this file
-(annotations inline as # [VOICE: ...] comments):
-  Navigation  : line N, word N on line M, jump to first/last X on line N
-  Cache pad   : recent N, at sign recent N  (long snake_case names repeat often)
-  Templates   : for loop, function definition, if statement, try except
-  Transactions: set mark / undo transaction  (wraps each function body)
-  Multi-cmd   : e.g. "line 45 delete word recent 1" in one breath
-  Select/fix  : "select minimum word frequency" → selects the token for correction
+──────────────────────────────────────────────────────────────────────────────
+CACHE PAD PAYOFF
+──────────────────────────────────────────────────────────────────────────────
+The following identifiers repeat enough times that typing them once and then
+saying "recent N" for every subsequent use is a clear win:
+
+  word_frequency_dict       — appears 10×  (say "recent 1" after first use)
+  normalized_word_list      — appears  6×  (say "recent 2")
+  output_file_path          — appears  5×  (say "recent 3")
+  minimum_word_frequency    — appears  4×  (say "recent 4")
+  sorted_frequency_pairs    — appears  2×
+  parse_command_line_arguments — appears 2× (say "recent 1" inside main)
+
+──────────────────────────────────────────────────────────────────────────────
+TEMPLATES — each auto-sets a transaction mark before insertion
+──────────────────────────────────────────────────────────────────────────────
+  "for loop"           → 2 instances  (normalize_text, format_frequency_report)
+  "if statement"       → 2 instances  (write_report, main)
+  "try except"         → 2 instances  (read file in main, write file)
+  "function definition"→ 7 functions
+  "while statement"    → (not used here, but syntax is identical)
+
+Say "undo transaction" to roll back any botched template insertion in one shot.
+
+──────────────────────────────────────────────────────────────────────────────
+NAVIGATION EXERCISES
+──────────────────────────────────────────────────────────────────────────────
+  "line N"                         — 7 functions across ~160 lines
+  "word N on line M"               — jump to a specific argument on a long def
+  "go to fourth word on line 68"   — land on 'minimum_word_frequency' param
+  "jump to first comma on current line"   — position within argument lists
+  "jump to first sierra on 45"     — find the 's' in sorted( on line 45
+  "jump to last underscore on 32"  — navigate within a snake_case name
+  "page up / page down"            — move between sections
+
+──────────────────────────────────────────────────────────────────────────────
+MULTI-COMMAND UTTERANCES (single breath, multiple actions)
+──────────────────────────────────────────────────────────────────────────────
+  "line 58 set mark for loop"
+      → jumps to line 58, sets transaction mark, inserts for-loop template
+
+  "end of line new line recent 1 dot items open paren close paren"
+      → appends a new line, inserts word_frequency_dict.items()
+
+  "jump to first underscore on 32 delete word recent 2"
+      → navigates to the underscore, deletes the preceding word, inserts
+        normalized_word_list from cache
+
+  "select minimum word frequency delete word recent 4"
+      → selects the token, deletes it, replaces with minimum_word_frequency
+
+──────────────────────────────────────────────────────────────────────────────
+SELECT-AND-FIX (camelCase/snake_case aware)
+──────────────────────────────────────────────────────────────────────────────
+  "select minimum word frequency"   → LLM finds minimum_word_frequency in buffer
+  "select word frequency dict"      → LLM finds word_frequency_dict
+  "select output file path"         → LLM finds output_file_path
+  "select normalized word list"     → LLM finds normalized_word_list
+
+After selection, dictate the replacement or say "delete word" / "kill line".
+
+──────────────────────────────────────────────────────────────────────────────
+TRANSACTIONS IN PRACTICE
+──────────────────────────────────────────────────────────────────────────────
+Say "set mark" at the start of each function body before filling it in.
+If the for-loop template, an argument list, or a multi-line string goes wrong,
+"undo transaction" reverts the entire function body to the blank state in one
+command — no repeated Ctrl-Z needed.
+
+Voice annotations inline as  # [VOICE: ...]  throughout the file.
+──────────────────────────────────────────────────────────────────────────────
 """
 
 import argparse
