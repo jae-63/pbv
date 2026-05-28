@@ -45,6 +45,10 @@ final class ExtensionClient {
         send(["cmd": "insertText", "text": text])
     }
 
+    func sendTranscript(_ text: String) {
+        send(["cmd": "transcript", "text": text])
+    }
+
     func sendSetMode(_ mode: String) {
         send(["cmd": "setMode", "mode": mode])
     }

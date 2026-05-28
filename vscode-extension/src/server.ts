@@ -4,6 +4,7 @@ import { InboundMessage, OutboundMessage } from './types';
 import { CachePad } from './cachepad';
 import { ModeStatusBar } from './statusbar';
 import { gotoLine, gotoWordOnLine, selectToken } from './navigator';
+import { ClaudeClient, EditorSnapshot } from './claudeClient';
 
 // Map action names from core.yaml to built-in VSCode command IDs.
 const VSCODE_COMMANDS: Record<string, string> = {
@@ -31,12 +32,24 @@ const VSCODE_COMMANDS: Record<string, string> = {
     pageDown:           'scrollPageDown',
 };
 
+interface Mark {
+    uri:    string;
+    text:   string;
+    cursor: vscode.Position;
+}
+
 export class IpcServer {
     private server: net.Server;
     private sockets = new Set<net.Socket>();
     private port: number;
+    private mark: Mark | undefined;
 
-    constructor(port: number, private cache: CachePad, private statusBar: ModeStatusBar) {
+    constructor(
+        port: number,
+        private cache: CachePad,
+        private statusBar: ModeStatusBar,
+        private claude?: ClaudeClient,
+    ) {
         this.port   = port;
         this.server = net.createServer(socket => this.onConnection(socket));
         this.server.listen(port, '127.0.0.1', () => {
@@ -101,10 +114,41 @@ export class IpcServer {
         if (!socket.destroyed) socket.write(JSON.stringify(msg) + '\n');
     }
 
+    private editorSnapshot(): EditorSnapshot {
+        const editor = vscode.window.activeTextEditor;
+        return {
+            fileName:     editor?.document.fileName.split('/').pop() ?? 'untitled',
+            language:     editor?.document.languageId ?? 'plaintext',
+            content:      editor?.document.getText() ?? '',
+            cursorLine:   (editor?.selection.active.line ?? 0) + 1,
+            cursorChar:   (editor?.selection.active.character ?? 0) + 1,
+            selectedText: editor ? editor.document.getText(editor.selection) : '',
+            cachePad:     this.cache.getItems(),
+        };
+    }
+
     private async dispatch(msg: InboundMessage, _socket: net.Socket): Promise<void> {
         const editor = vscode.window.activeTextEditor;
 
         switch (msg.cmd) {
+
+            // --- Voice transcript — interpreted by Claude ---
+            case 'transcript': {
+                if (!this.claude) {
+                    vscode.window.showWarningMessage(
+                        'Voice Coder: set voiceCoder.anthropicApiKey to enable Claude interpretation'
+                    );
+                    return;
+                }
+                const snap = this.editorSnapshot();
+                const status = vscode.window.setStatusBarMessage('$(loading~spin) Voice Coder: thinking…');
+                const command = await this.claude.interpret(msg.text, snap);
+                status.dispose();
+                if (command) {
+                    await this.dispatch(command as InboundMessage, _socket);
+                }
+                return;
+            }
 
             // --- Text insertion ---
             case 'insertText': {
@@ -123,6 +167,13 @@ export class IpcServer {
                     const markPos    = editor.document.positionAt(markOffset);
                     editor.selection = new vscode.Selection(markPos, markPos);
                 }
+                break;
+            }
+
+            // --- Selection replacement (Claude code transforms) ---
+            case 'replaceSelection': {
+                if (!editor) return;
+                await editor.edit(eb => eb.replace(editor.selection, msg.text));
                 break;
             }
 
@@ -173,6 +224,38 @@ export class IpcServer {
             case 'setMode':
                 this.statusBar.setMode(msg.mode);
                 break;
+
+            // --- Transaction mark ---
+            case 'setMark': {
+                if (!editor) return;
+                this.mark = {
+                    uri:    editor.document.uri.toString(),
+                    text:   editor.document.getText(),
+                    cursor: editor.selection.active,
+                };
+                vscode.window.setStatusBarMessage('$(bookmark) Voice Coder: mark set', 2000);
+                break;
+            }
+            case 'undoTransaction': {
+                if (!this.mark) {
+                    vscode.window.showWarningMessage('Voice Coder: no mark set');
+                    return;
+                }
+                if (!editor || editor.document.uri.toString() !== this.mark.uri) {
+                    vscode.window.showWarningMessage('Voice Coder: mark is from a different file');
+                    return;
+                }
+                const { text, cursor } = this.mark;
+                this.mark = undefined;
+                const fullRange = new vscode.Range(
+                    editor.document.positionAt(0),
+                    editor.document.positionAt(editor.document.getText().length),
+                );
+                await editor.edit(eb => eb.replace(fullRange, text));
+                editor.selection = new vscode.Selection(cursor, cursor);
+                vscode.window.setStatusBarMessage('$(discard) Voice Coder: transaction undone', 2000);
+                break;
+            }
 
             // --- Undo grouping ---
             case 'startUndoGroup':

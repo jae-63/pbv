@@ -3,11 +3,13 @@ import { CachePad } from './cachepad';
 import { ModeStatusBar } from './statusbar';
 import { IpcServer } from './server';
 import { OutboundMessage } from './types';
+import { ClaudeClient } from './claudeClient';
 
 export function activate(context: vscode.ExtensionContext): void {
     const config   = vscode.workspace.getConfiguration('voiceCoder');
     const port     = config.get<number>('port', 7890);
     const maxItems = config.get<number>('maxCacheItems', 20);
+    const apiKey   = config.get<string>('anthropicApiKey', '');
 
     const statusBar = new ModeStatusBar();
 
@@ -16,7 +18,8 @@ export function activate(context: vscode.ExtensionContext): void {
     const cache = new CachePad(maxItems, (msg) => broadcastFn(msg));
 
     // IPC server
-    const server = new IpcServer(port, cache, statusBar);
+    const claude = apiKey ? new ClaudeClient(apiKey) : undefined;
+    const server = new IpcServer(port, cache, statusBar, claude);
     broadcastFn  = (msg) => server.broadcast(msg as OutboundMessage);
 
     // Register cache pad tree view

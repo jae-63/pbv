@@ -6,7 +6,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // Components
     // ---------------------------------------------------------------------------
     private var speech:    SpeechEngine!
-    private var parser:    CommandParser!
     private var client:    ExtensionClient!
     private var hotkey:    HotkeyMonitor!
     private var overlay:   UtteranceOverlay!
@@ -29,18 +28,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
-
-        // Load compiled vocabulary
-        guard let vocabURL = Bundle.module.url(forResource: "compiled", withExtension: "json") else {
-            showError("compiled.json not found in app bundle.\nRun vocab/compile_vocab.py then rebuild.")
-            return
-        }
-        do {
-            parser = try CommandParser(compiledJSONURL: vocabURL)
-        } catch {
-            showError("Failed to load vocabulary: \(error)")
-            return
-        }
 
         overlay = UtteranceOverlay()
         client  = ExtensionClient()
@@ -75,91 +62,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // ---------------------------------------------------------------------------
-    // Transcript handler — the core dispatch loop
+    // Transcript handler — forward raw speech to VSCode for Claude interpretation
     // ---------------------------------------------------------------------------
 
     private func handle(transcript: String) {
-        NSLog("[VoiceCoder] transcript: %@  mode=%@", transcript, mode.rawValue)
+        NSLog("[VoiceCoder] transcript: %@", transcript)
         overlay.showUtterance(transcript)
-
-        switch mode {
-
-        case .command:
-            let result = parser.parseCommand(transcript)
-            switch result {
-            case .action(let name, let params):
-                NSLog("[VoiceCoder] action: %@  params=%@", name, params.description)
-                dispatchAction(name: name, params: params)
-            case .insertText(let text):
-                NSLog("[VoiceCoder] insertText: %@", text)
-                client.sendInsertText(text)
-            case .noMatch:
-                NSLog("[VoiceCoder] noMatch for: %@", transcript)
-                break
-            }
-
-        case .dictation:
-            // In dictation mode, first check for cache-pad commands
-            let cacheCheck = parser.parseCommand(transcript)
-            switch cacheCheck {
-            case .action(let name, let params)
-                where isCacheCommand(name) || isMetaCommand(name):
-                dispatchAction(name: name, params: params)
-            default:
-                // Assemble text with vocab substitutions and insert
-                let text = parser.assembleDictationText(transcript)
-                client.sendInsertText(text)
-            }
-        }
-    }
-
-    // ---------------------------------------------------------------------------
-    // Action dispatcher — converts ParsedCommand.action → ExtensionClient call
-    // ---------------------------------------------------------------------------
-
-    private func dispatchAction(name: String, params: [String: Any]) {
-        switch name {
-
-        // Navigation
-        case "gotoLine":
-            client.send(["cmd": "gotoLine", "line": params["N"] ?? 1])
-        case "gotoWordOnLine":
-            let w = params["W"] ?? params["ORD"] ?? 1
-            client.send(["cmd": "gotoWordOnLine", "word": w, "line": params["L"] ?? 1])
-        case "selectToken":
-            client.send(["cmd": "selectToken", "token": params["TOKEN"] ?? ""])
-        case "cursorUpN":
-            client.send(["cmd": "cursorUp", "n": params["N"] ?? 1])
-        case "cursorDownN":
-            client.send(["cmd": "cursorDown", "n": params["N"] ?? 1])
-
-        // Cache pad
-        case "insertCacheItem":
-            client.send(["cmd": "insertCacheItem", "index": params["N"] ?? 1])
-        case "evictCacheItem":
-            client.send(["cmd": "evictCacheItem", "index": params["N"] ?? 1])
-
-        // Parameterised editing
-        case "deleteChars":
-            client.send(["cmd": "deleteChars", "n": params["N"] ?? 1])
-        case "selectChars":
-            client.send(["cmd": "selectChars", "n": params["N"] ?? 1])
-        case "deleteWords":
-            client.send(["cmd": "deleteWords", "n": params["N"] ?? 1])
-
-        // Everything else is a 1:1 command name
-        default:
-            client.sendAction(name, params: params)
-        }
-    }
-
-    // Returns true for action names that should be honoured even in dictation mode
-    private func isCacheCommand(_ name: String) -> Bool {
-        ["insertCacheItem", "cacheCurrentWord", "refreshCachePad",
-         "evictCacheItem", "clearCachePad"].contains(name)
-    }
-    private func isMetaCommand(_ name: String) -> Bool {
-        ["undo", "redo", "save"].contains(name)
+        client.sendTranscript(transcript)
     }
 
     // ---------------------------------------------------------------------------

@@ -1,7 +1,9 @@
 // All messages Swift app → extension are newline-delimited JSON on the TCP socket.
 
 export type InboundMessage =
+  | { cmd: 'transcript';       text: string }
   | { cmd: 'insertText';       text: string }
+  | { cmd: 'replaceSelection'; text: string }
   | { cmd: 'gotoLine';         line: number }
   | { cmd: 'gotoWordOnLine';   word: number; line: number }
   | { cmd: 'selectToken';      token: string }
@@ -16,6 +18,8 @@ export type InboundMessage =
   | { cmd: 'redo' }
   | { cmd: 'startUndoGroup' }
   | { cmd: 'endUndoGroup' }
+  | { cmd: 'setMark' }
+  | { cmd: 'undoTransaction' }
   | { cmd: 'deleteChars';      n: number }
   | { cmd: 'selectChars';      n: number }
   | { cmd: 'deleteWords';      n: number }

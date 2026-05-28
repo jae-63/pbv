@@ -54,18 +54,27 @@
           "type": "number",
           "default": 20,
           "description": "Maximum number of items in the cache pad"
+        },
+        "voiceCoder.anthropicApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Anthropic API key for Claude voice interpretation (store in settings.json or env)"
         }
       }
     }
   },
   "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18",
+    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18 --watch",
     "package": "vsce package"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
+    "esbuild": "^0.24.0",
     "typescript": "^5.3.0"
   }
 }
