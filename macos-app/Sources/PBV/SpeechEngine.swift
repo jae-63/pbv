@@ -218,17 +218,17 @@ final class SpeechEngine: NSObject {
                     audioEngine.inputNode.removeTap(onBus: 0)
                     tapInstalled = false
                 }
-                if retryCount == 0 {
-                    // macOS fires config-change before hardware fully settles.
-                    // Wait 3 more seconds and try once more before giving up.
-                    NSLog("[PBV] audioEngine -10868 — retrying in 3s")
+                if retryCount < 5 {
+                    let delay = 3.0 + Double(retryCount) * 2.0  // 3, 5, 7, 9, 11s
+                    NSLog("[PBV] audioEngine -10868 — retry %d/5 in %.0fs", retryCount + 1, delay)
+                    audioEngine.reset()
                     isRestarting = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
                         self?.isRestarting = false
-                        self?.startAudioEngine(retryCount: 1)
+                        self?.startAudioEngine(retryCount: retryCount + 1)
                     }
                 } else {
-                    NSLog("[PBV] audioEngine -10868 after retry — staying idle; re-insert AirPods or use Sleep/Wake to recover")
+                    NSLog("[PBV] audioEngine -10868 after 5 retries — staying idle; use Sleep/Wake to recover")
                 }
             } else {
                 NSLog("[PBV] audioEngine error: %@", error.localizedDescription)
