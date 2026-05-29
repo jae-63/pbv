@@ -227,7 +227,7 @@ export function fastInterpret(utterance: string): Command | null {
         const m = text.match(exact);
         if (m) return build(m);
     }
-    return null;
+    return applyFormatter(text) ?? applyCommentBlock(text) ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -265,6 +265,20 @@ function applyFormatter(utterance: string): Command | null {
 }
 
 // ---------------------------------------------------------------------------
+// Comment-block templates
+// ---------------------------------------------------------------------------
+
+const COMMENT_RULE = /^comment\s+(?:(template)|(block)\s+(.+))$/i;
+const DASHES = '# ' + '-'.repeat(75);
+
+function applyCommentBlock(utterance: string): Command | null {
+    const m = utterance.match(COMMENT_RULE);
+    if (!m) return null;
+    const title = m[1] ? 'TEMPLATE' : m[3].charAt(0).toUpperCase() + m[3].slice(1);
+    return { cmd: 'insertText', text: `${DASHES}\n# ${title}\n${DASHES}\n\n` };
+}
+
+// ---------------------------------------------------------------------------
 // Greedy multi-command parser — Dragon-style continuous speech
 // ---------------------------------------------------------------------------
 
@@ -289,8 +303,8 @@ export function fastInterpretMulti(utterance: string): MultiResult {
             }
         }
         if (!matched) {
-            // Formatter consumes the rest of the utterance — must be last.
-            const fmt = applyFormatter(text);
+            // Terminal consumers — each takes the rest of the utterance.
+            const fmt = applyFormatter(text) ?? applyCommentBlock(text);
             if (fmt) { commands.push(fmt); text = ''; matched = true; }
         }
         if (!matched) break;

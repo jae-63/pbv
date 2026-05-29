@@ -131,10 +131,38 @@ describe('fastInterpret — number normalisation', () => {
 });
 
 // Formatters are only reachable through fastInterpretMulti (not fastInterpret).
-describe('fastInterpret — formatters not matched (go through multi)', () => {
-    test('formatter names alone return null from fastInterpret', () => {
-        expect(fastInterpret('snake foo bar')).toBeNull();
-        expect(fastInterpret('camel foo bar')).toBeNull();
+describe('fastInterpret — formatters via fastInterpret', () => {
+    test('formatters reachable from fastInterpret', () => {
+        expect(fastInterpret('snake foo bar')).toEqual({ cmd: 'insertText', text: 'foo_bar' });
+        expect(fastInterpret('camel foo bar')).toEqual({ cmd: 'insertText', text: 'fooBar' });
+    });
+});
+
+describe('fastInterpret — comment blocks', () => {
+    const DASHES = '# ' + '-'.repeat(75);
+
+    test('comment template inserts fixed TEMPLATE block', () => {
+        const r = fastInterpret('comment template');
+        expect(r).not.toBeNull();
+        expect(r!.cmd).toBe('insertText');
+        const text = r!.text as string;
+        expect(text).toContain('# TEMPLATE');
+        expect(text.startsWith(DASHES)).toBe(true);
+        expect(text.endsWith('\n\n')).toBe(true);
+    });
+
+    test('comment block capitalises spoken title', () => {
+        const r = fastInterpret('comment block text normalisation');
+        expect(r).not.toBeNull();
+        const text = r!.text as string;
+        expect(text).toContain('# Text normalisation');
+        expect(text.startsWith(DASHES)).toBe(true);
+        expect(text.endsWith('\n\n')).toBe(true);
+    });
+
+    test('comment block preserves capitalisation after first word', () => {
+        const r = fastInterpret('comment block entry point');
+        expect((r!.text as string)).toContain('# Entry point');
     });
 });
 

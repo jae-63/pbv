@@ -629,3 +629,26 @@ multiprocessing:
     written: "multiprocessing.get_context(\"spawn\")"
     space_before: true
     space_after: false
+
+# ---------------------------------------------------------------------------
+# Argument parsing (argparse)
+# ---------------------------------------------------------------------------
+argparse:
+  - {spoken: "argument parse",          written: "argparse",                        space_before: true,  space_after: false}
+  - {spoken: "import argument parse",   written: "import argparse\n",               space_before: true,  space_after: false}
+  - spoken: "argument parser"
+    written: "argparse.ArgumentParser({CURSOR})"
+    space_before: true
+    space_after: false
+  - spoken: "add argument"
+    written: ".add_argument({CURSOR})"
+    space_before: false
+    space_after: false
+  - spoken: "parse arguments"
+    written: ".parse_args()"
+    space_before: false
+    space_after: false
+  - spoken: "argument namespace"
+    written: "argparse.Namespace"
+    space_before: true
+    space_after: false
