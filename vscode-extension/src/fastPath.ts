@@ -128,6 +128,12 @@ const RULES: Rule[] = [
     rule('undo\\s+transaction', _ => ({ cmd: 'undoTransaction' })),
     rule('jump\\s+to\\s+mark', _ => ({ cmd: 'jumpToMark' })),
 
+    // Navigation bookmark — survives buffer edits; auto-set on traversal entry.
+    // "set bookmark" / "jump to bookmark" to distinguish from transaction mark.
+    rule('set\\s+bookmark',         _ => ({ cmd: 'setNavMark' })),
+    rule('jump\\s+to\\s+bookmark',  _ => ({ cmd: 'jumpToNavMark' })),
+    rule('jump\\s+back',            _ => ({ cmd: 'jumpToNavMark' })),
+
     // Accept inline completion (Tab / acceptSelectedSuggestion)
     rule('accept(?:\\s+(?:completion|suggestion))?', _ => ({ cmd: 'acceptCompletion' })),
 

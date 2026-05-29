@@ -51,6 +51,15 @@ export class IpcServer {
     private mark: Mark | undefined;
     private llmAbort: AbortController | null = null;
 
+    // Navigation bookmark — set explicitly by voice or auto-set on traversal entry.
+    // Separate from `mark` (which is the undo-transaction anchor and is overwritten
+    // on every LLM buffer edit).
+    private navMark: { uri: string; cursor: vscode.Position } | undefined;
+
+    // Scroll / traversal state
+    private traversalMatches: { start: vscode.Position; end: vscode.Position }[] | null = null;
+    private traversalIndex   = 0;
+
     constructor(
         port: number,
         private cache: CachePad,
@@ -66,6 +75,14 @@ export class IpcServer {
         this.server.on('error', err => {
             vscode.window.showErrorMessage(`Voice Coder IPC error: ${err.message}`);
         });
+
+        // Register keybinding targets for Ctrl+Down / Ctrl+Up in scroll mode.
+        // The 'when: "pbv.scrolling"' clause in package.json ensures these only
+        // fire while scroll/traversal mode is active.
+        context.subscriptions.push(
+            vscode.commands.registerCommand('pbv.scrollStep',     () => this.scrollStep(1)),
+            vscode.commands.registerCommand('pbv.scrollStepBack', () => this.scrollStep(-1)),
+        );
     }
 
     // Push a message to all connected clients (used for cache-update events).
@@ -294,6 +311,50 @@ export class IpcServer {
                 await editor.edit(eb => eb.insert(editor.selection.active, '"'));
                 break;
             }
+
+            // --- Scroll / traversal mode ---
+            case 'enterScrollMode':
+                this.traversalMatches = null;
+                this.statusBar.setScrollMode({ active: true, kind: 'scroll', direction: msg.direction });
+                await vscode.commands.executeCommand('setContext', 'pbv.scrolling', true);
+                break;
+
+            case 'enterTraversalMode': {
+                const ed = vscode.window.activeTextEditor;
+                if (ed) {
+                    // Auto-set navigation bookmark so "jump to mark" always returns here.
+                    this.navMark = {
+                        uri:    ed.document.uri.toString(),
+                        cursor: ed.selection.active,
+                    };
+                    const regex   = traversalRegex(ed.document.languageId, msg.pattern);
+                    const text    = ed.document.getText();
+                    const matches: { start: vscode.Position; end: vscode.Position }[] = [];
+                    let m: RegExpExecArray | null;
+                    while ((m = regex.exec(text)) !== null) {
+                        matches.push({
+                            start: ed.document.positionAt(m.index),
+                            end:   ed.document.positionAt(m.index + m[0].length),
+                        });
+                    }
+                    this.traversalMatches = matches;
+                    this.traversalIndex   = 0;
+                    vscode.window.setStatusBarMessage(
+                        `$(list-selection) PBV: traversing ${matches.length} match${matches.length === 1 ? '' : 'es'}`,
+                        4000
+                    );
+                }
+                this.statusBar.setScrollMode({ active: true, kind: 'traverse' });
+                await vscode.commands.executeCommand('setContext', 'pbv.scrolling', true);
+                break;
+            }
+
+            case 'exitScrollMode':
+                this.traversalMatches = null;
+                this.statusBar.setScrollMode({ active: false });
+                await vscode.commands.executeCommand('setContext', 'pbv.scrolling', false);
+                break;
+
             case 'cacheSelection': {
                 const sel = vscode.window.activeTextEditor;
                 if (sel) {
@@ -385,22 +446,50 @@ export class IpcServer {
                     text:   editor.document.getText(),
                     cursor: editor.selection.active,
                 };
-                vscode.window.setStatusBarMessage('$(bookmark) Voice Coder: mark set', 2000);
+                vscode.window.setStatusBarMessage('$(bookmark) PBV: mark set', 2000);
                 break;
             }
             case 'jumpToMark': {
                 if (!this.mark) {
-                    vscode.window.showWarningMessage('Voice Coder: no mark set');
+                    vscode.window.showWarningMessage('PBV: no mark set');
                     return;
                 }
                 if (!editor || editor.document.uri.toString() !== this.mark.uri) {
-                    vscode.window.showWarningMessage('Voice Coder: mark is from a different file');
+                    vscode.window.showWarningMessage('PBV: mark is from a different file');
                     return;
                 }
                 editor.selection = new vscode.Selection(this.mark.cursor, this.mark.cursor);
                 editor.revealRange(new vscode.Range(this.mark.cursor, this.mark.cursor),
                     vscode.TextEditorRevealType.InCenter);
-                vscode.window.setStatusBarMessage('$(bookmark) Voice Coder: jumped to mark', 2000);
+                vscode.window.setStatusBarMessage('$(bookmark) PBV: jumped to mark', 2000);
+                break;
+            }
+
+            // Navigation bookmark — not overwritten by buffer edits; auto-set on traversal entry.
+            case 'setNavMark': {
+                if (!editor) return;
+                this.navMark = {
+                    uri:    editor.document.uri.toString(),
+                    cursor: editor.selection.active,
+                };
+                vscode.window.setStatusBarMessage('$(location) PBV: nav mark set', 2000);
+                break;
+            }
+            case 'jumpToNavMark': {
+                if (!this.navMark) {
+                    vscode.window.showWarningMessage('PBV: no nav mark set');
+                    return;
+                }
+                if (!editor || editor.document.uri.toString() !== this.navMark.uri) {
+                    vscode.window.showWarningMessage('PBV: nav mark is from a different file');
+                    return;
+                }
+                editor.selection = new vscode.Selection(this.navMark.cursor, this.navMark.cursor);
+                editor.revealRange(
+                    new vscode.Range(this.navMark.cursor, this.navMark.cursor),
+                    vscode.TextEditorRevealType.InCenter
+                );
+                vscode.window.setStatusBarMessage('$(location) PBV: jumped to nav mark', 2000);
                 break;
             }
             case 'selectWord': {
@@ -477,21 +566,66 @@ export class IpcServer {
         }
     }
 
+    private async scrollStep(direction: 1 | -1): Promise<void> {
+        if (this.traversalMatches && this.traversalMatches.length > 0) {
+            this.traversalIndex =
+                (this.traversalIndex + direction + this.traversalMatches.length) %
+                this.traversalMatches.length;
+            const match  = this.traversalMatches[this.traversalIndex];
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {
+                const selectOnTraverse = vscode.workspace
+                    .getConfiguration('pbv')
+                    .get<boolean>('selectOnTraverse', false);
+                editor.selection = selectOnTraverse
+                    ? new vscode.Selection(match.start, match.end)
+                    : new vscode.Selection(match.start, match.start);
+                editor.revealRange(
+                    new vscode.Range(match.start, match.end),
+                    vscode.TextEditorRevealType.InCenter
+                );
+            }
+        } else {
+            await vscode.commands.executeCommand(
+                direction > 0 ? 'scrollLineDown' : 'scrollLineUp'
+            );
+        }
+    }
+
     private describeCmd(cmd: InboundMessage): string {
         const c = cmd as Record<string, unknown>;
         switch (cmd.cmd) {
-            case 'gotoLine':         return `gotoLine ${c.line}`;
-            case 'gotoWordOnLine':   return `word ${c.word} on line ${c.line}`;
-            case 'cursorUp':         return `up ${c.n ?? 1}`;
-            case 'cursorDown':       return `down ${c.n ?? 1}`;
-            case 'insertCacheItem':  return `${c.prefix ?? ''}cache[${c.index}]`;
-            case 'jumpToCharOnLine': return `jump [${c.ordinal}] '${c.char}' line ${c.line}`;
-            case 'deleteChars':      return `deleteChars ${c.n}`;
-            case 'deleteWords':      return `deleteWords ${c.n}`;
-            case 'insertText':       return `insertText "${String(c.text).slice(0, 30)}"`;
-            case 'replaceSelection': return `replaceSelection`;
-            case 'selectToken':      return `selectToken "${c.token}"`;
-            default:                 return cmd.cmd;
+            case 'gotoLine':            return `gotoLine ${c.line}`;
+            case 'gotoWordOnLine':      return `word ${c.word} on line ${c.line}`;
+            case 'cursorUp':            return `up ${c.n ?? 1}`;
+            case 'cursorDown':          return `down ${c.n ?? 1}`;
+            case 'insertCacheItem':     return `${c.prefix ?? ''}cache[${c.index}]`;
+            case 'jumpToCharOnLine':    return `jump [${c.ordinal}] '${c.char}' line ${c.line}`;
+            case 'deleteChars':         return `deleteChars ${c.n}`;
+            case 'deleteWords':         return `deleteWords ${c.n}`;
+            case 'insertText':          return `insertText "${String(c.text).slice(0, 30)}"`;
+            case 'replaceSelection':    return `replaceSelection`;
+            case 'selectToken':         return `selectToken "${c.token}"`;
+            case 'enterScrollMode':     return `enterScrollMode(${(c as any).direction})`;
+            case 'enterTraversalMode':  return `enterTraversalMode`;
+            case 'exitScrollMode':      return `exitScrollMode`;
+            default:                    return cmd.cmd;
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Traversal regex patterns — language-aware defaults + custom override
+// ---------------------------------------------------------------------------
+
+function traversalRegex(languageId: string, pattern?: string): RegExp {
+    if (pattern) return new RegExp(pattern, 'gm');
+    switch (languageId) {
+        case 'python':                   return /^\s*def\s+\w+/gm;
+        case 'go':                       return /^func\s+\w+/gm;
+        case 'typescript':
+        case 'javascript':               return /^(?:export\s+)?(?:async\s+)?function\s+\w+/gm;
+        case 'rust':                     return /^(?:pub\s+)?fn\s+\w+/gm;
+        default:                         return /^[^\s#\/\*].*[:{]\s*$/gm;
     }
 }

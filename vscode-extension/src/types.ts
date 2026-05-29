@@ -10,6 +10,9 @@ export type InboundMessage =
   | { cmd: 'selectRange';           startToken: string; endToken: string }
   | { cmd: 'cacheSelection' }
   | { cmd: 'closeString' }
+  | { cmd: 'enterScrollMode';   direction: 'down' | 'up' | 'left' | 'right' }
+  | { cmd: 'enterTraversalMode'; pattern?: string }
+  | { cmd: 'exitScrollMode' }
   | { cmd: 'selectAndCacheToken';   token: string }
   | { cmd: 'selectAndCacheRange';   startToken: string; endToken: string }
   | { cmd: 'insertCacheItem';  index: number; prefix?: string }
@@ -31,6 +34,8 @@ export type InboundMessage =
   | { cmd: 'endUndoGroup' }
   | { cmd: 'setMark' }
   | { cmd: 'jumpToMark' }
+  | { cmd: 'setNavMark' }
+  | { cmd: 'jumpToNavMark' }
   | { cmd: 'selectWord' }
   | { cmd: 'matchParen' }
   | { cmd: 'undoTransaction' }
