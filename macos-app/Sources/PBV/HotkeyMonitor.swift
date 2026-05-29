@@ -14,7 +14,7 @@ final class HotkeyMonitor {
     init(keyCode: CGKeyCode = 96 /* F5 */) {
         self.hotKeyCode = Int64(keyCode)
         guard AXIsProcessTrusted() else {
-            print("VoiceCoder: F5 hotkey disabled — add this binary in System Settings → Privacy & Security → Accessibility, then restart.")
+            print("PBV: F5 hotkey disabled — add this binary in System Settings → Privacy & Security → Accessibility, then restart.")
             return
         }
         installTap()
@@ -32,7 +32,7 @@ final class HotkeyMonitor {
             callback:         hotkeyEventCallback,
             userInfo:         selfPtr
         ) else {
-            print("VoiceCoder: failed to create CGEventTap (accessibility permission denied?)")
+            print("PBV: failed to create CGEventTap (accessibility permission denied?)")
             Unmanaged<HotkeyMonitor>.fromOpaque(selfPtr).release()
             return
         }

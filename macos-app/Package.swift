@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "VoiceCoder",
+    name: "PBV",
     platforms: [.macOS(.v13)],
     targets: [
         .executableTarget(
-            name: "VoiceCoder",
-            path: "Sources/VoiceCoder",
+            name: "PBV",
+            path: "Sources/PBV",
             resources: [
                 .process("Resources/compiled.json"),
             ],

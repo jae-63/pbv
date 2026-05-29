@@ -80,7 +80,7 @@ Installs the VSCode extension and compiles vocabulary. No npm or admin rights ne
 ```bash
 cd macos-app
 swift build
-.build/debug/VoiceCoder
+.build/debug/PBV
 ```
 
 First run requests microphone, speech recognition, and accessibility permissions.

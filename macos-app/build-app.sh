@@ -4,12 +4,12 @@ cd "$(dirname "$0")"
 
 swift build
 
-APP=".build/debug/VoiceCoder.app"
+APP=".build/debug/PBV.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 mkdir -p "$APP/Contents/Resources"
 
-cp .build/debug/VoiceCoder "$APP/Contents/MacOS/VoiceCoder"
+cp .build/debug/PBV "$APP/Contents/MacOS/PBV"
 cp Info.plist "$APP/Contents/Info.plist"
 
 # compiled.json is bundled into the binary by SPM; no separate copy needed.

@@ -173,7 +173,7 @@ function buildHtml(lang: string): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VoiceCoder Commands${langLabel}</title>
+<title>PBV Commands${langLabel}</title>
 <style>
   body { font-family: var(--vscode-font-family, -apple-system, sans-serif);
          font-size: 13px; color: var(--vscode-foreground, #ccc);
@@ -209,7 +209,7 @@ function buildHtml(lang: string): string {
 </style>
 </head>
 <body>
-<h1>VoiceCoder Commands${langLabel ? ` <small style="font-weight:400;color:#888">${esc(langLabel.slice(3))}</small>` : ''}</h1>
+<h1>PBV Commands${langLabel ? ` <small style="font-weight:400;color:#888">${esc(langLabel.slice(3))}</small>` : ''}</h1>
 <input id="filter" type="text" placeholder="Filter commands…" autofocus>
 ${sections.map(renderSection).join('\n')}
 <script>
@@ -243,7 +243,7 @@ export function showCommandsPanel(context: vscode.ExtensionContext): void {
 
     panel = vscode.window.createWebviewPanel(
         'pbv.commands',
-        'VoiceCoder Commands',
+        'PBV Commands',
         vscode.ViewColumn.Beside,
         { enableScripts: true, retainContextWhenHidden: true },
     );

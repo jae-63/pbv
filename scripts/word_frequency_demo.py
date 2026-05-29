@@ -3,7 +3,7 @@
 Word Frequency Counter — Programming-by-Voice Demo Script
 ==========================================================
 Counts word frequencies in a text file, with filtering and sorted output.
-Designed to be dictated from scratch to demonstrate the full VoiceCoder
+Designed to be dictated from scratch to demonstrate the full PBV
 command vocabulary.
 
 ──────────────────────────────────────────────────────────────────────────────
