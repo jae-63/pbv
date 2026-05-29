@@ -123,6 +123,76 @@ describe('fastInterpret — cache pad', () => {
     });
 });
 
+describe('fastInterpret — Python code templates', () => {
+    test('define function / method', () => {
+        expect(fastInterpret('define function')).toMatchObject({ cmd: 'insertText' });
+        expect((fastInterpret('define function')!.text as string)).toContain('{CURSOR}');
+        expect((fastInterpret('define function')!.text as string)).toContain('def ');
+        expect((fastInterpret('define method')!.text as string)).toContain('self');
+    });
+
+    test('for loop / while loop', () => {
+        expect((fastInterpret('for loop')!.text as string)).toContain('for ');
+        expect((fastInterpret('for loop')!.text as string)).toContain(' in ');
+        expect((fastInterpret('while loop')!.text as string)).toContain('while ');
+    });
+
+    test('if / elif / else blocks', () => {
+        expect((fastInterpret('if block')!.text as string)).toContain('if ');
+        expect((fastInterpret('elif block')!.text as string)).toContain('elif ');
+        expect((fastInterpret('else block')!.text as string)).toContain('else:');
+    });
+
+    test('try except includes navigable EXCEPTION_TEMPLATE', () => {
+        const text = fastInterpret('try except')!.text as string;
+        expect(text).toContain('try:');
+        expect(text).toContain('except ');
+        expect(text).toContain('EXCEPTION_TEMPLATE');
+        // navigable by voice: "select exception template" finds EXCEPTION_TEMPLATE
+        const { findTokenOffset } = require('../navigator');
+        const r = findTokenOffset(text, 'exception template', 0);
+        expect(r).not.toBeNull();
+    });
+
+    test('try block is alias for try except', () => {
+        expect(fastInterpret('try block')).toEqual(fastInterpret('try except'));
+    });
+
+    test('f string / raw string', () => {
+        expect((fastInterpret('f string')!.text as string)).toBe('f"{CURSOR}"');
+        expect((fastInterpret('raw string')!.text as string)).toBe('r"{CURSOR}"');
+    });
+
+    test('list / dict comprehension', () => {
+        const lst = fastInterpret('list comprehension')!.text as string;
+        expect(lst).toContain('[');
+        expect(lst).toContain('for');
+        expect(lst).toContain(' in ');
+        const dct = fastInterpret('dict comprehension')!.text as string;
+        expect(dct).toContain('{');
+        expect(dct).toContain('for');
+    });
+
+    test('with block', () => {
+        expect((fastInterpret('with block')!.text as string)).toContain('with ');
+        expect((fastInterpret('with block')!.text as string)).toContain(' as ');
+    });
+});
+
+describe('fastInterpret — dictation helpers', () => {
+    test('no space deletes one char', () => {
+        expect(fastInterpret('no space')).toEqual({ cmd: 'deleteChars', n: 1 });
+    });
+
+    test('open string inserts a quote', () => {
+        expect(fastInterpret('open string')).toEqual({ cmd: 'insertText', text: '"' });
+    });
+
+    test('close string dispatches closeString', () => {
+        expect(fastInterpret('close string')).toEqual({ cmd: 'closeString' });
+    });
+});
+
 describe('fastInterpret — number normalisation', () => {
     test('word numbers', () => {
         expect(fastInterpret('line twenty five')).toEqual({ cmd: 'gotoLine', line: 25 });

@@ -9,6 +9,7 @@ export type InboundMessage =
   | { cmd: 'selectToken';           token: string }
   | { cmd: 'selectRange';           startToken: string; endToken: string }
   | { cmd: 'cacheSelection' }
+  | { cmd: 'closeString' }
   | { cmd: 'selectAndCacheToken';   token: string }
   | { cmd: 'selectAndCacheRange';   startToken: string; endToken: string }
   | { cmd: 'insertCacheItem';  index: number; prefix?: string }

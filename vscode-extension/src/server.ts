@@ -288,6 +288,12 @@ export class IpcServer {
             case 'selectRange':
                 await selectRange(msg.startToken, msg.endToken);
                 break;
+            case 'closeString': {
+                if (!editor) return;
+                await vscode.commands.executeCommand('deleteLeft');
+                await editor.edit(eb => eb.insert(editor.selection.active, '"'));
+                break;
+            }
             case 'cacheSelection': {
                 const sel = vscode.window.activeTextEditor;
                 if (sel) {
