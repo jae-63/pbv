@@ -40,7 +40,7 @@ final class ScrollModeController {
 
     func enterTraverse() {
         mode     = .traverse
-        interval = 1.0
+        interval = 1.5   // 3× slower than default scroll (0.5s)
         restartTimer()
     }
 
