@@ -533,6 +533,8 @@ var RULES = [
   rule("set\\s+mark", (_) => ({ cmd: "setMark" })),
   rule("undo\\s+transaction", (_) => ({ cmd: "undoTransaction" })),
   rule("jump\\s+to\\s+mark", (_) => ({ cmd: "jumpToMark" })),
+  // Accept inline completion (Tab / acceptSelectedSuggestion)
+  rule("accept(?:\\s+(?:completion|suggestion))?", (_) => ({ cmd: "acceptCompletion" })),
   // Cache selection
   rule("cache\\s+(?:this|that|selection)", (_) => ({ cmd: "cacheSelection" })),
   // Word selection & bracket matching
@@ -1066,6 +1068,7 @@ function showCommandsPanel(_context) {
 
 // src/server.ts
 var VSCODE_COMMANDS = {
+  acceptCompletion: "acceptSelectedSuggestion",
   undo: "undo",
   redo: "redo",
   deleteToEndOfLine: "deleteAllRight",
@@ -1531,7 +1534,12 @@ var FEW_SHOT = [
   { role: "user", content: 'Utterance: "select and cache gig through flag"\nLanguage: python\nContent excerpt: "gig_worker_flag": False,' },
   { role: "assistant", content: '{"cmd":"selectAndCacheRange","startToken":"gig","endToken":"flag"}' },
   { role: "user", content: 'Utterance: "select and cache triage completed"\nLanguage: python\nContent excerpt: triage_completed = check_status()' },
-  { role: "assistant", content: '{"cmd":"selectAndCacheToken","token":"triage_completed"}' }
+  { role: "assistant", content: '{"cmd":"selectAndCacheToken","token":"triage_completed"}' },
+  // doc comments — generate from visible function signature; indent matches the file
+  { role: "user", content: 'Utterance: "function doc"\nLanguage: python\nContent excerpt:\n21: def count_word_frequencies(normalized_word_list: list[str]) -> dict[str, int]:\n22: ' },
+  { role: "assistant", content: '{"cmd":"insertText","text":""""Build a frequency dict from a list of normalized words.\\n\\n    Args:\\n        normalized_word_list: Pre-processed word tokens.\\n\\n    Returns:\\n        Mapping from word to its occurrence count.\\n    """"}' },
+  { role: "user", content: 'Utterance: "go doc"\nLanguage: go\nContent excerpt:\n45: func ProcessItems(items []string) error {' },
+  { role: "assistant", content: '{"cmd":"insertText","text":"// ProcessItems processes the provided items and returns any error.\\n"}' }
 ];
 var OUTPUT_SCHEMA = {
   type: "object",

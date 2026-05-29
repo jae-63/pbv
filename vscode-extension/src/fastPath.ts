@@ -104,6 +104,9 @@ const RULES: Rule[] = [
     rule('undo\\s+transaction', _ => ({ cmd: 'undoTransaction' })),
     rule('jump\\s+to\\s+mark', _ => ({ cmd: 'jumpToMark' })),
 
+    // Accept inline completion (Tab / acceptSelectedSuggestion)
+    rule('accept(?:\\s+(?:completion|suggestion))?', _ => ({ cmd: 'acceptCompletion' })),
+
     // Cache selection
     rule('cache\\s+(?:this|that|selection)', _ => ({ cmd: 'cacheSelection' })),
 

@@ -12,6 +12,7 @@ import type { ExtensionContext } from 'vscode';
 
 // Map action names from core.yaml to built-in VSCode command IDs.
 const VSCODE_COMMANDS: Record<string, string> = {
+    acceptCompletion:   'acceptSelectedSuggestion',
     undo:               'undo',
     redo:               'redo',
     deleteToEndOfLine:  'deleteAllRight',

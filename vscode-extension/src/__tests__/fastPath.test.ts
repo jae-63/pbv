@@ -115,6 +115,12 @@ describe('fastInterpret — cache pad', () => {
         expect(fastInterpret('cache that')).toEqual({ cmd: 'cacheSelection' });
         expect(fastInterpret('cache selection')).toEqual({ cmd: 'cacheSelection' });
     });
+
+    test('accept completion', () => {
+        expect(fastInterpret('accept')).toEqual({ cmd: 'acceptCompletion' });
+        expect(fastInterpret('accept completion')).toEqual({ cmd: 'acceptCompletion' });
+        expect(fastInterpret('accept suggestion')).toEqual({ cmd: 'acceptCompletion' });
+    });
 });
 
 describe('fastInterpret — number normalisation', () => {

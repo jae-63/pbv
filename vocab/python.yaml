@@ -412,6 +412,18 @@ metaclasses:
     written: "__slots__ = ({CURSOR},)"
     space_before: true
     space_after: false
+  - {spoken: "dunder bool",          written: "__bool__",       space_before: false, space_after: false}
+  - {spoken: "dunder contains",      written: "__contains__",   space_before: false, space_after: false}
+  - {spoken: "dunder del",           written: "__del__",        space_before: false, space_after: false}
+  - {spoken: "dunder less than",     written: "__lt__",         space_before: false, space_after: false}
+  - {spoken: "dunder less equal",    written: "__le__",         space_before: false, space_after: false}
+  - {spoken: "dunder greater than",  written: "__gt__",         space_before: false, space_after: false}
+  - {spoken: "dunder greater equal", written: "__ge__",         space_before: false, space_after: false}
+  - {spoken: "dunder add",           written: "__add__",        space_before: false, space_after: false}
+  - {spoken: "dunder doc",           written: "__doc__",        space_before: false, space_after: false}
+  - {spoken: "dunder file",          written: "__file__",       space_before: false, space_after: false}
+  - {spoken: "dunder class",         written: "__class__",      space_before: false, space_after: false}
+  - {spoken: "dunder dict",          written: "__dict__",       space_before: false, space_after: false}
 
 # ---------------------------------------------------------------------------
 # Async IO
@@ -650,5 +662,143 @@ argparse:
     space_after: false
   - spoken: "argument namespace"
     written: "argparse.Namespace"
+    space_before: true
+    space_after: false
+
+# ---------------------------------------------------------------------------
+# Hard-to-pronounce libraries
+# Criterion: written form diverges significantly from natural speech.
+# ---------------------------------------------------------------------------
+
+# uuid — spoken "U-U-I-D"; say "unique I D"
+uuid:
+  - {spoken: "import unique I D",    written: "import uuid\n",             space_before: true,  space_after: false}
+  - {spoken: "unique I D",           written: "uuid",                      space_before: true,  space_after: false}
+  - spoken: "unique I D four"
+    written: "uuid.uuid4()"
+    space_before: true
+    space_after: false
+  - spoken: "unique I D class"
+    written: "uuid.UUID"
+    space_before: true
+    space_after: false
+
+# urllib — spoken "U-R-L-lib"
+urllib:
+  - {spoken: "import U R L parse",   written: "from urllib.parse import {CURSOR}\n", space_before: true, space_after: false}
+  - {spoken: "U R L encode",         written: "urllib.parse.urlencode",    space_before: true,  space_after: false}
+  - {spoken: "U R L decode",         written: "urllib.parse.unquote",      space_before: true,  space_after: false}
+  - {spoken: "U R L parse",          written: "urllib.parse.urlparse",     space_before: true,  space_after: false}
+  - {spoken: "U R L join",           written: "urllib.parse.urljoin",      space_before: true,  space_after: false}
+  - {spoken: "U R L open",           written: "urllib.request.urlopen",    space_before: true,  space_after: false}
+
+# base64 — spoken "base sixty four"
+base64:
+  - {spoken: "import base sixty four", written: "import base64\n",         space_before: true,  space_after: false}
+  - {spoken: "base sixty four",        written: "base64",                   space_before: true,  space_after: false}
+  - spoken: "base sixty four encode"
+    written: "base64.b64encode({CURSOR})"
+    space_before: true
+    space_after: false
+  - spoken: "base sixty four decode"
+    written: "base64.b64decode({CURSOR})"
+    space_before: true
+    space_after: false
+
+# pathlib — "path lib" is easy to say, but Path() usage is so common it's worth shortcuts
+pathlib:
+  - {spoken: "import path",          written: "from pathlib import Path\n", space_before: true,  space_after: false}
+  - spoken: "path of"
+    written: "Path({CURSOR})"
+    space_before: true
+    space_after: false
+
+# os.path — common but compound; "O S path" is awkward
+os_path:
+  - {spoken: "path join",            written: "os.path.join",               space_before: true,  space_after: false}
+  - {spoken: "path exists",          written: "os.path.exists",             space_before: true,  space_after: false}
+  - {spoken: "dir name",             written: "os.path.dirname",            space_before: true,  space_after: false}
+  - {spoken: "base name",            written: "os.path.basename",           space_before: true,  space_after: false}
+  - {spoken: "absolute path",        written: "os.path.abspath",            space_before: true,  space_after: false}
+  - {spoken: "path split",           written: "os.path.split",              space_before: true,  space_after: false}
+
+# Third-party: hard-to-pronounce names
+# psycopg2 — PostgreSQL adapter; "psyco-P-G-two" is nearly unsayable
+psycopg2:
+  - {spoken: "import P G two",       written: "import psycopg2\n",          space_before: true,  space_after: false}
+  - {spoken: "P G two",              written: "psycopg2",                   space_before: true,  space_after: false}
+  - spoken: "P G connect"
+    written: "psycopg2.connect({CURSOR})"
+    space_before: true
+    space_after: false
+  - spoken: "P G cursor"
+    written: ".cursor()"
+    space_before: false
+    space_after: false
+
+# pydantic — "pie-dan-tic"
+pydantic:
+  - {spoken: "import pie dan tic",   written: "from pydantic import {CURSOR}\n", space_before: true, space_after: false}
+  - {spoken: "pie dan tic",          written: "pydantic",                   space_before: true,  space_after: false}
+  - {spoken: "base model",           written: "BaseModel",                  space_before: true,  space_after: false}
+  - spoken: "pie dan tic field"
+    written: "Field({CURSOR})"
+    space_before: true
+    space_after: false
+  - spoken: "model validator"
+    written: "@model_validator(mode=\"{CURSOR}\")\n"
+    space_before: true
+    space_after: false
+
+# sqlalchemy — "sequel alchemy" / "S-Q-L alchemy"
+sqlalchemy:
+  - {spoken: "import sequel alchemy", written: "from sqlalchemy import {CURSOR}\n", space_before: true, space_after: false}
+  - {spoken: "sequel alchemy",        written: "sqlalchemy",                space_before: true,  space_after: false}
+  - {spoken: "sequel session",        written: "Session",                   space_before: true,  space_after: false}
+  - spoken: "sequel column"
+    written: "Column({CURSOR})"
+    space_before: true
+    space_after: false
+  - spoken: "sequel engine"
+    written: "create_engine({CURSOR})"
+    space_before: true
+    space_after: false
+
+# boto3 — "boto three" (AWS SDK)
+boto3:
+  - {spoken: "import boto three",    written: "import boto3\n",             space_before: true,  space_after: false}
+  - {spoken: "boto three",           written: "boto3",                      space_before: true,  space_after: false}
+  - spoken: "boto client"
+    written: "boto3.client(\"{CURSOR}\")"
+    space_before: true
+    space_after: false
+  - spoken: "boto resource"
+    written: "boto3.resource(\"{CURSOR}\")"
+    space_before: true
+    space_after: false
+
+# aiohttp — "A-I-O-http" / "async http"
+aiohttp:
+  - {spoken: "import async http",    written: "import aiohttp\n",           space_before: true,  space_after: false}
+  - {spoken: "async http",           written: "aiohttp",                    space_before: true,  space_after: false}
+  - spoken: "async http session"
+    written: "aiohttp.ClientSession()"
+    space_before: true
+    space_after: false
+  - spoken: "async http get"
+    written: "await session.get({CURSOR})"
+    space_before: true
+    space_after: false
+
+# httpx — "H-T-T-P-X"
+httpx:
+  - {spoken: "import H T T P X",    written: "import httpx\n",             space_before: true,  space_after: false}
+  - {spoken: "H T T P X",           written: "httpx",                      space_before: true,  space_after: false}
+  - spoken: "H T T P X client"
+    written: "httpx.Client()"
+    space_before: true
+    space_after: false
+  - spoken: "H T T P X async client"
+    written: "httpx.AsyncClient()"
     space_before: true
     space_after: false
