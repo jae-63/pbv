@@ -163,6 +163,14 @@ final class SpeechEngine: NSObject {
     private func startAudioEngine() {
         guard isRunning else { return }
 
+        // Guard against accessing inputNode (which can trigger a system mic dialog)
+        // before the user has explicitly granted permission via requestPermissions.
+        guard AVCaptureDevice.authorizationStatus(for: .audio) == .authorized else {
+            NSLog("[PBV] startAudioEngine: mic not authorized, skipping start")
+            onStateChange?(.idle)
+            return
+        }
+
         // Listen for device changes (AirPods connect/disconnect, USB mic plug/unplug).
         // When the engine reconfigures, tear down and restart cleanly.
         NotificationCenter.default.addObserver(
