@@ -736,6 +736,18 @@ function applyFormatter(utterance) {
   const tokens = m[2].trim().split(/\s+/);
   return { cmd: "insertText", text: fn(tokens) };
 }
+var COMMENT_RULE = /^comment\s+(?:(template)|(block)\s+(.+))$/i;
+var DASHES = "# " + "-".repeat(75);
+function applyCommentBlock(utterance) {
+  const m = utterance.match(COMMENT_RULE);
+  if (!m) return null;
+  const title = m[1] ? "TEMPLATE" : m[3].charAt(0).toUpperCase() + m[3].slice(1);
+  return { cmd: "insertText", text: `${DASHES}
+# ${title}
+${DASHES}
+
+` };
+}
 function fastInterpretMulti(utterance) {
   let text = prepare(utterance);
   const commands3 = [];
@@ -751,7 +763,7 @@ function fastInterpretMulti(utterance) {
       }
     }
     if (!matched) {
-      const fmt = applyFormatter(text);
+      const fmt = applyFormatter(text) ?? applyCommentBlock(text);
       if (fmt) {
         commands3.push(fmt);
         text = "";
