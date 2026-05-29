@@ -37,15 +37,25 @@ final class ScrollModeController {
     // MARK: - Entry / exit
 
     func enter(scrollDirection direction: String) {
+        requestAccessibilityIfNeeded()
         mode     = .scroll(direction: direction)
         interval = 1.0
         restartTimer()
     }
 
     func enterTraverse() {
+        requestAccessibilityIfNeeded()
         mode     = .traverse
         interval = 1.0
         restartTimer()
+    }
+
+    // Prompt for Accessibility permission the first time scroll/traverse is used.
+    // Deferred from app launch so it doesn't appear on every cold start.
+    private func requestAccessibilityIfNeeded() {
+        guard !AXIsProcessTrusted() else { return }
+        AXIsProcessTrustedWithOptions(
+            [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary)
     }
 
     func exit() {

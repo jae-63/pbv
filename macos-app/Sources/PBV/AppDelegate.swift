@@ -35,10 +35,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
 
-        // Accessibility permission is required for CGEventPost (scroll keystrokes).
-        // Prompt once; the user grants it in System Settings → Privacy → Accessibility.
-        AXIsProcessTrustedWithOptions(
-            [kAXTrustedCheckOptionPrompt.takeRetainedValue(): true] as CFDictionary)
+        // Accessibility permission check is deferred to first scroll/traverse command
+        // (see ScrollModeController.requestAccessibilityIfNeeded) so it doesn't prompt
+        // on every launch.
 
         scroll.onIconChange = { [weak self] name in
             guard let self else { return }
