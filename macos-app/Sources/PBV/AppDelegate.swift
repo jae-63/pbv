@@ -121,7 +121,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             scroll.enter(scrollDirection: "right")
             client.send(["cmd": "enterScrollMode", "direction": "right"])
             return true
-        case "traverse definitions", "traverse definition":
+        case "traverse definitions", "traverse definition",
+             "reverse definitions", "reverse definition",   // common Whisper mishearing
+             "browse definitions", "browse definition":
             scroll.enterTraverse()
             client.send(["cmd": "enterTraversalMode"])
             return true
