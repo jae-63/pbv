@@ -26,7 +26,7 @@ final class ScrollModeController {
 
     private(set) var mode: Mode = .off
 
-    private var interval: TimeInterval = 1.0
+    private var interval: TimeInterval = 0.5
     private var timer:    DispatchSourceTimer?
     private var blink     = false
 
@@ -54,8 +54,10 @@ final class ScrollModeController {
 
     // MARK: - Speed control
 
-    func faster() { interval = max(0.2, interval * 0.75); restartTimer() }
-    func slower() { interval = min(4.0, interval * 1.33); restartTimer() }
+    func faster()     { interval = max(0.2,  interval * 0.75);             restartTimer() }
+    func muchFaster() { interval = max(0.2,  interval * 0.75 * 0.75 * 0.75); restartTimer() }
+    func slower()     { interval = min(4.0,  interval * 1.33);             restartTimer() }
+    func muchSlower() { interval = min(4.0,  interval * 1.33 * 1.33 * 1.33); restartTimer() }
 
     // MARK: - Timer
 

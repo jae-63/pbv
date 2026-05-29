@@ -127,12 +127,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return true
         case "faster":
             guard scroll.isActive else { return false }
-            scroll.faster()
-            return true
+            scroll.faster(); return true
+        case "much faster":
+            guard scroll.isActive else { return false }
+            scroll.muchFaster(); return true
         case "slower":
             guard scroll.isActive else { return false }
-            scroll.slower()
-            return true
+            scroll.slower(); return true
+        case "much slower":
+            guard scroll.isActive else { return false }
+            scroll.muchSlower(); return true
         case "stop", "stop scrolling":
             guard scroll.isActive else { return false }
             scroll.exit()

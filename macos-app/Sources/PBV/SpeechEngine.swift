@@ -31,7 +31,7 @@ final class SpeechEngine: NSObject {
         "Comment line. Select all. Copy. Cut. Paste. " +
         "Word 3 on line 68. Go to top. Go to bottom. End of line. Home. " +
         "Scroll down. Scroll up. Scroll left. Scroll right. " +
-        "Traverse definitions. Stop scrolling. Faster. Slower."
+        "Traverse definitions. Stop scrolling. Faster. Slower. Much faster. Much slower."
     private var serverURL:  URL { URL(string: "http://127.0.0.1:\(serverPort)/inference")! }
 
     // RMS below this level is treated as silence and not sent to Whisper.
