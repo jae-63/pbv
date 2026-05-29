@@ -231,10 +231,17 @@ var CachePad = class {
 
 // src/statusbar.ts
 var vscode2 = __toESM(require("vscode"));
+var SCROLL_ARROW = {
+  down: "\u2193",
+  up: "\u2191",
+  left: "\u2190",
+  right: "\u2192"
+};
 var ModeStatusBar = class {
   constructor() {
     this.mode = "command";
     this.ready = false;
+    this.scroll = { active: false };
     this.item = vscode2.window.createStatusBarItem(vscode2.StatusBarAlignment.Left, 1e3);
     this.item.command = void 0;
     this.render();
@@ -251,6 +258,10 @@ var ModeStatusBar = class {
   getMode() {
     return this.mode;
   }
+  setScrollMode(state) {
+    this.scroll = state;
+    this.render();
+  }
   dispose() {
     this.item.dispose();
   }
@@ -258,20 +269,35 @@ var ModeStatusBar = class {
     this.dispose();
   }
   render() {
+    const scrollSuffix = this.scrollSuffix();
     if (this.mode === "command") {
-      this.item.text = "$(mic) COMMAND";
-      if (this.ready) {
+      this.item.text = `$(mic) COMMAND${scrollSuffix}`;
+      if (this.scroll.active) {
+        this.item.backgroundColor = new vscode2.ThemeColor("statusBarItem.prominentBackground");
+        this.item.tooltip = this.scrollTooltip();
+      } else if (this.ready) {
         this.item.backgroundColor = new vscode2.ThemeColor("statusBarItem.warningBackground");
-        this.item.tooltip = "Voice Coder: listening \u2014 utterances are interpreted as commands";
+        this.item.tooltip = "PBV: listening \u2014 utterances interpreted as commands";
       } else {
         this.item.backgroundColor = new vscode2.ThemeColor("statusBarItem.errorBackground");
-        this.item.tooltip = "Voice Coder: initializing speech recognition\u2026";
+        this.item.tooltip = "PBV: initializing speech recognition\u2026";
       }
     } else {
-      this.item.text = "$(keyboard) DICTATION";
-      this.item.backgroundColor = void 0;
-      this.item.tooltip = "Voice Coder: dictation mode \u2014 speech is inserted as text";
+      this.item.text = `$(keyboard) DICTATION${scrollSuffix}`;
+      this.item.backgroundColor = this.scroll.active ? new vscode2.ThemeColor("statusBarItem.prominentBackground") : void 0;
+      this.item.tooltip = this.scroll.active ? this.scrollTooltip() : "PBV: dictation mode \u2014 speech is inserted as text";
     }
+  }
+  scrollSuffix() {
+    if (!this.scroll.active) return "";
+    if (this.scroll.kind === "traverse") return "  \u2261";
+    const arrow = SCROLL_ARROW[this.scroll.direction] ?? "\u2193";
+    return `  ${arrow}`;
+  }
+  scrollTooltip() {
+    if (!this.scroll.active) return "";
+    if (this.scroll.kind === "traverse") return 'PBV: traversal mode \u2014 "stop scrolling" to exit';
+    return `PBV: scrolling ${this.scroll.direction} \u2014 "faster", "slower", "stop scrolling"`;
   }
 };
 
@@ -1357,6 +1383,7 @@ var IpcServer = class {
       // --- Scroll / traversal mode ---
       case "enterScrollMode":
         this.traversalMatches = null;
+        this.statusBar.setScrollMode({ active: true, kind: "scroll", direction: msg.direction });
         await vscode5.commands.executeCommand("setContext", "pbv.scrolling", true);
         break;
       case "enterTraversalMode": {
@@ -1383,11 +1410,13 @@ var IpcServer = class {
             4e3
           );
         }
+        this.statusBar.setScrollMode({ active: true, kind: "traverse" });
         await vscode5.commands.executeCommand("setContext", "pbv.scrolling", true);
         break;
       }
       case "exitScrollMode":
         this.traversalMatches = null;
+        this.statusBar.setScrollMode({ active: false });
         await vscode5.commands.executeCommand("setContext", "pbv.scrolling", false);
         break;
       case "cacheSelection": {

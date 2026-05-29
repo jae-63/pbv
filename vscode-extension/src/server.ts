@@ -315,6 +315,7 @@ export class IpcServer {
             // --- Scroll / traversal mode ---
             case 'enterScrollMode':
                 this.traversalMatches = null;
+                this.statusBar.setScrollMode({ active: true, kind: 'scroll', direction: msg.direction });
                 await vscode.commands.executeCommand('setContext', 'pbv.scrolling', true);
                 break;
 
@@ -343,12 +344,14 @@ export class IpcServer {
                         4000
                     );
                 }
+                this.statusBar.setScrollMode({ active: true, kind: 'traverse' });
                 await vscode.commands.executeCommand('setContext', 'pbv.scrolling', true);
                 break;
             }
 
             case 'exitScrollMode':
                 this.traversalMatches = null;
+                this.statusBar.setScrollMode({ active: false });
                 await vscode.commands.executeCommand('setContext', 'pbv.scrolling', false);
                 break;
 
