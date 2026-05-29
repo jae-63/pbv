@@ -182,16 +182,17 @@ final class SpeechEngine: NSObject {
             self?.restartAudioEngine()
         }
 
-        let inputNode    = audioEngine.inputNode
-        // Always tap at the hardware's native format — requesting an arbitrary
-        // format (e.g. 16 kHz) crashes on devices that can't run at that rate.
-        let nativeFormat = inputNode.outputFormat(forBus: 0)
+        let inputNode = audioEngine.inputNode
 
         guard !tapInstalled else {
             NSLog("[PBV] installTap skipped — tap already installed")
             return
         }
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: nativeFormat) {
+        // Pass nil so AVAudioEngine uses whatever the node's current format is at
+        // call time. Passing a captured nativeFormat crashes when AirPods finish
+        // initialising between the format read and the installTap call (the hardware
+        // format changes and AVAudioEngine throws an uncatchable NSException).
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: nil) {
             [weak self] buffer, _ in
             guard let self, self.isRunning else { return }
             DispatchQueue.main.async { self.receive(buffer) }
@@ -200,8 +201,9 @@ final class SpeechEngine: NSObject {
 
         do {
             try audioEngine.start()
+            let fmt = inputNode.outputFormat(forBus: 0)
             NSLog("[PBV] audioEngine started — %.0f Hz, %u ch",
-                  nativeFormat.sampleRate, nativeFormat.channelCount)
+                  fmt.sampleRate, fmt.channelCount)
             onStateChange?(.listening)
         } catch {
             NSLog("[PBV] audioEngine error: %@", error.localizedDescription)
