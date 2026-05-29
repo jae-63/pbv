@@ -95,9 +95,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // (the user must say "stop scrolling" before issuing other commands).
     @discardableResult
     private func handleScrollCommand(_ raw: String) -> Bool {
-        let text = raw.lowercased()
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .trimmingCharacters(in: .punctuationCharacters)
+        // Strip ALL punctuation (not just from edges), collapse spaces, lowercase.
+        // Whisper sometimes adds periods mid-phrase or surrounding words.
+        let stripped = raw.unicodeScalars
+            .filter { !CharacterSet.punctuationCharacters.contains($0) }
+        let text = String(stripped)
+            .lowercased()
+            .components(separatedBy: .whitespaces)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        NSLog("[PBV] handleScrollCommand raw=%@ normalized=%@", raw, text)
         switch text {
         case "scroll down", "hold down":
             scroll.enter(scrollDirection: "down")
