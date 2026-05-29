@@ -1,11 +1,4 @@
 import AppKit
-import CoreGraphics
-
-// Key codes for arrow keys (from HIToolbox/Events.h)
-private let kVK_DownArrow:  CGKeyCode = 125
-private let kVK_UpArrow:    CGKeyCode = 126
-private let kVK_LeftArrow:  CGKeyCode = 123
-private let kVK_RightArrow: CGKeyCode = 124
 
 // ---------------------------------------------------------------------------
 // ScrollModeController
@@ -27,6 +20,9 @@ final class ScrollModeController {
 
     // Called on every timer tick with the SF symbol name to display.
     var onIconChange: ((String) -> Void)?
+    // Called on every timer tick to advance the scroll/traversal step.
+    // true = forward (down), false = backward (up).
+    var onScrollTick: ((Bool) -> Void)?
 
     private(set) var mode: Mode = .off
 
@@ -37,26 +33,17 @@ final class ScrollModeController {
     // MARK: - Entry / exit
 
     func enter(scrollDirection direction: String) {
-        requestAccessibilityIfNeeded()
         mode     = .scroll(direction: direction)
         interval = 1.0
         restartTimer()
     }
 
     func enterTraverse() {
-        requestAccessibilityIfNeeded()
         mode     = .traverse
         interval = 1.0
         restartTimer()
     }
 
-    // Prompt for Accessibility permission the first time scroll/traverse is used.
-    // Deferred from app launch so it doesn't appear on every cold start.
-    private func requestAccessibilityIfNeeded() {
-        guard !AXIsProcessTrusted() else { return }
-        AXIsProcessTrustedWithOptions(
-            [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary)
-    }
 
     func exit() {
         mode = .off
@@ -90,7 +77,9 @@ final class ScrollModeController {
     private func tick() {
         blink.toggle()
         emitIcon()
-        postKeystroke()
+        let forward: Bool
+        if case .scroll(let dir) = mode { forward = (dir != "up") } else { forward = true }
+        onScrollTick?(forward)
     }
 
     // MARK: - Icon
@@ -117,30 +106,4 @@ final class ScrollModeController {
         }
     }
 
-    // MARK: - CGEvent keystroke
-
-    private func postKeystroke() {
-        let keyCode: CGKeyCode
-        switch mode {
-        case .off: return
-        case .traverse:              keyCode = kVK_DownArrow
-        case .scroll(let dir):
-            switch dir {
-            case "up":    keyCode = kVK_UpArrow
-            case "left":  keyCode = kVK_LeftArrow
-            case "right": keyCode = kVK_RightArrow
-            default:      keyCode = kVK_DownArrow
-            }
-        }
-
-        guard let src = CGEventSource(stateID: .hidSystemState),
-              let dn  = CGEvent(keyboardEventSource: src, virtualKey: keyCode, keyDown: true),
-              let up  = CGEvent(keyboardEventSource: src, virtualKey: keyCode, keyDown: false)
-        else { return }
-
-        dn.flags = .maskControl
-        up.flags = .maskControl
-        dn.post(tap: .cghidEventTap)
-        up.post(tap: .cghidEventTap)
-    }
 }

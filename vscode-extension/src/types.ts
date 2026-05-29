@@ -13,6 +13,7 @@ export type InboundMessage =
   | { cmd: 'enterScrollMode';   direction: 'down' | 'up' | 'left' | 'right' }
   | { cmd: 'enterTraversalMode'; pattern?: string }
   | { cmd: 'exitScrollMode' }
+  | { cmd: 'scrollStep';        direction: 'forward' | 'back' }
   | { cmd: 'selectAndCacheToken';   token: string }
   | { cmd: 'selectAndCacheRange';   startToken: string; endToken: string }
   | { cmd: 'insertCacheItem';  index: number; prefix?: string }

@@ -35,14 +35,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
 
-        // Accessibility permission check is deferred to first scroll/traverse command
-        // (see ScrollModeController.requestAccessibilityIfNeeded) so it doesn't prompt
-        // on every launch.
-
         scroll.onIconChange = { [weak self] name in
             guard let self else { return }
             self.statusItem.button?.image = NSImage(
                 systemSymbolName: name, accessibilityDescription: "PBV")
+        }
+        scroll.onScrollTick = { [weak self] forward in
+            self?.client.send(["cmd": "scrollStep", "direction": forward ? "forward" : "back"])
         }
 
         overlay = UtteranceOverlay()

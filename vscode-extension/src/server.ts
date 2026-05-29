@@ -355,6 +355,10 @@ export class IpcServer {
                 await vscode.commands.executeCommand('setContext', 'pbv.scrolling', false);
                 break;
 
+            case 'scrollStep':
+                await this.scrollStep(msg.direction === 'back' ? -1 : 1);
+                break;
+
             case 'cacheSelection': {
                 const sel = vscode.window.activeTextEditor;
                 if (sel) {

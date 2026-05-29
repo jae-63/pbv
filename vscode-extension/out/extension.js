@@ -1419,6 +1419,9 @@ var IpcServer = class {
         this.statusBar.setScrollMode({ active: false });
         await vscode5.commands.executeCommand("setContext", "pbv.scrolling", false);
         break;
+      case "scrollStep":
+        await this.scrollStep(msg.direction === "back" ? -1 : 1);
+        break;
       case "cacheSelection": {
         const sel = vscode5.window.activeTextEditor;
         if (sel) {
