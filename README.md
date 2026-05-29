@@ -58,17 +58,29 @@ Spoken words are automatically formatted into code identifier conventions:
 | `"kebab foo bar"` | `foo-bar` |
 | `"smash foo bar"` | `foobar` |
 
-## Selection
+## Selecting by voice
 
-When selecting by spoken words, the system tries all identifier forms automatically. Saying `"select triage completed"` searches the visible file for `triage completed`, `triage_completed`, `triageCompleted`, `TriageCompleted`, `TRIAGE_COMPLETED`, `triage-completed`, and `triagecompleted` — using the first match found.
+You can move the selection to any visible text by speaking words from it. The system tries all common identifier forms automatically, so you don't need to specify punctuation:
+
+```
+"select triage completed"              →  finds  triage_completed  or  triageCompleted  etc.
+"select range Lambda through record"   →  selects the span from Lambda to record
+"select and cache gig through flag"    →  selects gig_worker_flag and caches it
+```
+
+Searches are case-insensitive and restricted to the lines currently visible in the editor, so the command never jumps to an off-screen occurrence. After selecting, issue any transformation — `"make this async"`, `"delete word"`, `"cache this"`, etc.
+
+This is a core technique for editing identifiers and comment text without spelling them out character by character. The idea has a long history in voice coding; our implementation is independent.
 
 ## Voice commands — overview
 
 | Category | Examples |
 |---|---|
 | Navigation | `"go to line 42"`, `"up 5"`, `"word 3 on line 12"`, `"top"`, `"end of line"` |
+| Completion | `"accept"` / `"accept completion"` — accept the current inline suggestion |
 | Deletion | `"delete word"`, `"delete 3 words"`, `"delete line"`, `"delete to end"` |
 | Selection | `"select word"`, `"select triage completed"`, `"select range X through Y"` |
+| Doc comments | `"function doc"` — Python docstring stub; `"go doc"` — Go `//` comment line |
 | Cache | `"cache 2"`, `"recent 3"`, `"cache this"`, `"select and cache X through Y"` |
 | Formatting | `"snake ..."`, `"camel ..."`, `"hammer ..."`, `"constant ..."` |
 | Characters | `"alpha"` → `a`, `"cap sierra"` → `S`, `"underscore"` → `_` |
@@ -146,6 +158,7 @@ The original system ran on Windows with Dragon NaturallySpeaking 5 and a heavily
 - **Cache pad** — a visible list of recent identifiers that can be inserted by number, avoiding the need to spell long names
 - **NATO phonetics** for single characters
 - **Formatter commands** for producing identifier conventions from natural spoken words
-- **Select-and-transform** — select text by speaking words from it, then issue a transformation command
+- **Selecting by voice** — select text by speaking words from it, then issue a transformation command; the system resolves spoken words to all identifier forms automatically
+- **Navigable template placeholders** — templates insert `ALL_CAPS_TEMPLATE` markers that can be jumped to by voice (`"select arguments template"`, `"select returns template"`, etc.)
 
 The `legacy_videos_and_analysis/` directory contains recordings from the original system.

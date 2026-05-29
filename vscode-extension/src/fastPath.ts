@@ -107,6 +107,21 @@ const RULES: Rule[] = [
     // Accept inline completion (Tab / acceptSelectedSuggestion)
     rule('accept(?:\\s+(?:completion|suggestion))?', _ => ({ cmd: 'acceptCompletion' })),
 
+    // Doc-comment templates — ALL_CAPS placeholders are navigable by voice:
+    //   "select summary template"   → selects SUMMARY_TEMPLATE
+    //   "select arguments template" → selects ARGUMENTS_TEMPLATE
+    //   "select returns template"   → selects RETURNS_TEMPLATE
+    // Cursor lands at SUMMARY_TEMPLATE on insertion. Assumes 4-space Python indent.
+    rule('function\\s+doc', _ => ({
+        cmd: 'insertText',
+        text: '"""{CURSOR}SUMMARY_TEMPLATE\n\n    Args:\n        ARGUMENTS_TEMPLATE\n\n    Returns:\n        RETURNS_TEMPLATE\n    """',
+    })),
+    // Go: insert above the func line; cursor lands at start of comment text.
+    rule('go\\s+doc', _ => ({
+        cmd: 'insertText',
+        text: '// {CURSOR}SUMMARY_TEMPLATE\n',
+    })),
+
     // Cache selection
     rule('cache\\s+(?:this|that|selection)', _ => ({ cmd: 'cacheSelection' })),
 

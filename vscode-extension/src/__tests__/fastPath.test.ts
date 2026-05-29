@@ -144,6 +144,45 @@ describe('fastInterpret — formatters via fastInterpret', () => {
     });
 });
 
+describe('fastInterpret — doc-comment templates', () => {
+    test('function doc inserts Python docstring stub with navigable placeholders', () => {
+        const r = fastInterpret('function doc');
+        expect(r).not.toBeNull();
+        const text = r!.text as string;
+        expect(text).toContain('SUMMARY_TEMPLATE');
+        expect(text).toContain('ARGUMENTS_TEMPLATE');
+        expect(text).toContain('RETURNS_TEMPLATE');
+        expect(text).toContain('Args:');
+        expect(text).toContain('Returns:');
+        expect(text).toContain('{CURSOR}');
+    });
+
+    test('go doc inserts Go comment line with navigable placeholder', () => {
+        const r = fastInterpret('go doc');
+        expect(r).not.toBeNull();
+        const text = r!.text as string;
+        expect(text).toMatch(/^\/\/ /);
+        expect(text).toContain('SUMMARY_TEMPLATE');
+        expect(text).toContain('{CURSOR}');
+    });
+
+    test('ARGUMENTS_TEMPLATE is found by "select arguments template" (voice navigation)', () => {
+        const { findTokenOffset } = require('../navigator');
+        const stub = '"""SUMMARY_TEMPLATE\n\n    Args:\n        ARGUMENTS_TEMPLATE\n\n    Returns:\n        RETURNS_TEMPLATE\n    """';
+        const r = findTokenOffset(stub, 'arguments template', 0);
+        expect(r).not.toBeNull();
+        expect(stub.slice(r!.offset, r!.offset + r!.matchLength)).toBe('ARGUMENTS_TEMPLATE');
+    });
+
+    test('RETURNS_TEMPLATE is found by "select returns template"', () => {
+        const { findTokenOffset } = require('../navigator');
+        const stub = '"""SUMMARY_TEMPLATE\n\n    Args:\n        ARGUMENTS_TEMPLATE\n\n    Returns:\n        RETURNS_TEMPLATE\n    """';
+        const r = findTokenOffset(stub, 'returns template', 0);
+        expect(r).not.toBeNull();
+        expect(stub.slice(r!.offset, r!.offset + r!.matchLength)).toBe('RETURNS_TEMPLATE');
+    });
+});
+
 describe('fastInterpret — comment blocks', () => {
     const DASHES = '# ' + '-'.repeat(75);
 
