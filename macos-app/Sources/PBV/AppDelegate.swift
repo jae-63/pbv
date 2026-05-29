@@ -97,19 +97,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func handleScrollCommand(_ raw: String) -> Bool {
         let text = raw.lowercased().trimmingCharacters(in: .whitespaces)
         switch text {
-        case "scroll down":
+        case "scroll down", "hold down":
             scroll.enter(scrollDirection: "down")
             client.send(["cmd": "enterScrollMode", "direction": "down"])
             return true
-        case "scroll up":
+        case "scroll up", "hold up":
             scroll.enter(scrollDirection: "up")
             client.send(["cmd": "enterScrollMode", "direction": "up"])
             return true
-        case "scroll left":
+        case "scroll left", "hold left":
             scroll.enter(scrollDirection: "left")
             client.send(["cmd": "enterScrollMode", "direction": "left"])
             return true
-        case "scroll right":
+        case "scroll right", "hold right":
             scroll.enter(scrollDirection: "right")
             client.send(["cmd": "enterScrollMode", "direction": "right"])
             return true
