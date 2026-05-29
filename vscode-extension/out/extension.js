@@ -524,6 +524,28 @@ var RULES = [
   // Mode switching — voice-only, no keyboard required
   rule("command\\s+mode", (_) => ({ cmd: "commandMode" })),
   rule("dictation\\s+mode", (_) => ({ cmd: "dictationMode" })),
+  // ---------------------------------------------------------------------------
+  // Python code templates — fast-path so they never wait on the LLM.
+  // {CURSOR} marks insertion point; UPPER_TEMPLATE marks navigable placeholders
+  // (say "select exception template" etc. to jump to them after insertion).
+  // ---------------------------------------------------------------------------
+  rule("define\\s+function", (_) => ({ cmd: "insertText", text: "def {CURSOR}():\n    " })),
+  rule("define\\s+method", (_) => ({ cmd: "insertText", text: "def {CURSOR}(self):\n    " })),
+  rule("for\\s+loop", (_) => ({ cmd: "insertText", text: "for {CURSOR} in :\n    " })),
+  rule("while\\s+loop", (_) => ({ cmd: "insertText", text: "while {CURSOR}:\n    " })),
+  rule("if\\s+block", (_) => ({ cmd: "insertText", text: "if {CURSOR}:\n    " })),
+  rule("elif\\s+block", (_) => ({ cmd: "insertText", text: "elif {CURSOR}:\n    " })),
+  rule("else\\s+block", (_) => ({ cmd: "insertText", text: "else:\n    {CURSOR}" })),
+  rule("try\\s+(?:block|except)", (_) => ({ cmd: "insertText", text: "try:\n    {CURSOR}\nexcept EXCEPTION_TEMPLATE as error:\n    " })),
+  rule("with\\s+block", (_) => ({ cmd: "insertText", text: "with {CURSOR} as :\n    " })),
+  rule("list\\s+comprehension", (_) => ({ cmd: "insertText", text: "[{CURSOR} for  in ]" })),
+  rule("dict\\s+comprehension", (_) => ({ cmd: "insertText", text: "{{CURSOR}: for  in }" })),
+  rule("f\\s+string", (_) => ({ cmd: "insertText", text: 'f"{CURSOR}"' })),
+  rule("raw\\s+string", (_) => ({ cmd: "insertText", text: 'r"{CURSOR}"' })),
+  // Dictation helpers
+  rule("no\\s+space", (_) => ({ cmd: "deleteChars", n: 1 })),
+  rule("open\\s+string", (_) => ({ cmd: "insertText", text: '"' })),
+  rule("close\\s+string", (_) => ({ cmd: "closeString" })),
   // UI — voice-only access to help and cache pad
   rule("what\\s+can\\s+I\\s+say", (_) => ({ cmd: "showCommands" })),
   rule("show\\s+commands", (_) => ({ cmd: "showCommands" })),
@@ -1314,6 +1336,12 @@ var IpcServer = class {
       case "selectRange":
         await selectRange(msg.startToken, msg.endToken);
         break;
+      case "closeString": {
+        if (!editor) return;
+        await vscode5.commands.executeCommand("deleteLeft");
+        await editor.edit((eb) => eb.insert(editor.selection.active, '"'));
+        break;
+      }
       case "cacheSelection": {
         const sel = vscode5.window.activeTextEditor;
         if (sel) {

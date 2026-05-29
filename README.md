@@ -86,10 +86,46 @@ This is a core technique for editing identifiers and comment text without spelli
 | Characters | `"alpha"` → `a`, `"cap sierra"` → `S`, `"underscore"` → `_` |
 | Transactions | `"set mark"`, `"undo transaction"`, `"jump to mark"` |
 | Modes | `"command mode"`, `"dictation mode"` |
+| Python templates | `"for loop"`, `"if block"`, `"try except"`, `"define function"`, `"f string"`, `"raw string"` |
+| Comment blocks | `"comment block [title]"`, `"comment template"` |
 | Document | `"save"`, `"undo"`, `"redo"`, `"format document"`, `"comment line"` |
 | Help | `"what can I say"`, `"show commands"` |
 
 Full vocabulary: `vocab/core.yaml` and the language-specific files (`python.yaml`, `go.yaml`, `terraform.yaml`, `k8s-yaml.yaml`).
+
+## Dictation mode
+
+**Command mode** (default) routes every utterance through the fast-path and LLM. **Dictation mode** inserts the transcript verbatim — no command interpretation.
+
+Switch with `"command mode"` / `"dictation mode"`.
+
+### Dictating string content
+
+For prose inside a string literal (docstrings, argparse help text, f-string messages):
+
+1. Position cursor, then say **`"open string"`** → inserts `"`, cursor lands inside.
+2. Say **`"dictation mode"`**.
+3. Dictate the content. Each utterance is appended with a trailing space.
+4. Say **`"command mode"`** to stop dictating.
+5. Say **`"no space"`** → deletes the trailing space left by the last utterance.
+6. Say **`"close string"`** → also deletes the trailing space and inserts the closing `"` in one step.
+
+### Dictating code
+
+For code that the LLM handles poorly or slowly, use the fast-path templates directly in command mode:
+
+```
+"define function"   →  def {cursor}():
+"for loop"          →  for {cursor} in :
+"try except"        →  try: / except EXCEPTION_TEMPLATE as error:
+"f string"          →  f"{cursor}"
+```
+
+After inserting a template, navigate within it using `"word N on line N"` or voice selection (`"select exception template"` etc.).
+
+### Smoke test
+
+Before a session run `./scripts/smoke_test.sh` to verify all three processes are alive (PBV.app, whisper-server, VSCode extension).
 
 ## Setup
 
