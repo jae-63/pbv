@@ -46,6 +46,8 @@ final class SpeechEngine: NSObject {
     private var frames       = [AVAudioPCMBuffer]()
     private var silenceTimer: DispatchWorkItem?
     private var isRunning    = false
+    private var isRestarting = false
+    private var tapInstalled = false
 
     // ---------------------------------------------------------------------------
     // Permissions — only mic needed now (no SFSpeechRecognizer)
@@ -89,15 +91,17 @@ final class SpeechEngine: NSObject {
         frames.removeAll()
         NotificationCenter.default.removeObserver(
             self, name: .AVAudioEngineConfigurationChange, object: audioEngine)
-        if audioEngine.isRunning {
-            audioEngine.stop()
+        if audioEngine.isRunning { audioEngine.stop() }
+        if tapInstalled {
             audioEngine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
         }
         onStateChange?(.idle)
     }
 
     private func restartAudioEngine() {
-        guard isRunning else { return }
+        guard isRunning, !isRestarting else { return }
+        isRestarting = true
         // Signal not-ready while we reconfigure.
         onStateChange?(.idle)
         frames.removeAll()
@@ -108,9 +112,13 @@ final class SpeechEngine: NSObject {
         if audioEngine.isRunning {
             audioEngine.stop()
         }
-        audioEngine.inputNode.removeTap(onBus: 0)
+        if tapInstalled {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
+        }
         // Brief pause so macOS finishes reconfiguring the device.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.isRestarting = false
             self?.startAudioEngine()
         }
     }
@@ -171,11 +179,16 @@ final class SpeechEngine: NSObject {
         // format (e.g. 16 kHz) crashes on devices that can't run at that rate.
         let nativeFormat = inputNode.outputFormat(forBus: 0)
 
+        guard !tapInstalled else {
+            NSLog("[PBV] installTap skipped — tap already installed")
+            return
+        }
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: nativeFormat) {
             [weak self] buffer, _ in
             guard let self, self.isRunning else { return }
             DispatchQueue.main.async { self.receive(buffer) }
         }
+        tapInstalled = true
 
         do {
             try audioEngine.start()

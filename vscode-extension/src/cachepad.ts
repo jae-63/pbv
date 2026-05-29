@@ -64,6 +64,13 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
     prepend(symbol: string): void {
         if (STOP_WORDS.has(symbol)) return;
         if (symbol.length < 2) return;
+        this.prependExplicit(symbol);
+    }
+
+    // Like prepend() but skips stop-word filtering — for user-directed caching
+    // where the user explicitly chose what to cache.
+    prependExplicit(symbol: string): void {
+        if (symbol.length < 1) return;
         this.items = [symbol, ...this.items.filter(s => s !== symbol)].slice(0, this.maxItems);
         this.markRecent(symbol);
         this.refresh();

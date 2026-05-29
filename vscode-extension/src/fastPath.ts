@@ -104,6 +104,9 @@ const RULES: Rule[] = [
     rule('undo\\s+transaction', _ => ({ cmd: 'undoTransaction' })),
     rule('jump\\s+to\\s+mark', _ => ({ cmd: 'jumpToMark' })),
 
+    // Cache selection
+    rule('cache\\s+(?:this|that|selection)', _ => ({ cmd: 'cacheSelection' })),
+
     // Word selection & bracket matching
     rule('select\\s+word',     _ => ({ cmd: 'selectWord' })),
     rule('double\\s+select',   _ => ({ cmd: 'selectWord' })),

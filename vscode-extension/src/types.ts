@@ -6,7 +6,11 @@ export type InboundMessage =
   | { cmd: 'replaceSelection'; text: string }
   | { cmd: 'gotoLine';         line: number }
   | { cmd: 'gotoWordOnLine';   word: number; line: number }
-  | { cmd: 'selectToken';      token: string }
+  | { cmd: 'selectToken';           token: string }
+  | { cmd: 'selectRange';           startToken: string; endToken: string }
+  | { cmd: 'cacheSelection' }
+  | { cmd: 'selectAndCacheToken';   token: string }
+  | { cmd: 'selectAndCacheRange';   startToken: string; endToken: string }
   | { cmd: 'insertCacheItem';  index: number; prefix?: string }
   | { cmd: 'jumpToCharOnLine'; ordinal: number; char: string; line: number }
   | { cmd: 'cacheCurrentWord' }

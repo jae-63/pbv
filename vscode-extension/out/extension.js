@@ -149,6 +149,12 @@ var CachePad = class {
   prepend(symbol) {
     if (STOP_WORDS.has(symbol)) return;
     if (symbol.length < 2) return;
+    this.prependExplicit(symbol);
+  }
+  // Like prepend() but skips stop-word filtering — for user-directed caching
+  // where the user explicitly chose what to cache.
+  prependExplicit(symbol) {
+    if (symbol.length < 1) return;
     this.items = [symbol, ...this.items.filter((s) => s !== symbol)].slice(0, this.maxItems);
     this.markRecent(symbol);
     this.refresh();
@@ -355,21 +361,72 @@ async function jumpToCharOnLine(ordinal, char, targetMod) {
   editor.selection = new vscode3.Selection(pos, pos);
   editor.revealRange(new vscode3.Range(pos, pos), vscode3.TextEditorRevealType.InCenter);
 }
+function candidateForms(token) {
+  const words = token.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 1) return [token];
+  const lower = words.map((w) => w.toLowerCase());
+  const capFirst2 = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  return [
+    token,
+    // literal as spoken
+    lower.join("_"),
+    // snake_case
+    lower[0] + lower.slice(1).map(capFirst2).join(""),
+    // camelCase
+    lower.map(capFirst2).join(""),
+    // PascalCase
+    lower.map((w) => w.toUpperCase()).join("_"),
+    // CONSTANT_CASE
+    lower.join("-"),
+    // kebab-case
+    lower.join("")
+    // smashcase
+  ];
+}
+function findTokenOffset(text, token, cursor) {
+  const lower = text.toLowerCase();
+  for (const candidate of candidateForms(token)) {
+    const query = candidate.toLowerCase();
+    let offset = lower.indexOf(query, cursor);
+    if (offset === -1) offset = lower.indexOf(query, 0);
+    if (offset !== -1) return { offset, matchLength: candidate.length };
+  }
+  return null;
+}
+function findRangeOffsets(text, startToken, endToken, cursor) {
+  const startResult = findTokenOffset(text, startToken, cursor);
+  if (!startResult) return null;
+  const lower = text.toLowerCase();
+  for (const candidate of candidateForms(endToken)) {
+    const endQ = candidate.toLowerCase();
+    const endIdx = lower.indexOf(endQ, startResult.offset + startResult.matchLength);
+    if (endIdx !== -1) return { start: startResult.offset, end: endIdx + candidate.length };
+  }
+  return null;
+}
+async function selectRange(startToken, endToken) {
+  const editor = vscode3.window.activeTextEditor;
+  if (!editor) return;
+  const doc = editor.document;
+  const text = doc.getText();
+  const cursor = doc.offsetAt(editor.selection.active);
+  const range = findRangeOffsets(text, startToken, endToken, cursor);
+  if (!range) return;
+  const startPos = doc.positionAt(range.start);
+  const endPos = doc.positionAt(range.end);
+  editor.selection = new vscode3.Selection(startPos, endPos);
+  editor.revealRange(new vscode3.Range(startPos, endPos), vscode3.TextEditorRevealType.InCenter);
+}
 async function selectToken(token) {
   const editor = vscode3.window.activeTextEditor;
   if (!editor) return;
   const doc = editor.document;
   const text = doc.getText();
   const cursor = doc.offsetAt(editor.selection.active);
-  const searchFrom = (startOffset) => {
-    const idx = text.indexOf(token, startOffset);
-    return idx;
-  };
-  let found = searchFrom(cursor);
-  if (found === -1) found = searchFrom(0);
-  if (found === -1) return;
-  const startPos = doc.positionAt(found);
-  const endPos = doc.positionAt(found + token.length);
+  const found = findTokenOffset(text, token, cursor);
+  if (!found) return;
+  const startPos = doc.positionAt(found.offset);
+  const endPos = doc.positionAt(found.offset + found.matchLength);
   editor.selection = new vscode3.Selection(startPos, endPos);
   editor.revealRange(new vscode3.Range(startPos, endPos), vscode3.TextEditorRevealType.InCenter);
 }
@@ -476,6 +533,8 @@ var RULES = [
   rule("set\\s+mark", (_) => ({ cmd: "setMark" })),
   rule("undo\\s+transaction", (_) => ({ cmd: "undoTransaction" })),
   rule("jump\\s+to\\s+mark", (_) => ({ cmd: "jumpToMark" })),
+  // Cache selection
+  rule("cache\\s+(?:this|that|selection)", (_) => ({ cmd: "cacheSelection" })),
   // Word selection & bracket matching
   rule("select\\s+word", (_) => ({ cmd: "selectWord" })),
   rule("double\\s+select", (_) => ({ cmd: "selectWord" })),
@@ -773,6 +832,7 @@ var vscode4 = __toESM(require("vscode"));
 var fs = __toESM(require("fs"));
 var os = __toESM(require("os"));
 var path = __toESM(require("path"));
+var import_child_process = require("child_process");
 var UNIVERSAL = [
   {
     title: "Navigation",
@@ -984,7 +1044,12 @@ function showCommandsPanel(_context) {
   const html = buildHtml(lang);
   const tmpFile = path.join(os.tmpdir(), "pbv-commands.html");
   fs.writeFileSync(tmpFile, html, "utf8");
-  vscode4.env.openExternal(vscode4.Uri.file(tmpFile));
+  const browserApp = vscode4.workspace.getConfiguration("pbv").get("helpBrowser", "").trim();
+  if (browserApp) {
+    (0, import_child_process.execFile)("open", ["-a", browserApp, tmpFile]);
+  } else {
+    vscode4.env.openExternal(vscode4.Uri.file(tmpFile));
+  }
 }
 
 // src/server.ts
@@ -1080,6 +1145,7 @@ var IpcServer = class {
   }
   editorSnapshot() {
     const editor = vscode5.window.activeTextEditor;
+    const visible = editor?.visibleRanges[0];
     return {
       fileName: editor?.document.fileName.split("/").pop() ?? "untitled",
       language: editor?.document.languageId ?? "plaintext",
@@ -1087,7 +1153,9 @@ var IpcServer = class {
       cursorLine: (editor?.selection.active.line ?? 0) + 1,
       cursorChar: (editor?.selection.active.character ?? 0) + 1,
       selectedText: editor ? editor.document.getText(editor.selection) : "",
-      cachePad: this.cache.getItems()
+      cachePad: this.cache.getItems(),
+      visibleStart: (visible?.start.line ?? 0) + 1,
+      visibleEnd: (visible?.end.line ?? 0) + 1
     };
   }
   async dispatch(msg, _socket) {
@@ -1214,6 +1282,36 @@ var IpcServer = class {
       case "selectToken":
         await selectToken(msg.token);
         break;
+      case "selectRange":
+        await selectRange(msg.startToken, msg.endToken);
+        break;
+      case "cacheSelection": {
+        const sel = vscode5.window.activeTextEditor;
+        if (sel) {
+          const text = sel.document.getText(sel.selection);
+          if (text) this.cache.prependExplicit(text);
+          else this.cache.cacheWordAtCursor();
+        }
+        break;
+      }
+      case "selectAndCacheToken": {
+        await selectToken(msg.token);
+        const ste = vscode5.window.activeTextEditor;
+        if (ste) {
+          const text = ste.document.getText(ste.selection);
+          if (text) this.cache.prependExplicit(text);
+        }
+        break;
+      }
+      case "selectAndCacheRange": {
+        await selectRange(msg.startToken, msg.endToken);
+        const str = vscode5.window.activeTextEditor;
+        if (str) {
+          const text = str.document.getText(str.selection);
+          if (text) this.cache.prependExplicit(text);
+        }
+        break;
+      }
       case "cursorUp":
         for (let i = 0; i < (msg.n ?? 1); i++)
           await vscode5.commands.executeCommand("cursorUp");
@@ -1407,11 +1505,21 @@ var FEW_SHOT = [
   { role: "assistant", content: '{"cmd":"undoTransaction"}' },
   { role: "user", content: 'Utterance: "cache 2"' },
   { role: "assistant", content: '{"cmd":"insertCacheItem","index":2}' },
-  // camelCase / snake_case aware selection — resolve spoken form to actual token
+  // camelCase / snake_case aware selection — resolve spoken form to actual token in excerpt
   { role: "user", content: 'Utterance: "select my variable name"\nLanguage: python\nContent excerpt: result = myVariableName + offset' },
   { role: "assistant", content: '{"cmd":"selectToken","token":"myVariableName"}' },
   { role: "user", content: 'Utterance: "select output file name"\nLanguage: python\nContent excerpt: open(output_file_name, "r")' },
-  { role: "assistant", content: '{"cmd":"selectToken","token":"output_file_name"}' }
+  { role: "assistant", content: '{"cmd":"selectToken","token":"output_file_name"}' },
+  // selectRange — "select range X through Y" selects from X to end of Y (works in comments too)
+  { role: "user", content: 'Utterance: "select range score through ago"\nLanguage: markdown\nContent excerpt: Four score and seven years ago our fathers' },
+  { role: "assistant", content: '{"cmd":"selectRange","startToken":"score","endToken":"ago"}' },
+  { role: "user", content: 'Utterance: "select range raises through error"\nLanguage: python\nContent excerpt: # raises ValueError if input is not a valid error' },
+  { role: "assistant", content: '{"cmd":"selectRange","startToken":"raises","endToken":"error"}' },
+  // selectAndCache — select text AND push it to the cache pad in one step
+  { role: "user", content: 'Utterance: "select and cache gig through flag"\nLanguage: python\nContent excerpt: "gig_worker_flag": False,' },
+  { role: "assistant", content: '{"cmd":"selectAndCacheRange","startToken":"gig","endToken":"flag"}' },
+  { role: "user", content: 'Utterance: "select and cache triage completed"\nLanguage: python\nContent excerpt: triage_completed = check_status()' },
+  { role: "assistant", content: '{"cmd":"selectAndCacheToken","token":"triage_completed"}' }
 ];
 var OUTPUT_SCHEMA = {
   type: "object",
@@ -1434,6 +1542,10 @@ var OUTPUT_SCHEMA = {
         "pageUp",
         "pageDown",
         "selectToken",
+        "selectRange",
+        "cacheSelection",
+        "selectAndCacheToken",
+        "selectAndCacheRange",
         "insertCacheItem",
         "deleteChars",
         "deleteWords",
@@ -1456,6 +1568,8 @@ var OUTPUT_SCHEMA = {
     word: { type: "number" },
     text: { type: "string" },
     token: { type: "string" },
+    startToken: { type: "string" },
+    endToken: { type: "string" },
     n: { type: "number" },
     index: { type: "number" }
   },
@@ -1467,10 +1581,13 @@ var ClaudeClient = class {
     this.baseUrl = baseUrl.replace(/\/$/, "");
   }
   async interpret(transcript, snap, signal) {
+    const excerpt = windowForLines(snap.content, snap.visibleStart, snap.visibleEnd);
     const parts = [
       `Language: ${snap.language}`,
       `Cursor: line ${snap.cursorLine}, char ${snap.cursorChar}`,
       `Cache pad: ${snap.cachePad.length ? snap.cachePad.join(", ") : "(empty)"}`,
+      `Content excerpt:
+${excerpt}`,
       `Utterance: "${transcript}"`
     ];
     if (snap.selectedText) {
@@ -1515,6 +1632,12 @@ ${snap.selectedText}`);
     }
   }
 };
+function windowForLines(content, startLine, endLine) {
+  const lines = content.split("\n");
+  const start = Math.max(0, startLine - 1);
+  const end = Math.min(lines.length, endLine);
+  return lines.slice(start, end).map((l, i) => `${start + i + 1}: ${l}`).join("\n");
+}
 
 // src/extension.ts
 function activate(context) {

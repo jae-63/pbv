@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { InboundMessage, OutboundMessage } from './types';
 import { CachePad } from './cachepad';
 import { ModeStatusBar } from './statusbar';
-import { gotoLine, gotoWordOnLine, selectToken, jumpToCharOnLine } from './navigator';
+import { gotoLine, gotoWordOnLine, selectToken, selectRange, jumpToCharOnLine } from './navigator';
 import { ClaudeClient, EditorSnapshot } from './claudeClient';
 import { fastInterpret, fastInterpretMulti } from './fastPath';
 import { tryTransform } from './codeTransform';
@@ -123,6 +123,7 @@ export class IpcServer {
 
     private editorSnapshot(): EditorSnapshot {
         const editor = vscode.window.activeTextEditor;
+        const visible = editor?.visibleRanges[0];
         return {
             fileName:     editor?.document.fileName.split('/').pop() ?? 'untitled',
             language:     editor?.document.languageId ?? 'plaintext',
@@ -131,6 +132,8 @@ export class IpcServer {
             cursorChar:   (editor?.selection.active.character ?? 0) + 1,
             selectedText: editor ? editor.document.getText(editor.selection) : '',
             cachePad:     this.cache.getItems(),
+            visibleStart: (visible?.start.line ?? 0) + 1,
+            visibleEnd:   (visible?.end.line ?? 0) + 1,
         };
     }
 
@@ -281,6 +284,36 @@ export class IpcServer {
             case 'selectToken':
                 await selectToken(msg.token);
                 break;
+            case 'selectRange':
+                await selectRange(msg.startToken, msg.endToken);
+                break;
+            case 'cacheSelection': {
+                const sel = vscode.window.activeTextEditor;
+                if (sel) {
+                    const text = sel.document.getText(sel.selection);
+                    if (text) this.cache.prependExplicit(text);
+                    else this.cache.cacheWordAtCursor();
+                }
+                break;
+            }
+            case 'selectAndCacheToken': {
+                await selectToken(msg.token);
+                const ste = vscode.window.activeTextEditor;
+                if (ste) {
+                    const text = ste.document.getText(ste.selection);
+                    if (text) this.cache.prependExplicit(text);
+                }
+                break;
+            }
+            case 'selectAndCacheRange': {
+                await selectRange(msg.startToken, msg.endToken);
+                const str = vscode.window.activeTextEditor;
+                if (str) {
+                    const text = str.document.getText(str.selection);
+                    if (text) this.cache.prependExplicit(text);
+                }
+                break;
+            }
             case 'cursorUp':
                 for (let i = 0; i < (msg.n ?? 1); i++)
                     await vscode.commands.executeCommand('cursorUp');

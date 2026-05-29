@@ -4,9 +4,15 @@
   "displayName": "PBV",
   "description": "PBV — Programming By Voice: Whisper speech recognition + LLM command interpretation for VSCode",
   "version": "0.1.0",
-  "engines": {"vscode": "^1.85.0"},
-  "categories": ["Other"],
-  "activationEvents": ["onStartupFinished"],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -77,6 +83,11 @@
           "type": "string",
           "default": "http://localhost:11434",
           "description": "Base URL of the local Ollama server"
+        },
+        "pbv.helpBrowser": {
+          "type": "string",
+          "default": "",
+          "description": "App name to open the 'What can I say?' help page (e.g. \"Google Chrome\"). Leave blank to use the system default."
         }
       }
     }
@@ -84,13 +95,17 @@
   "scripts": {
     "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18",
     "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18 --watch",
+    "test": "jest",
+    "deploy": "npm run compile && cp out/extension.js ~/.vscode/extensions/local.pbv-0.1.0/out/ && cp package.json ~/.vscode/extensions/local.pbv-0.1.0/",
     "package": "vsce package"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.24.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11",
     "typescript": "^5.3.0"
   }
 }

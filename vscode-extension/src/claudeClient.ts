@@ -12,11 +12,21 @@ const FEW_SHOT: { role: 'user' | 'assistant'; content: string }[] = [
     { role: 'assistant', content: '{"cmd":"undoTransaction"}' },
     { role: 'user',      content: 'Utterance: "cache 2"' },
     { role: 'assistant', content: '{"cmd":"insertCacheItem","index":2}' },
-    // camelCase / snake_case aware selection — resolve spoken form to actual token
+    // camelCase / snake_case aware selection — resolve spoken form to actual token in excerpt
     { role: 'user',      content: 'Utterance: "select my variable name"\nLanguage: python\nContent excerpt: result = myVariableName + offset' },
     { role: 'assistant', content: '{"cmd":"selectToken","token":"myVariableName"}' },
     { role: 'user',      content: 'Utterance: "select output file name"\nLanguage: python\nContent excerpt: open(output_file_name, "r")' },
     { role: 'assistant', content: '{"cmd":"selectToken","token":"output_file_name"}' },
+    // selectRange — "select range X through Y" selects from X to end of Y (works in comments too)
+    { role: 'user',      content: 'Utterance: "select range score through ago"\nLanguage: markdown\nContent excerpt: Four score and seven years ago our fathers' },
+    { role: 'assistant', content: '{"cmd":"selectRange","startToken":"score","endToken":"ago"}' },
+    { role: 'user',      content: 'Utterance: "select range raises through error"\nLanguage: python\nContent excerpt: # raises ValueError if input is not a valid error' },
+    { role: 'assistant', content: '{"cmd":"selectRange","startToken":"raises","endToken":"error"}' },
+    // selectAndCache — select text AND push it to the cache pad in one step
+    { role: 'user',      content: 'Utterance: "select and cache gig through flag"\nLanguage: python\nContent excerpt: "gig_worker_flag": False,' },
+    { role: 'assistant', content: '{"cmd":"selectAndCacheRange","startToken":"gig","endToken":"flag"}' },
+    { role: 'user',      content: 'Utterance: "select and cache triage completed"\nLanguage: python\nContent excerpt: triage_completed = check_status()' },
+    { role: 'assistant', content: '{"cmd":"selectAndCacheToken","token":"triage_completed"}' },
 ];
 
 const OUTPUT_SCHEMA = {
@@ -30,7 +40,9 @@ const OUTPUT_SCHEMA = {
                 'cursorUp', 'cursorDown', 'cursorLeft', 'cursorRight',
                 'cursorHome', 'cursorEnd', 'cursorTop', 'cursorBottom',
                 'pageUp', 'pageDown',
-                'selectToken', 'insertCacheItem',
+                'selectToken', 'selectRange',
+                'cacheSelection', 'selectAndCacheToken', 'selectAndCacheRange',
+                'insertCacheItem',
                 'deleteChars', 'deleteWords', 'deleteLine', 'deleteToEndOfLine',
                 'setMark', 'undoTransaction',
                 'undo', 'redo', 'save', 'formatDocument',
@@ -40,7 +52,9 @@ const OUTPUT_SCHEMA = {
         line:  { type: 'number' },
         word:  { type: 'number' },
         text:  { type: 'string' },
-        token: { type: 'string' },
+        token:      { type: 'string' },
+        startToken: { type: 'string' },
+        endToken:   { type: 'string' },
         n:     { type: 'number' },
         index: { type: 'number' },
     },
@@ -48,13 +62,15 @@ const OUTPUT_SCHEMA = {
 };
 
 export interface EditorSnapshot {
-    fileName:     string;
-    language:     string;
-    content:      string;
-    cursorLine:   number;   // 1-based
-    cursorChar:   number;   // 1-based
-    selectedText: string;
-    cachePad:     string[];
+    fileName:       string;
+    language:       string;
+    content:        string;
+    cursorLine:     number;   // 1-based
+    cursorChar:     number;   // 1-based
+    selectedText:   string;
+    cachePad:       string[];
+    visibleStart:   number;   // 1-based, first visible line
+    visibleEnd:     number;   // 1-based, last visible line
 }
 
 interface OllamaResponse {
@@ -71,10 +87,12 @@ export class ClaudeClient {
     }
 
     async interpret(transcript: string, snap: EditorSnapshot, signal?: AbortSignal): Promise<object | null> {
+        const excerpt = windowForLines(snap.content, snap.visibleStart, snap.visibleEnd);
         const parts = [
             `Language: ${snap.language}`,
             `Cursor: line ${snap.cursorLine}, char ${snap.cursorChar}`,
             `Cache pad: ${snap.cachePad.length ? snap.cachePad.join(', ') : '(empty)'}`,
+            `Content excerpt:\n${excerpt}`,
             `Utterance: "${transcript}"`,
         ];
         if (snap.selectedText) {
@@ -126,10 +144,20 @@ export class ClaudeClient {
     }
 }
 
-function windowAroundCursor(content: string, cursorLine: number, radius: number): string {
+export function windowAroundCursor(content: string, cursorLine: number, radius: number): string {
     const lines = content.split('\n');
     const start = Math.max(0, cursorLine - 1 - radius);
     const end   = Math.min(lines.length, cursorLine + radius);
+    return lines.slice(start, end)
+        .map((l, i) => `${start + i + 1}: ${l}`)
+        .join('\n');
+}
+
+// Returns the lines between startLine and endLine (both 1-based, inclusive), prefixed with line numbers.
+export function windowForLines(content: string, startLine: number, endLine: number): string {
+    const lines = content.split('\n');
+    const start = Math.max(0, startLine - 1);
+    const end   = Math.min(lines.length, endLine);
     return lines.slice(start, end)
         .map((l, i) => `${start + i + 1}: ${l}`)
         .join('\n');
