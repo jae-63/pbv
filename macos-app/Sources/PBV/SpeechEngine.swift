@@ -164,7 +164,7 @@ final class SpeechEngine: NSObject {
     // Audio capture
     // ---------------------------------------------------------------------------
 
-    private func startAudioEngine(retryCount: Int = 0) {
+    private func startAudioEngine() {
         guard isRunning else { return }
 
         // Guard against accessing inputNode (which can trigger a system mic dialog)
@@ -213,21 +213,15 @@ final class SpeechEngine: NSObject {
             onStateChange?(.listening)
         } catch {
             let code = (error as NSError).code
-            // -10868 = kAudioUnitErr_CannotDoInCurrentContext: audio hardware is
-            // still transitioning (AirPods connecting/disconnecting). Retry silently
-            // up to 6× with a 2s gap (12s total window covers slow AirPod pairing).
-            if code == -10868 && retryCount < 6 {
-                NSLog("[PBV] audioEngine -10868 (device transitioning), retry %d/6", retryCount + 1)
+            if code == -10868 {
+                // Device is still transitioning (AirPods connect/disconnect).
+                // Stay idle — the next AVAudioEngineConfigurationChange notification
+                // from macOS will trigger restartAudioEngine() automatically when the
+                // hardware settles. No dialog; use Sleep/Wake menu if mic stays stuck.
+                NSLog("[PBV] audioEngine -10868 — device transitioning, waiting for config-change")
                 if tapInstalled {
                     audioEngine.inputNode.removeTap(onBus: 0)
                     tapInstalled = false
-                }
-                // Hold isRestarting = true so concurrent AVAudioEngineConfigurationChange
-                // notifications don't interrupt the retry wait.
-                isRestarting = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-                    self?.isRestarting = false
-                    self?.startAudioEngine(retryCount: retryCount + 1)
                 }
             } else {
                 NSLog("[PBV] audioEngine error: %@", error.localizedDescription)
