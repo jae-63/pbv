@@ -164,7 +164,7 @@ final class SpeechEngine: NSObject {
     // Audio capture
     // ---------------------------------------------------------------------------
 
-    private func startAudioEngine() {
+    private func startAudioEngine(retryCount: Int = 0) {
         guard isRunning else { return }
 
         // Guard against accessing inputNode (which can trigger a system mic dialog)
@@ -214,14 +214,21 @@ final class SpeechEngine: NSObject {
         } catch {
             let code = (error as NSError).code
             if code == -10868 {
-                // Device is still transitioning (AirPods connect/disconnect).
-                // Stay idle — the next AVAudioEngineConfigurationChange notification
-                // from macOS will trigger restartAudioEngine() automatically when the
-                // hardware settles. No dialog; use Sleep/Wake menu if mic stays stuck.
-                NSLog("[PBV] audioEngine -10868 — device transitioning, waiting for config-change")
                 if tapInstalled {
                     audioEngine.inputNode.removeTap(onBus: 0)
                     tapInstalled = false
+                }
+                if retryCount == 0 {
+                    // macOS fires config-change before hardware fully settles.
+                    // Wait 3 more seconds and try once more before giving up.
+                    NSLog("[PBV] audioEngine -10868 — retrying in 3s")
+                    isRestarting = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+                        self?.isRestarting = false
+                        self?.startAudioEngine(retryCount: 1)
+                    }
+                } else {
+                    NSLog("[PBV] audioEngine -10868 after retry — staying idle; re-insert AirPods or use Sleep/Wake to recover")
                 }
             } else {
                 NSLog("[PBV] audioEngine error: %@", error.localizedDescription)
