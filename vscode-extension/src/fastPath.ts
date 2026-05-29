@@ -89,6 +89,16 @@ const RULES: Rule[] = [
     rule('delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?',
          _ => ({ cmd: 'deleteToEndOfLine' })),
 
+    // Mode switching — voice-only, no keyboard required
+    rule('command\\s+mode',    _ => ({ cmd: 'commandMode' })),
+    rule('dictation\\s+mode',  _ => ({ cmd: 'dictationMode' })),
+
+    // UI — voice-only access to help and cache pad
+    rule('what\\s+can\\s+I\\s+say', _ => ({ cmd: 'showCommands' })),
+    rule('show\\s+commands',        _ => ({ cmd: 'showCommands' })),
+    rule('help',                    _ => ({ cmd: 'showCommands' })),
+    rule('show\\s+cache(?:\\s+pad)?', _ => ({ cmd: 'showCachePad' })),
+
     // Transactions & mark navigation
     rule('set\\s+mark',        _ => ({ cmd: 'setMark' })),
     rule('undo\\s+transaction', _ => ({ cmd: 'undoTransaction' })),

@@ -7,6 +7,8 @@ import { gotoLine, gotoWordOnLine, selectToken, jumpToCharOnLine } from './navig
 import { ClaudeClient, EditorSnapshot } from './claudeClient';
 import { fastInterpret, fastInterpretMulti } from './fastPath';
 import { tryTransform } from './codeTransform';
+import { showCommandsPanel } from './commandsPanel';
+import type { ExtensionContext } from 'vscode';
 
 // Map action names from core.yaml to built-in VSCode command IDs.
 const VSCODE_COMMANDS: Record<string, string> = {
@@ -52,6 +54,7 @@ export class IpcServer {
         port: number,
         private cache: CachePad,
         private statusBar: ModeStatusBar,
+        private context: ExtensionContext,
         private claude?: ClaudeClient,
     ) {
         this.port   = port;
@@ -318,6 +321,20 @@ export class IpcServer {
                 break;
             case 'setReady':
                 this.statusBar.setReady(msg.ready);
+                break;
+            case 'commandMode':
+                this.statusBar.setMode('command');
+                break;
+            case 'dictationMode':
+                this.statusBar.setMode('dictation');
+                break;
+
+            // --- Voice-only UI access ---
+            case 'showCommands':
+                showCommandsPanel(this.context);
+                break;
+            case 'showCachePad':
+                await vscode.commands.executeCommand('pbv.cachePad.focus');
                 break;
 
             // --- Transaction mark ---

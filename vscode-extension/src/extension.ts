@@ -21,7 +21,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // IPC server
     const claude = new ClaudeClient(ollamaModel, ollamaUrl);
-    const server = new IpcServer(port, cache, statusBar, claude);
+    const server = new IpcServer(port, cache, statusBar, context, claude);
     broadcastFn  = (msg) => server.broadcast(msg as OutboundMessage);
 
     // Register cache pad tree view

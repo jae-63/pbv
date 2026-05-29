@@ -271,7 +271,7 @@ var ModeStatusBar = class {
 
 // src/server.ts
 var net = __toESM(require("net"));
-var vscode4 = __toESM(require("vscode"));
+var vscode5 = __toESM(require("vscode"));
 
 // src/navigator.ts
 var vscode3 = __toESM(require("vscode"));
@@ -464,6 +464,14 @@ var RULES = [
     "delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?",
     (_) => ({ cmd: "deleteToEndOfLine" })
   ),
+  // Mode switching — voice-only, no keyboard required
+  rule("command\\s+mode", (_) => ({ cmd: "commandMode" })),
+  rule("dictation\\s+mode", (_) => ({ cmd: "dictationMode" })),
+  // UI — voice-only access to help and cache pad
+  rule("what\\s+can\\s+I\\s+say", (_) => ({ cmd: "showCommands" })),
+  rule("show\\s+commands", (_) => ({ cmd: "showCommands" })),
+  rule("help", (_) => ({ cmd: "showCommands" })),
+  rule("show\\s+cache(?:\\s+pad)?", (_) => ({ cmd: "showCachePad" })),
   // Transactions & mark navigation
   rule("set\\s+mark", (_) => ({ cmd: "setMark" })),
   rule("undo\\s+transaction", (_) => ({ cmd: "undoTransaction" })),
@@ -760,523 +768,11 @@ ${indent}`
   return null;
 }
 
-// src/server.ts
-var VSCODE_COMMANDS = {
-  undo: "undo",
-  redo: "redo",
-  deleteToEndOfLine: "deleteAllRight",
-  deleteLine: "editor.action.deleteLines",
-  duplicateLine: "editor.action.copyLinesDownAction",
-  selectAll: "editor.action.selectAll",
-  cut: "editor.action.clipboardCutAction",
-  copy: "editor.action.clipboardCopyAction",
-  paste: "editor.action.clipboardPasteAction",
-  save: "workbench.action.files.save",
-  formatDocument: "editor.action.formatDocument",
-  toggleLineComment: "editor.action.commentLine",
-  find: "actions.find",
-  replace: "editor.action.startFindReplaceAction",
-  matchParen: "editor.action.jumpToBracket",
-  cursorLeft: "cursorLeft",
-  cursorRight: "cursorRight",
-  cursorHome: "cursorHome",
-  cursorEnd: "cursorEnd",
-  cursorTop: "cursorTop",
-  cursorBottom: "cursorBottom",
-  pageUp: "scrollPageUp",
-  pageDown: "scrollPageDown"
-};
-var IpcServer = class {
-  constructor(port, cache, statusBar, claude) {
-    this.cache = cache;
-    this.statusBar = statusBar;
-    this.claude = claude;
-    this.sockets = /* @__PURE__ */ new Set();
-    this.llmAbort = null;
-    this.port = port;
-    this.server = net.createServer((socket) => this.onConnection(socket));
-    this.server.listen(port, "127.0.0.1", () => {
-      vscode4.window.setStatusBarMessage(`Voice Coder: listening on :${port}`, 3e3);
-    });
-    this.server.on("error", (err) => {
-      vscode4.window.showErrorMessage(`Voice Coder IPC error: ${err.message}`);
-    });
-  }
-  // Push a message to all connected clients (used for cache-update events).
-  broadcast(msg) {
-    const line = JSON.stringify(msg) + "\n";
-    for (const s of this.sockets) {
-      if (!s.destroyed) s.write(line);
-    }
-  }
-  dispose() {
-    for (const s of this.sockets) s.destroy();
-    this.server.close();
-  }
-  // vscode.Disposable
-  [Symbol.dispose]() {
-    this.dispose();
-  }
-  onConnection(socket) {
-    this.sockets.add(socket);
-    socket.on("close", () => this.sockets.delete(socket));
-    let buffer = "";
-    socket.on("data", (data) => {
-      buffer += data.toString();
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        this.handle(trimmed, socket);
-      }
-    });
-  }
-  async handle(raw, socket) {
-    let msg;
-    try {
-      msg = JSON.parse(raw);
-    } catch {
-      this.reply(socket, { ok: false, error: "malformed JSON" });
-      return;
-    }
-    try {
-      await this.dispatch(msg, socket);
-      this.reply(socket, { ok: true });
-    } catch (err) {
-      this.reply(socket, { ok: false, error: String(err) });
-    }
-  }
-  reply(socket, msg) {
-    if (!socket.destroyed) socket.write(JSON.stringify(msg) + "\n");
-  }
-  editorSnapshot() {
-    const editor = vscode4.window.activeTextEditor;
-    return {
-      fileName: editor?.document.fileName.split("/").pop() ?? "untitled",
-      language: editor?.document.languageId ?? "plaintext",
-      content: editor?.document.getText() ?? "",
-      cursorLine: (editor?.selection.active.line ?? 0) + 1,
-      cursorChar: (editor?.selection.active.character ?? 0) + 1,
-      selectedText: editor ? editor.document.getText(editor.selection) : "",
-      cachePad: this.cache.getItems()
-    };
-  }
-  async dispatch(msg, _socket) {
-    const editor = vscode4.window.activeTextEditor;
-    switch (msg.cmd) {
-      // --- Voice transcript — interpreted by Claude ---
-      case "transcript": {
-        this.llmAbort?.abort();
-        this.llmAbort = null;
-        const raw = msg.text;
-        if (this.statusBar.getMode() === "dictation") {
-          if (editor) {
-            await editor.edit((eb) => eb.insert(editor.selection.active, raw + " "));
-            vscode4.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 1e4);
-          }
-          return;
-        }
-        if (!this.claude) {
-          vscode4.window.showWarningMessage(
-            "Voice Coder: LLM client not initialized (check pbv.ollamaModel setting)"
-          );
-          return;
-        }
-        const { commands: commands3, remainder } = fastInterpretMulti(raw);
-        if (commands3.length > 0) {
-          const labels = commands3.map((c) => this.describeCmd(c)).join(" | ");
-          vscode4.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 ${labels}`, 1e4);
-          for (const cmd of commands3) {
-            await this.dispatch(cmd, _socket);
-          }
-          if (!remainder) return;
-        }
-        const llmInput = remainder || raw;
-        if (commands3.length > 0 && !remainder) return;
-        const snap = this.editorSnapshot();
-        if (snap.selectedText) {
-          const transformed = tryTransform(raw, snap.selectedText, snap.language);
-          if (transformed !== null) {
-            const editor2 = vscode4.window.activeTextEditor;
-            if (editor2) {
-              this.mark = { uri: editor2.document.uri.toString(), text: editor2.document.getText(), cursor: editor2.selection.active };
-              editor2.selection = vscode4.window.activeTextEditor.selection;
-              vscode4.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 replaceSelection`, 1e4);
-              await this.dispatch({ cmd: "replaceSelection", text: transformed }, _socket);
-            }
-            return;
-          }
-        }
-        const savedSelection = vscode4.window.activeTextEditor?.selection;
-        const abort = new AbortController();
-        this.llmAbort = abort;
-        const status = vscode4.window.setStatusBarMessage(`$(loading~spin) "${llmInput}" \u2192 thinking\u2026`);
-        const command = await this.claude.interpret(llmInput, snap, abort.signal);
-        status.dispose();
-        this.llmAbort = null;
-        if (abort.signal.aborted) return;
-        if (!command) {
-          vscode4.window.setStatusBarMessage(`$(mic) "${llmInput}" \u2192 (no command)`, 1e4);
-          return;
-        }
-        if (command) {
-          const cmd = command;
-          vscode4.window.setStatusBarMessage(
-            `$(mic) "${llmInput}" \u2192 ${this.describeCmd(cmd)}`,
-            1e4
-          );
-          const isBufferEdit = cmd.cmd === "replaceSelection" || cmd.cmd === "insertText";
-          if (snap.selectedText && !isBufferEdit) {
-            vscode4.window.showWarningMessage(
-              `Voice Coder: selection ignored \u2014 LLM returned "${cmd.cmd}" instead of an edit`
-            );
-            return;
-          }
-          if (isBufferEdit) {
-            const editor2 = vscode4.window.activeTextEditor;
-            if (editor2) {
-              this.mark = {
-                uri: editor2.document.uri.toString(),
-                text: editor2.document.getText(),
-                cursor: editor2.selection.active
-              };
-            }
-            if (cmd.cmd === "replaceSelection" && savedSelection) {
-              const editor3 = vscode4.window.activeTextEditor;
-              if (editor3) editor3.selection = savedSelection;
-            }
-          }
-          await this.dispatch(cmd, _socket);
-        }
-        return;
-      }
-      // --- Text insertion ---
-      case "insertText": {
-        if (!editor) return;
-        const raw = msg.text;
-        const cursor = raw.indexOf("{CURSOR}");
-        const text = raw.replace("{CURSOR}", "");
-        await editor.edit((eb) => eb.insert(editor.selection.active, text));
-        if (cursor !== -1) {
-          const inserted = editor.selection.active;
-          const endOffset = editor.document.offsetAt(inserted);
-          const markOffset = endOffset - (text.length - cursor);
-          const markPos = editor.document.positionAt(markOffset);
-          editor.selection = new vscode4.Selection(markPos, markPos);
-        }
-        break;
-      }
-      // --- Selection replacement (Claude code transforms) ---
-      case "replaceSelection": {
-        if (!editor) return;
-        await editor.edit((eb) => eb.replace(editor.selection, msg.text));
-        break;
-      }
-      // --- Navigation ---
-      case "gotoLine":
-        await gotoLine(msg.line);
-        break;
-      case "gotoWordOnLine":
-        await gotoWordOnLine(msg.word, msg.line);
-        break;
-      case "jumpToCharOnLine":
-        await jumpToCharOnLine(msg.ordinal, msg.char, msg.line);
-        break;
-      case "selectToken":
-        await selectToken(msg.token);
-        break;
-      case "cursorUp":
-        for (let i = 0; i < (msg.n ?? 1); i++)
-          await vscode4.commands.executeCommand("cursorUp");
-        break;
-      case "cursorDown":
-        for (let i = 0; i < (msg.n ?? 1); i++)
-          await vscode4.commands.executeCommand("cursorDown");
-        break;
-      // --- Cache pad ---
-      case "insertCacheItem": {
-        const sym = this.cache.insertAt(msg.index);
-        if (sym && editor) {
-          const text = (msg.prefix ?? "") + sym;
-          await editor.edit((eb) => eb.insert(editor.selection.active, text));
-        }
-        break;
-      }
-      case "cacheCurrentWord":
-        this.cache.cacheWordAtCursor();
-        break;
-      case "refreshCachePad":
-        if (editor) this.cache.absorbDocument(editor.document);
-        break;
-      case "evictCacheItem":
-        this.cache.evict(msg.index);
-        break;
-      case "clearCachePad":
-        this.cache.clear();
-        break;
-      case "syncCacheItems":
-        this.cache.sync(msg.items);
-        break;
-      // --- Mode / readiness ---
-      case "setMode":
-        this.statusBar.setMode(msg.mode);
-        break;
-      case "setReady":
-        this.statusBar.setReady(msg.ready);
-        break;
-      // --- Transaction mark ---
-      case "setMark": {
-        if (!editor) return;
-        this.mark = {
-          uri: editor.document.uri.toString(),
-          text: editor.document.getText(),
-          cursor: editor.selection.active
-        };
-        vscode4.window.setStatusBarMessage("$(bookmark) Voice Coder: mark set", 2e3);
-        break;
-      }
-      case "jumpToMark": {
-        if (!this.mark) {
-          vscode4.window.showWarningMessage("Voice Coder: no mark set");
-          return;
-        }
-        if (!editor || editor.document.uri.toString() !== this.mark.uri) {
-          vscode4.window.showWarningMessage("Voice Coder: mark is from a different file");
-          return;
-        }
-        editor.selection = new vscode4.Selection(this.mark.cursor, this.mark.cursor);
-        editor.revealRange(
-          new vscode4.Range(this.mark.cursor, this.mark.cursor),
-          vscode4.TextEditorRevealType.InCenter
-        );
-        vscode4.window.setStatusBarMessage("$(bookmark) Voice Coder: jumped to mark", 2e3);
-        break;
-      }
-      case "selectWord": {
-        if (!editor) return;
-        const wordRange = editor.document.getWordRangeAtPosition(
-          editor.selection.active
-        );
-        if (wordRange) editor.selection = new vscode4.Selection(
-          wordRange.start,
-          wordRange.end
-        );
-        break;
-      }
-      case "undoTransaction": {
-        if (!this.mark) {
-          vscode4.window.showWarningMessage("Voice Coder: no mark set");
-          return;
-        }
-        if (!editor || editor.document.uri.toString() !== this.mark.uri) {
-          vscode4.window.showWarningMessage("Voice Coder: mark is from a different file");
-          return;
-        }
-        const { text, cursor } = this.mark;
-        this.mark = void 0;
-        const fullRange = new vscode4.Range(
-          editor.document.positionAt(0),
-          editor.document.positionAt(editor.document.getText().length)
-        );
-        await editor.edit((eb) => eb.replace(fullRange, text));
-        editor.selection = new vscode4.Selection(cursor, cursor);
-        vscode4.window.setStatusBarMessage("$(discard) Voice Coder: transaction undone", 2e3);
-        break;
-      }
-      // --- Undo grouping ---
-      case "startUndoGroup":
-        if (editor) await editor.edit((_eb) => {
-        }, { undoStopBefore: true, undoStopAfter: false });
-        break;
-      case "endUndoGroup":
-        if (editor) await editor.edit((_eb) => {
-        }, { undoStopBefore: false, undoStopAfter: true });
-        break;
-      // --- Char / word deletion ---
-      case "deleteChars":
-        for (let i = 0; i < msg.n; i++)
-          await vscode4.commands.executeCommand("deleteLeft");
-        break;
-      case "selectChars": {
-        if (!editor) break;
-        const start = editor.selection.active;
-        const endOff = editor.document.offsetAt(start) + msg.n;
-        const end = editor.document.positionAt(Math.min(endOff, editor.document.getText().length));
-        editor.selection = new vscode4.Selection(start, end);
-        break;
-      }
-      case "deleteWords":
-        for (let i = 0; i < msg.n; i++)
-          await vscode4.commands.executeCommand("deleteWordLeft");
-        break;
-      // --- Undo / redo ---
-      case "undo":
-        await vscode4.commands.executeCommand("undo");
-        break;
-      case "redo":
-        await vscode4.commands.executeCommand("redo");
-        break;
-      // --- Everything else maps 1:1 to a VSCode command ---
-      default: {
-        const vcCmd = VSCODE_COMMANDS[msg.cmd];
-        if (vcCmd) await vscode4.commands.executeCommand(vcCmd);
-        break;
-      }
-    }
-  }
-  describeCmd(cmd) {
-    const c = cmd;
-    switch (cmd.cmd) {
-      case "gotoLine":
-        return `gotoLine ${c.line}`;
-      case "gotoWordOnLine":
-        return `word ${c.word} on line ${c.line}`;
-      case "cursorUp":
-        return `up ${c.n ?? 1}`;
-      case "cursorDown":
-        return `down ${c.n ?? 1}`;
-      case "insertCacheItem":
-        return `${c.prefix ?? ""}cache[${c.index}]`;
-      case "jumpToCharOnLine":
-        return `jump [${c.ordinal}] '${c.char}' line ${c.line}`;
-      case "deleteChars":
-        return `deleteChars ${c.n}`;
-      case "deleteWords":
-        return `deleteWords ${c.n}`;
-      case "insertText":
-        return `insertText "${String(c.text).slice(0, 30)}"`;
-      case "replaceSelection":
-        return `replaceSelection`;
-      case "selectToken":
-        return `selectToken "${c.token}"`;
-      default:
-        return cmd.cmd;
-    }
-  }
-};
-
-// src/claudeClient.ts
-var vscode5 = __toESM(require("vscode"));
-var SYSTEM_PROMPT = 'You are a voice coding assistant. Map each utterance to exactly one JSON command object. If a "Selected code:" block is present, the utterance is a transformation request \u2014 return replaceSelection with the transformed code.';
-var FEW_SHOT = [
-  { role: "user", content: 'Utterance: "set mark"' },
-  { role: "assistant", content: '{"cmd":"setMark"}' },
-  { role: "user", content: 'Utterance: "undo transaction"' },
-  { role: "assistant", content: '{"cmd":"undoTransaction"}' },
-  { role: "user", content: 'Utterance: "cache 2"' },
-  { role: "assistant", content: '{"cmd":"insertCacheItem","index":2}' },
-  // camelCase / snake_case aware selection — resolve spoken form to actual token
-  { role: "user", content: 'Utterance: "select my variable name"\nLanguage: python\nContent excerpt: result = myVariableName + offset' },
-  { role: "assistant", content: '{"cmd":"selectToken","token":"myVariableName"}' },
-  { role: "user", content: 'Utterance: "select output file name"\nLanguage: python\nContent excerpt: open(output_file_name, "r")' },
-  { role: "assistant", content: '{"cmd":"selectToken","token":"output_file_name"}' }
-];
-var OUTPUT_SCHEMA = {
-  type: "object",
-  properties: {
-    cmd: {
-      type: "string",
-      enum: [
-        "insertText",
-        "replaceSelection",
-        "gotoLine",
-        "gotoWordOnLine",
-        "cursorUp",
-        "cursorDown",
-        "cursorLeft",
-        "cursorRight",
-        "cursorHome",
-        "cursorEnd",
-        "cursorTop",
-        "cursorBottom",
-        "pageUp",
-        "pageDown",
-        "selectToken",
-        "insertCacheItem",
-        "deleteChars",
-        "deleteWords",
-        "deleteLine",
-        "deleteToEndOfLine",
-        "setMark",
-        "undoTransaction",
-        "undo",
-        "redo",
-        "save",
-        "formatDocument",
-        "toggleLineComment",
-        "selectAll",
-        "copy",
-        "cut",
-        "paste"
-      ]
-    },
-    line: { type: "number" },
-    word: { type: "number" },
-    text: { type: "string" },
-    token: { type: "string" },
-    n: { type: "number" },
-    index: { type: "number" }
-  },
-  required: ["cmd"]
-};
-var ClaudeClient = class {
-  constructor(model, baseUrl = "http://localhost:11434") {
-    this.model = model;
-    this.baseUrl = baseUrl.replace(/\/$/, "");
-  }
-  async interpret(transcript, snap, signal) {
-    const parts = [
-      `Language: ${snap.language}`,
-      `Cursor: line ${snap.cursorLine}, char ${snap.cursorChar}`,
-      `Cache pad: ${snap.cachePad.length ? snap.cachePad.join(", ") : "(empty)"}`,
-      `Utterance: "${transcript}"`
-    ];
-    if (snap.selectedText) {
-      parts.push(`Selected code:
-${snap.selectedText}`);
-    }
-    const userMsg = parts.join("\n");
-    const messages = [
-      ...FEW_SHOT,
-      { role: "user", content: userMsg }
-    ];
-    const timeout = AbortSignal.timeout(1e4);
-    const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
-    try {
-      const res = await fetch(`${this.baseUrl}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: combined,
-        body: JSON.stringify({
-          model: this.model,
-          system: SYSTEM_PROMPT,
-          messages,
-          stream: false,
-          format: OUTPUT_SCHEMA,
-          options: { temperature: 0, num_predict: 60 }
-        })
-      });
-      if (!res.ok) {
-        throw new Error(`Ollama HTTP ${res.status}: ${await res.text()}`);
-      }
-      const data = await res.json();
-      return JSON.parse(data.message.content.trim());
-    } catch (err) {
-      const name = err instanceof Error ? err.name : "";
-      if (name === "AbortError") return null;
-      if (name === "TimeoutError") {
-        vscode5.window.showWarningMessage("Voice Coder: LLM timed out (Ollama took >10 s)");
-      } else {
-        vscode5.window.showWarningMessage(`Voice Coder: LLM error \u2014 ${err}`);
-      }
-      return null;
-    }
-  }
-};
-
 // src/commandsPanel.ts
-var vscode6 = __toESM(require("vscode"));
+var vscode4 = __toESM(require("vscode"));
+var fs = __toESM(require("fs"));
+var os = __toESM(require("os"));
+var path = __toESM(require("path"));
 var UNIVERSAL = [
   {
     title: "Navigation",
@@ -1483,32 +979,542 @@ ${sections.map(renderSection).join("\n")}
 </body>
 </html>`;
 }
-var panel;
-function showCommandsPanel(context) {
-  const lang = vscode6.window.activeTextEditor?.document.languageId ?? "";
-  if (panel) {
-    panel.reveal();
-    panel.webview.html = buildHtml(lang);
-    return;
-  }
-  panel = vscode6.window.createWebviewPanel(
-    "pbv.commands",
-    "PBV Commands",
-    vscode6.ViewColumn.Beside,
-    { enableScripts: true, retainContextWhenHidden: true }
-  );
-  panel.webview.html = buildHtml(lang);
-  panel.onDidDispose(() => {
-    panel = void 0;
-  }, null, context.subscriptions);
-  context.subscriptions.push(
-    vscode6.window.onDidChangeActiveTextEditor((e) => {
-      if (!panel) return;
-      const newLang = e?.document.languageId ?? "";
-      if (newLang !== lang) panel.webview.html = buildHtml(newLang);
-    })
-  );
+function showCommandsPanel(_context) {
+  const lang = vscode4.window.activeTextEditor?.document.languageId ?? "";
+  const html = buildHtml(lang);
+  const tmpFile = path.join(os.tmpdir(), "pbv-commands.html");
+  fs.writeFileSync(tmpFile, html, "utf8");
+  vscode4.env.openExternal(vscode4.Uri.file(tmpFile));
 }
+
+// src/server.ts
+var VSCODE_COMMANDS = {
+  undo: "undo",
+  redo: "redo",
+  deleteToEndOfLine: "deleteAllRight",
+  deleteLine: "editor.action.deleteLines",
+  duplicateLine: "editor.action.copyLinesDownAction",
+  selectAll: "editor.action.selectAll",
+  cut: "editor.action.clipboardCutAction",
+  copy: "editor.action.clipboardCopyAction",
+  paste: "editor.action.clipboardPasteAction",
+  save: "workbench.action.files.save",
+  formatDocument: "editor.action.formatDocument",
+  toggleLineComment: "editor.action.commentLine",
+  find: "actions.find",
+  replace: "editor.action.startFindReplaceAction",
+  matchParen: "editor.action.jumpToBracket",
+  cursorLeft: "cursorLeft",
+  cursorRight: "cursorRight",
+  cursorHome: "cursorHome",
+  cursorEnd: "cursorEnd",
+  cursorTop: "cursorTop",
+  cursorBottom: "cursorBottom",
+  pageUp: "scrollPageUp",
+  pageDown: "scrollPageDown"
+};
+var IpcServer = class {
+  constructor(port, cache, statusBar, context, claude) {
+    this.cache = cache;
+    this.statusBar = statusBar;
+    this.context = context;
+    this.claude = claude;
+    this.sockets = /* @__PURE__ */ new Set();
+    this.llmAbort = null;
+    this.port = port;
+    this.server = net.createServer((socket) => this.onConnection(socket));
+    this.server.listen(port, "127.0.0.1", () => {
+      vscode5.window.setStatusBarMessage(`Voice Coder: listening on :${port}`, 3e3);
+    });
+    this.server.on("error", (err) => {
+      vscode5.window.showErrorMessage(`Voice Coder IPC error: ${err.message}`);
+    });
+  }
+  // Push a message to all connected clients (used for cache-update events).
+  broadcast(msg) {
+    const line = JSON.stringify(msg) + "\n";
+    for (const s of this.sockets) {
+      if (!s.destroyed) s.write(line);
+    }
+  }
+  dispose() {
+    for (const s of this.sockets) s.destroy();
+    this.server.close();
+  }
+  // vscode.Disposable
+  [Symbol.dispose]() {
+    this.dispose();
+  }
+  onConnection(socket) {
+    this.sockets.add(socket);
+    socket.on("close", () => this.sockets.delete(socket));
+    let buffer = "";
+    socket.on("data", (data) => {
+      buffer += data.toString();
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        this.handle(trimmed, socket);
+      }
+    });
+  }
+  async handle(raw, socket) {
+    let msg;
+    try {
+      msg = JSON.parse(raw);
+    } catch {
+      this.reply(socket, { ok: false, error: "malformed JSON" });
+      return;
+    }
+    try {
+      await this.dispatch(msg, socket);
+      this.reply(socket, { ok: true });
+    } catch (err) {
+      this.reply(socket, { ok: false, error: String(err) });
+    }
+  }
+  reply(socket, msg) {
+    if (!socket.destroyed) socket.write(JSON.stringify(msg) + "\n");
+  }
+  editorSnapshot() {
+    const editor = vscode5.window.activeTextEditor;
+    return {
+      fileName: editor?.document.fileName.split("/").pop() ?? "untitled",
+      language: editor?.document.languageId ?? "plaintext",
+      content: editor?.document.getText() ?? "",
+      cursorLine: (editor?.selection.active.line ?? 0) + 1,
+      cursorChar: (editor?.selection.active.character ?? 0) + 1,
+      selectedText: editor ? editor.document.getText(editor.selection) : "",
+      cachePad: this.cache.getItems()
+    };
+  }
+  async dispatch(msg, _socket) {
+    const editor = vscode5.window.activeTextEditor;
+    switch (msg.cmd) {
+      // --- Voice transcript — interpreted by Claude ---
+      case "transcript": {
+        this.llmAbort?.abort();
+        this.llmAbort = null;
+        const raw = msg.text;
+        if (this.statusBar.getMode() === "dictation") {
+          if (editor) {
+            await editor.edit((eb) => eb.insert(editor.selection.active, raw + " "));
+            vscode5.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 1e4);
+          }
+          return;
+        }
+        if (!this.claude) {
+          vscode5.window.showWarningMessage(
+            "Voice Coder: LLM client not initialized (check pbv.ollamaModel setting)"
+          );
+          return;
+        }
+        const { commands: commands3, remainder } = fastInterpretMulti(raw);
+        if (commands3.length > 0) {
+          const labels = commands3.map((c) => this.describeCmd(c)).join(" | ");
+          vscode5.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 ${labels}`, 1e4);
+          for (const cmd of commands3) {
+            await this.dispatch(cmd, _socket);
+          }
+          if (!remainder) return;
+        }
+        const llmInput = remainder || raw;
+        if (commands3.length > 0 && !remainder) return;
+        const snap = this.editorSnapshot();
+        if (snap.selectedText) {
+          const transformed = tryTransform(raw, snap.selectedText, snap.language);
+          if (transformed !== null) {
+            const editor2 = vscode5.window.activeTextEditor;
+            if (editor2) {
+              this.mark = { uri: editor2.document.uri.toString(), text: editor2.document.getText(), cursor: editor2.selection.active };
+              editor2.selection = vscode5.window.activeTextEditor.selection;
+              vscode5.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 replaceSelection`, 1e4);
+              await this.dispatch({ cmd: "replaceSelection", text: transformed }, _socket);
+            }
+            return;
+          }
+        }
+        const savedSelection = vscode5.window.activeTextEditor?.selection;
+        const abort = new AbortController();
+        this.llmAbort = abort;
+        const status = vscode5.window.setStatusBarMessage(`$(loading~spin) "${llmInput}" \u2192 thinking\u2026`);
+        const command = await this.claude.interpret(llmInput, snap, abort.signal);
+        status.dispose();
+        this.llmAbort = null;
+        if (abort.signal.aborted) return;
+        if (!command) {
+          vscode5.window.setStatusBarMessage(`$(mic) "${llmInput}" \u2192 (no command)`, 1e4);
+          return;
+        }
+        if (command) {
+          const cmd = command;
+          vscode5.window.setStatusBarMessage(
+            `$(mic) "${llmInput}" \u2192 ${this.describeCmd(cmd)}`,
+            1e4
+          );
+          const isBufferEdit = cmd.cmd === "replaceSelection" || cmd.cmd === "insertText";
+          if (snap.selectedText && !isBufferEdit) {
+            vscode5.window.showWarningMessage(
+              `Voice Coder: selection ignored \u2014 LLM returned "${cmd.cmd}" instead of an edit`
+            );
+            return;
+          }
+          if (isBufferEdit) {
+            const editor2 = vscode5.window.activeTextEditor;
+            if (editor2) {
+              this.mark = {
+                uri: editor2.document.uri.toString(),
+                text: editor2.document.getText(),
+                cursor: editor2.selection.active
+              };
+            }
+            if (cmd.cmd === "replaceSelection" && savedSelection) {
+              const editor3 = vscode5.window.activeTextEditor;
+              if (editor3) editor3.selection = savedSelection;
+            }
+          }
+          await this.dispatch(cmd, _socket);
+        }
+        return;
+      }
+      // --- Text insertion ---
+      case "insertText": {
+        if (!editor) return;
+        const raw = msg.text;
+        const cursor = raw.indexOf("{CURSOR}");
+        const text = raw.replace("{CURSOR}", "");
+        await editor.edit((eb) => eb.insert(editor.selection.active, text));
+        if (cursor !== -1) {
+          const inserted = editor.selection.active;
+          const endOffset = editor.document.offsetAt(inserted);
+          const markOffset = endOffset - (text.length - cursor);
+          const markPos = editor.document.positionAt(markOffset);
+          editor.selection = new vscode5.Selection(markPos, markPos);
+        }
+        break;
+      }
+      // --- Selection replacement (Claude code transforms) ---
+      case "replaceSelection": {
+        if (!editor) return;
+        await editor.edit((eb) => eb.replace(editor.selection, msg.text));
+        break;
+      }
+      // --- Navigation ---
+      case "gotoLine":
+        await gotoLine(msg.line);
+        break;
+      case "gotoWordOnLine":
+        await gotoWordOnLine(msg.word, msg.line);
+        break;
+      case "jumpToCharOnLine":
+        await jumpToCharOnLine(msg.ordinal, msg.char, msg.line);
+        break;
+      case "selectToken":
+        await selectToken(msg.token);
+        break;
+      case "cursorUp":
+        for (let i = 0; i < (msg.n ?? 1); i++)
+          await vscode5.commands.executeCommand("cursorUp");
+        break;
+      case "cursorDown":
+        for (let i = 0; i < (msg.n ?? 1); i++)
+          await vscode5.commands.executeCommand("cursorDown");
+        break;
+      // --- Cache pad ---
+      case "insertCacheItem": {
+        const sym = this.cache.insertAt(msg.index);
+        if (sym && editor) {
+          const text = (msg.prefix ?? "") + sym;
+          await editor.edit((eb) => eb.insert(editor.selection.active, text));
+        }
+        break;
+      }
+      case "cacheCurrentWord":
+        this.cache.cacheWordAtCursor();
+        break;
+      case "refreshCachePad":
+        if (editor) this.cache.absorbDocument(editor.document);
+        break;
+      case "evictCacheItem":
+        this.cache.evict(msg.index);
+        break;
+      case "clearCachePad":
+        this.cache.clear();
+        break;
+      case "syncCacheItems":
+        this.cache.sync(msg.items);
+        break;
+      // --- Mode / readiness ---
+      case "setMode":
+        this.statusBar.setMode(msg.mode);
+        break;
+      case "setReady":
+        this.statusBar.setReady(msg.ready);
+        break;
+      case "commandMode":
+        this.statusBar.setMode("command");
+        break;
+      case "dictationMode":
+        this.statusBar.setMode("dictation");
+        break;
+      // --- Voice-only UI access ---
+      case "showCommands":
+        showCommandsPanel(this.context);
+        break;
+      case "showCachePad":
+        await vscode5.commands.executeCommand("pbv.cachePad.focus");
+        break;
+      // --- Transaction mark ---
+      case "setMark": {
+        if (!editor) return;
+        this.mark = {
+          uri: editor.document.uri.toString(),
+          text: editor.document.getText(),
+          cursor: editor.selection.active
+        };
+        vscode5.window.setStatusBarMessage("$(bookmark) Voice Coder: mark set", 2e3);
+        break;
+      }
+      case "jumpToMark": {
+        if (!this.mark) {
+          vscode5.window.showWarningMessage("Voice Coder: no mark set");
+          return;
+        }
+        if (!editor || editor.document.uri.toString() !== this.mark.uri) {
+          vscode5.window.showWarningMessage("Voice Coder: mark is from a different file");
+          return;
+        }
+        editor.selection = new vscode5.Selection(this.mark.cursor, this.mark.cursor);
+        editor.revealRange(
+          new vscode5.Range(this.mark.cursor, this.mark.cursor),
+          vscode5.TextEditorRevealType.InCenter
+        );
+        vscode5.window.setStatusBarMessage("$(bookmark) Voice Coder: jumped to mark", 2e3);
+        break;
+      }
+      case "selectWord": {
+        if (!editor) return;
+        const wordRange = editor.document.getWordRangeAtPosition(
+          editor.selection.active
+        );
+        if (wordRange) editor.selection = new vscode5.Selection(
+          wordRange.start,
+          wordRange.end
+        );
+        break;
+      }
+      case "undoTransaction": {
+        if (!this.mark) {
+          vscode5.window.showWarningMessage("Voice Coder: no mark set");
+          return;
+        }
+        if (!editor || editor.document.uri.toString() !== this.mark.uri) {
+          vscode5.window.showWarningMessage("Voice Coder: mark is from a different file");
+          return;
+        }
+        const { text, cursor } = this.mark;
+        this.mark = void 0;
+        const fullRange = new vscode5.Range(
+          editor.document.positionAt(0),
+          editor.document.positionAt(editor.document.getText().length)
+        );
+        await editor.edit((eb) => eb.replace(fullRange, text));
+        editor.selection = new vscode5.Selection(cursor, cursor);
+        vscode5.window.setStatusBarMessage("$(discard) Voice Coder: transaction undone", 2e3);
+        break;
+      }
+      // --- Undo grouping ---
+      case "startUndoGroup":
+        if (editor) await editor.edit((_eb) => {
+        }, { undoStopBefore: true, undoStopAfter: false });
+        break;
+      case "endUndoGroup":
+        if (editor) await editor.edit((_eb) => {
+        }, { undoStopBefore: false, undoStopAfter: true });
+        break;
+      // --- Char / word deletion ---
+      case "deleteChars":
+        for (let i = 0; i < msg.n; i++)
+          await vscode5.commands.executeCommand("deleteLeft");
+        break;
+      case "selectChars": {
+        if (!editor) break;
+        const start = editor.selection.active;
+        const endOff = editor.document.offsetAt(start) + msg.n;
+        const end = editor.document.positionAt(Math.min(endOff, editor.document.getText().length));
+        editor.selection = new vscode5.Selection(start, end);
+        break;
+      }
+      case "deleteWords":
+        for (let i = 0; i < msg.n; i++)
+          await vscode5.commands.executeCommand("deleteWordLeft");
+        break;
+      // --- Undo / redo ---
+      case "undo":
+        await vscode5.commands.executeCommand("undo");
+        break;
+      case "redo":
+        await vscode5.commands.executeCommand("redo");
+        break;
+      // --- Everything else maps 1:1 to a VSCode command ---
+      default: {
+        const vcCmd = VSCODE_COMMANDS[msg.cmd];
+        if (vcCmd) await vscode5.commands.executeCommand(vcCmd);
+        break;
+      }
+    }
+  }
+  describeCmd(cmd) {
+    const c = cmd;
+    switch (cmd.cmd) {
+      case "gotoLine":
+        return `gotoLine ${c.line}`;
+      case "gotoWordOnLine":
+        return `word ${c.word} on line ${c.line}`;
+      case "cursorUp":
+        return `up ${c.n ?? 1}`;
+      case "cursorDown":
+        return `down ${c.n ?? 1}`;
+      case "insertCacheItem":
+        return `${c.prefix ?? ""}cache[${c.index}]`;
+      case "jumpToCharOnLine":
+        return `jump [${c.ordinal}] '${c.char}' line ${c.line}`;
+      case "deleteChars":
+        return `deleteChars ${c.n}`;
+      case "deleteWords":
+        return `deleteWords ${c.n}`;
+      case "insertText":
+        return `insertText "${String(c.text).slice(0, 30)}"`;
+      case "replaceSelection":
+        return `replaceSelection`;
+      case "selectToken":
+        return `selectToken "${c.token}"`;
+      default:
+        return cmd.cmd;
+    }
+  }
+};
+
+// src/claudeClient.ts
+var vscode6 = __toESM(require("vscode"));
+var SYSTEM_PROMPT = 'You are a voice coding assistant. Map each utterance to exactly one JSON command object. If a "Selected code:" block is present, the utterance is a transformation request \u2014 return replaceSelection with the transformed code.';
+var FEW_SHOT = [
+  { role: "user", content: 'Utterance: "set mark"' },
+  { role: "assistant", content: '{"cmd":"setMark"}' },
+  { role: "user", content: 'Utterance: "undo transaction"' },
+  { role: "assistant", content: '{"cmd":"undoTransaction"}' },
+  { role: "user", content: 'Utterance: "cache 2"' },
+  { role: "assistant", content: '{"cmd":"insertCacheItem","index":2}' },
+  // camelCase / snake_case aware selection — resolve spoken form to actual token
+  { role: "user", content: 'Utterance: "select my variable name"\nLanguage: python\nContent excerpt: result = myVariableName + offset' },
+  { role: "assistant", content: '{"cmd":"selectToken","token":"myVariableName"}' },
+  { role: "user", content: 'Utterance: "select output file name"\nLanguage: python\nContent excerpt: open(output_file_name, "r")' },
+  { role: "assistant", content: '{"cmd":"selectToken","token":"output_file_name"}' }
+];
+var OUTPUT_SCHEMA = {
+  type: "object",
+  properties: {
+    cmd: {
+      type: "string",
+      enum: [
+        "insertText",
+        "replaceSelection",
+        "gotoLine",
+        "gotoWordOnLine",
+        "cursorUp",
+        "cursorDown",
+        "cursorLeft",
+        "cursorRight",
+        "cursorHome",
+        "cursorEnd",
+        "cursorTop",
+        "cursorBottom",
+        "pageUp",
+        "pageDown",
+        "selectToken",
+        "insertCacheItem",
+        "deleteChars",
+        "deleteWords",
+        "deleteLine",
+        "deleteToEndOfLine",
+        "setMark",
+        "undoTransaction",
+        "undo",
+        "redo",
+        "save",
+        "formatDocument",
+        "toggleLineComment",
+        "selectAll",
+        "copy",
+        "cut",
+        "paste"
+      ]
+    },
+    line: { type: "number" },
+    word: { type: "number" },
+    text: { type: "string" },
+    token: { type: "string" },
+    n: { type: "number" },
+    index: { type: "number" }
+  },
+  required: ["cmd"]
+};
+var ClaudeClient = class {
+  constructor(model, baseUrl = "http://localhost:11434") {
+    this.model = model;
+    this.baseUrl = baseUrl.replace(/\/$/, "");
+  }
+  async interpret(transcript, snap, signal) {
+    const parts = [
+      `Language: ${snap.language}`,
+      `Cursor: line ${snap.cursorLine}, char ${snap.cursorChar}`,
+      `Cache pad: ${snap.cachePad.length ? snap.cachePad.join(", ") : "(empty)"}`,
+      `Utterance: "${transcript}"`
+    ];
+    if (snap.selectedText) {
+      parts.push(`Selected code:
+${snap.selectedText}`);
+    }
+    const userMsg = parts.join("\n");
+    const messages = [
+      ...FEW_SHOT,
+      { role: "user", content: userMsg }
+    ];
+    const timeout = AbortSignal.timeout(1e4);
+    const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
+    try {
+      const res = await fetch(`${this.baseUrl}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: combined,
+        body: JSON.stringify({
+          model: this.model,
+          system: SYSTEM_PROMPT,
+          messages,
+          stream: false,
+          format: OUTPUT_SCHEMA,
+          options: { temperature: 0, num_predict: 60 }
+        })
+      });
+      if (!res.ok) {
+        throw new Error(`Ollama HTTP ${res.status}: ${await res.text()}`);
+      }
+      const data = await res.json();
+      return JSON.parse(data.message.content.trim());
+    } catch (err) {
+      const name = err instanceof Error ? err.name : "";
+      if (name === "AbortError") return null;
+      if (name === "TimeoutError") {
+        vscode6.window.showWarningMessage("Voice Coder: LLM timed out (Ollama took >10 s)");
+      } else {
+        vscode6.window.showWarningMessage(`Voice Coder: LLM error \u2014 ${err}`);
+      }
+      return null;
+    }
+  }
+};
 
 // src/extension.ts
 function activate(context) {
@@ -1522,7 +1528,7 @@ function activate(context) {
   };
   const cache = new CachePad(maxItems, (msg) => broadcastFn(msg));
   const claude = new ClaudeClient(ollamaModel, ollamaUrl);
-  const server = new IpcServer(port, cache, statusBar, claude);
+  const server = new IpcServer(port, cache, statusBar, context, claude);
   broadcastFn = (msg) => server.broadcast(msg);
   const treeView = vscode7.window.createTreeView("pbv.cachePad", {
     treeDataProvider: cache,

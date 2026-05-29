@@ -227,35 +227,19 @@ ${sections.map(renderSection).join('\n')}
 }
 
 // ---------------------------------------------------------------------------
-// Public API
+// Public API — opens in the system browser so it stays visible on a second
+// monitor while coding, requires no keyboard/mouse to dismiss, and works for
+// users who cannot use VSCode UI interactions at all.
 // ---------------------------------------------------------------------------
 
-let panel: vscode.WebviewPanel | undefined;
+import * as fs   from 'fs';
+import * as os   from 'os';
+import * as path from 'path';
 
-export function showCommandsPanel(context: vscode.ExtensionContext): void {
-    const lang = vscode.window.activeTextEditor?.document.languageId ?? '';
-
-    if (panel) {
-        panel.reveal();
-        panel.webview.html = buildHtml(lang);
-        return;
-    }
-
-    panel = vscode.window.createWebviewPanel(
-        'pbv.commands',
-        'PBV Commands',
-        vscode.ViewColumn.Beside,
-        { enableScripts: true, retainContextWhenHidden: true },
-    );
-    panel.webview.html = buildHtml(lang);
-    panel.onDidDispose(() => { panel = undefined; }, null, context.subscriptions);
-
-    // Refresh if the user switches to a file with a different language.
-    context.subscriptions.push(
-        vscode.window.onDidChangeActiveTextEditor(e => {
-            if (!panel) return;
-            const newLang = e?.document.languageId ?? '';
-            if (newLang !== lang) panel.webview.html = buildHtml(newLang);
-        })
-    );
+export function showCommandsPanel(_context: vscode.ExtensionContext): void {
+    const lang    = vscode.window.activeTextEditor?.document.languageId ?? '';
+    const html    = buildHtml(lang);
+    const tmpFile = path.join(os.tmpdir(), 'pbv-commands.html');
+    fs.writeFileSync(tmpFile, html, 'utf8');
+    vscode.env.openExternal(vscode.Uri.file(tmpFile));
 }

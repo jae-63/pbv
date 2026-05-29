@@ -15,6 +15,10 @@ export type InboundMessage =
   | { cmd: 'clearCachePad' }
   | { cmd: 'syncCacheItems'; items: string[] }
   | { cmd: 'setMode';          mode: 'command' | 'dictation' }
+  | { cmd: 'commandMode' }
+  | { cmd: 'dictationMode' }
+  | { cmd: 'showCommands' }
+  | { cmd: 'showCachePad' }
   | { cmd: 'setReady';         ready: boolean }
   | { cmd: 'undo' }
   | { cmd: 'redo' }
