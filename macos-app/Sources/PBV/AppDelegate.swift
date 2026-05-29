@@ -20,9 +20,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             updateMenuModeItem()
         }
     }
-    private var speechReady = false
-    private var modeMenuItem: NSMenuItem?
-    private var micMenuItem:  NSMenuItem?
+    private var speechReady  = false
+    private var micSleeping  = false
+    private var modeMenuItem:  NSMenuItem?
+    private var micMenuItem:   NSMenuItem?
+    private var sleepMenuItem: NSMenuItem?
 
     enum Mode: String { case command, dictation }
 
@@ -180,6 +182,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(.separator())
 
+        let sleepItem = NSMenuItem(title: sleepTitle, action: #selector(toggleSleep), keyEquivalent: "")
+        sleepItem.target = self
+        sleepMenuItem = sleepItem
+        menu.addItem(sleepItem)
+
+        menu.addItem(.separator())
+
         let reconnectItem = NSMenuItem(title: "Reconnect to VSCode", action: #selector(reconnect), keyEquivalent: "")
         reconnectItem.target = self
         menu.addItem(reconnectItem)
@@ -192,6 +201,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleModeFromMenu() { toggleMode() }
     @objc private func reconnect() { client = ExtensionClient() }
+
+    @objc private func toggleSleep() {
+        micSleeping.toggle()
+        if micSleeping {
+            speech.stop()
+        } else {
+            speech.start()
+        }
+        sleepMenuItem?.title = sleepTitle
+    }
+
+    private var sleepTitle: String {
+        micSleeping ? "Wake Mic" : "Sleep Mic"
+    }
 
     private var micLabel: String {
         let name = AVCaptureDevice.default(for: .audio)?.localizedName ?? "Unknown"
@@ -239,7 +262,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // ---------------------------------------------------------------------------
 
     func menuWillOpen(_ menu: NSMenu) {
-        micMenuItem?.title = micLabel
+        micMenuItem?.title   = micLabel
+        sleepMenuItem?.title = sleepTitle
     }
 
     private func showError(_ msg: String) {
