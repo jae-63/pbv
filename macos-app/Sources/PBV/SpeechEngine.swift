@@ -119,8 +119,9 @@ final class SpeechEngine: NSObject {
             audioEngine.inputNode.removeTap(onBus: 0)
             tapInstalled = false
         }
-        // Brief pause so macOS finishes reconfiguring the device.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+        // Longer pause: AirPods take several seconds to fully hand off to the
+        // built-in mic. -10868 fires if we try before the hardware settles.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
             self?.isRestarting = false
             self?.startAudioEngine()
         }
@@ -221,7 +222,11 @@ final class SpeechEngine: NSObject {
                     audioEngine.inputNode.removeTap(onBus: 0)
                     tapInstalled = false
                 }
+                // Hold isRestarting = true so concurrent AVAudioEngineConfigurationChange
+                // notifications don't interrupt the retry wait.
+                isRestarting = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                    self?.isRestarting = false
                     self?.startAudioEngine(retryCount: retryCount + 1)
                 }
             } else {
