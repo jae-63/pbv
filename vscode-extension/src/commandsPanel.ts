@@ -232,14 +232,21 @@ ${sections.map(renderSection).join('\n')}
 // users who cannot use VSCode UI interactions at all.
 // ---------------------------------------------------------------------------
 
-import * as fs   from 'fs';
-import * as os   from 'os';
-import * as path from 'path';
+import * as fs            from 'fs';
+import * as os            from 'os';
+import * as path          from 'path';
+import { execFile }       from 'child_process';
 
 export function showCommandsPanel(_context: vscode.ExtensionContext): void {
     const lang    = vscode.window.activeTextEditor?.document.languageId ?? '';
     const html    = buildHtml(lang);
     const tmpFile = path.join(os.tmpdir(), 'pbv-commands.html');
     fs.writeFileSync(tmpFile, html, 'utf8');
-    vscode.env.openExternal(vscode.Uri.file(tmpFile));
+
+    const browserApp = vscode.workspace.getConfiguration('pbv').get<string>('helpBrowser', '').trim();
+    if (browserApp) {
+        execFile('open', ['-a', browserApp, tmpFile]);
+    } else {
+        vscode.env.openExternal(vscode.Uri.file(tmpFile));
+    }
 }

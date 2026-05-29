@@ -106,6 +106,91 @@ export async function jumpToCharOnLine(
     editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
 }
 
+// ---------------------------------------------------------------------------
+// Pure search helpers — exported for unit tests, no VSCode dependency.
+// ---------------------------------------------------------------------------
+
+// Returns all identifier forms for a spoken phrase, e.g. "triage completed" →
+// ["triage completed", "triage_completed", "triageCompleted", "TriageCompleted", …].
+// Single-word tokens return [token] unchanged.
+export function candidateForms(token: string): string[] {
+    const words = token.trim().split(/\s+/).filter(Boolean);
+    if (words.length === 1) return [token];
+    const lower    = words.map(w => w.toLowerCase());
+    const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    return [
+        token,                                              // literal as spoken
+        lower.join('_'),                                    // snake_case
+        lower[0] + lower.slice(1).map(capFirst).join(''),  // camelCase
+        lower.map(capFirst).join(''),                       // PascalCase
+        lower.map(w => w.toUpperCase()).join('_'),          // CONSTANT_CASE
+        lower.join('-'),                                    // kebab-case
+        lower.join(''),                                     // smashcase
+    ];
+}
+
+// Returns the offset and match length of `token` in `text` (case-insensitive),
+// trying all identifier forms of the token. Searches forward from `cursor` and
+// wraps. Returns null if not found.
+export function findTokenOffset(
+    text: string,
+    token: string,
+    cursor: number,
+): { offset: number; matchLength: number } | null {
+    const lower = text.toLowerCase();
+    for (const candidate of candidateForms(token)) {
+        const query = candidate.toLowerCase();
+        let offset = lower.indexOf(query, cursor);
+        if (offset === -1) offset = lower.indexOf(query, 0);
+        if (offset !== -1) return { offset, matchLength: candidate.length };
+    }
+    return null;
+}
+
+// Returns {start, end} offsets (end is exclusive) for the range from startToken
+// to the end of endToken (case-insensitive, tries all identifier forms for each).
+// Wraps on startToken. Returns null if either token is missing or endToken doesn't
+// follow startToken.
+export function findRangeOffsets(
+    text: string,
+    startToken: string,
+    endToken: string,
+    cursor: number,
+): { start: number; end: number } | null {
+    const startResult = findTokenOffset(text, startToken, cursor);
+    if (!startResult) return null;
+
+    const lower = text.toLowerCase();
+    for (const candidate of candidateForms(endToken)) {
+        const endQ   = candidate.toLowerCase();
+        const endIdx = lower.indexOf(endQ, startResult.offset + startResult.matchLength);
+        if (endIdx !== -1) return { start: startResult.offset, end: endIdx + candidate.length };
+    }
+    return null;
+}
+
+// ---------------------------------------------------------------------------
+// VSCode commands — thin wrappers over the pure helpers above.
+// ---------------------------------------------------------------------------
+
+// Find startToken then endToken (must follow startToken) and select everything between them.
+// Searches forward from cursor, case-insensitively; wraps on startToken only.
+export async function selectRange(startToken: string, endToken: string): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const doc    = editor.document;
+    const text   = doc.getText();
+    const cursor = doc.offsetAt(editor.selection.active);
+    const range  = findRangeOffsets(text, startToken, endToken, cursor);
+    if (!range) return;
+
+    const startPos = doc.positionAt(range.start);
+    const endPos   = doc.positionAt(range.end);
+    editor.selection = new vscode.Selection(startPos, endPos);
+    editor.revealRange(new vscode.Range(startPos, endPos), vscode.TextEditorRevealType.InCenter);
+}
+
 // Find the first occurrence of `token` in the current document at or after the cursor
 // and select it. Wraps to top of file if not found below cursor.
 export async function selectToken(token: string): Promise<void> {
@@ -115,19 +200,11 @@ export async function selectToken(token: string): Promise<void> {
     const doc    = editor.document;
     const text   = doc.getText();
     const cursor = doc.offsetAt(editor.selection.active);
+    const found  = findTokenOffset(text, token, cursor);
+    if (!found) return;
 
-    // Search forward from cursor, then wrap
-    const searchFrom = (startOffset: number): number => {
-        const idx = text.indexOf(token, startOffset);
-        return idx;
-    };
-
-    let found = searchFrom(cursor);
-    if (found === -1) found = searchFrom(0); // wrap
-    if (found === -1) return;
-
-    const startPos = doc.positionAt(found);
-    const endPos   = doc.positionAt(found + token.length);
+    const startPos = doc.positionAt(found.offset);
+    const endPos   = doc.positionAt(found.offset + found.matchLength);
     editor.selection = new vscode.Selection(startPos, endPos);
     editor.revealRange(new vscode.Range(startPos, endPos), vscode.TextEditorRevealType.InCenter);
 }
