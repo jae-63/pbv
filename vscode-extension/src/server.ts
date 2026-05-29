@@ -51,8 +51,13 @@ export class IpcServer {
     private mark: Mark | undefined;
     private llmAbort: AbortController | null = null;
 
+    // Navigation bookmark — set explicitly by voice or auto-set on traversal entry.
+    // Separate from `mark` (which is the undo-transaction anchor and is overwritten
+    // on every LLM buffer edit).
+    private navMark: { uri: string; cursor: vscode.Position } | undefined;
+
     // Scroll / traversal state
-    private traversalMatches: vscode.Position[] | null = null;
+    private traversalMatches: { start: vscode.Position; end: vscode.Position }[] | null = null;
     private traversalIndex   = 0;
 
     constructor(
@@ -316,12 +321,20 @@ export class IpcServer {
             case 'enterTraversalMode': {
                 const ed = vscode.window.activeTextEditor;
                 if (ed) {
+                    // Auto-set navigation bookmark so "jump to mark" always returns here.
+                    this.navMark = {
+                        uri:    ed.document.uri.toString(),
+                        cursor: ed.selection.active,
+                    };
                     const regex   = traversalRegex(ed.document.languageId, msg.pattern);
                     const text    = ed.document.getText();
-                    const matches: vscode.Position[] = [];
+                    const matches: { start: vscode.Position; end: vscode.Position }[] = [];
                     let m: RegExpExecArray | null;
                     while ((m = regex.exec(text)) !== null) {
-                        matches.push(ed.document.positionAt(m.index));
+                        matches.push({
+                            start: ed.document.positionAt(m.index),
+                            end:   ed.document.positionAt(m.index + m[0].length),
+                        });
                     }
                     this.traversalMatches = matches;
                     this.traversalIndex   = 0;
@@ -430,22 +443,50 @@ export class IpcServer {
                     text:   editor.document.getText(),
                     cursor: editor.selection.active,
                 };
-                vscode.window.setStatusBarMessage('$(bookmark) Voice Coder: mark set', 2000);
+                vscode.window.setStatusBarMessage('$(bookmark) PBV: mark set', 2000);
                 break;
             }
             case 'jumpToMark': {
                 if (!this.mark) {
-                    vscode.window.showWarningMessage('Voice Coder: no mark set');
+                    vscode.window.showWarningMessage('PBV: no mark set');
                     return;
                 }
                 if (!editor || editor.document.uri.toString() !== this.mark.uri) {
-                    vscode.window.showWarningMessage('Voice Coder: mark is from a different file');
+                    vscode.window.showWarningMessage('PBV: mark is from a different file');
                     return;
                 }
                 editor.selection = new vscode.Selection(this.mark.cursor, this.mark.cursor);
                 editor.revealRange(new vscode.Range(this.mark.cursor, this.mark.cursor),
                     vscode.TextEditorRevealType.InCenter);
-                vscode.window.setStatusBarMessage('$(bookmark) Voice Coder: jumped to mark', 2000);
+                vscode.window.setStatusBarMessage('$(bookmark) PBV: jumped to mark', 2000);
+                break;
+            }
+
+            // Navigation bookmark — not overwritten by buffer edits; auto-set on traversal entry.
+            case 'setNavMark': {
+                if (!editor) return;
+                this.navMark = {
+                    uri:    editor.document.uri.toString(),
+                    cursor: editor.selection.active,
+                };
+                vscode.window.setStatusBarMessage('$(location) PBV: nav mark set', 2000);
+                break;
+            }
+            case 'jumpToNavMark': {
+                if (!this.navMark) {
+                    vscode.window.showWarningMessage('PBV: no nav mark set');
+                    return;
+                }
+                if (!editor || editor.document.uri.toString() !== this.navMark.uri) {
+                    vscode.window.showWarningMessage('PBV: nav mark is from a different file');
+                    return;
+                }
+                editor.selection = new vscode.Selection(this.navMark.cursor, this.navMark.cursor);
+                editor.revealRange(
+                    new vscode.Range(this.navMark.cursor, this.navMark.cursor),
+                    vscode.TextEditorRevealType.InCenter
+                );
+                vscode.window.setStatusBarMessage('$(location) PBV: jumped to nav mark', 2000);
                 break;
             }
             case 'selectWord': {
@@ -527,12 +568,17 @@ export class IpcServer {
             this.traversalIndex =
                 (this.traversalIndex + direction + this.traversalMatches.length) %
                 this.traversalMatches.length;
-            const pos    = this.traversalMatches[this.traversalIndex];
+            const match  = this.traversalMatches[this.traversalIndex];
             const editor = vscode.window.activeTextEditor;
             if (editor) {
-                editor.selection = new vscode.Selection(pos, pos);
+                const selectOnTraverse = vscode.workspace
+                    .getConfiguration('pbv')
+                    .get<boolean>('selectOnTraverse', false);
+                editor.selection = selectOnTraverse
+                    ? new vscode.Selection(match.start, match.end)
+                    : new vscode.Selection(match.start, match.start);
                 editor.revealRange(
-                    new vscode.Range(pos, pos),
+                    new vscode.Range(match.start, match.end),
                     vscode.TextEditorRevealType.InCenter
                 );
             }

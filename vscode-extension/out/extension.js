@@ -555,6 +555,11 @@ var RULES = [
   rule("set\\s+mark", (_) => ({ cmd: "setMark" })),
   rule("undo\\s+transaction", (_) => ({ cmd: "undoTransaction" })),
   rule("jump\\s+to\\s+mark", (_) => ({ cmd: "jumpToMark" })),
+  // Navigation bookmark — survives buffer edits; auto-set on traversal entry.
+  // "set bookmark" / "jump to bookmark" to distinguish from transaction mark.
+  rule("set\\s+bookmark", (_) => ({ cmd: "setNavMark" })),
+  rule("jump\\s+to\\s+bookmark", (_) => ({ cmd: "jumpToNavMark" })),
+  rule("jump\\s+back", (_) => ({ cmd: "jumpToNavMark" })),
   // Accept inline completion (Tab / acceptSelectedSuggestion)
   rule("accept(?:\\s+(?:completion|suggestion))?", (_) => ({ cmd: "acceptCompletion" })),
   // Doc-comment templates — ALL_CAPS placeholders are navigable by voice:
@@ -1357,12 +1362,19 @@ var IpcServer = class {
       case "enterTraversalMode": {
         const ed = vscode5.window.activeTextEditor;
         if (ed) {
+          this.navMark = {
+            uri: ed.document.uri.toString(),
+            cursor: ed.selection.active
+          };
           const regex = traversalRegex(ed.document.languageId, msg.pattern);
           const text = ed.document.getText();
           const matches = [];
           let m;
           while ((m = regex.exec(text)) !== null) {
-            matches.push(ed.document.positionAt(m.index));
+            matches.push({
+              start: ed.document.positionAt(m.index),
+              end: ed.document.positionAt(m.index + m[0].length)
+            });
           }
           this.traversalMatches = matches;
           this.traversalIndex = 0;
@@ -1465,16 +1477,16 @@ var IpcServer = class {
           text: editor.document.getText(),
           cursor: editor.selection.active
         };
-        vscode5.window.setStatusBarMessage("$(bookmark) Voice Coder: mark set", 2e3);
+        vscode5.window.setStatusBarMessage("$(bookmark) PBV: mark set", 2e3);
         break;
       }
       case "jumpToMark": {
         if (!this.mark) {
-          vscode5.window.showWarningMessage("Voice Coder: no mark set");
+          vscode5.window.showWarningMessage("PBV: no mark set");
           return;
         }
         if (!editor || editor.document.uri.toString() !== this.mark.uri) {
-          vscode5.window.showWarningMessage("Voice Coder: mark is from a different file");
+          vscode5.window.showWarningMessage("PBV: mark is from a different file");
           return;
         }
         editor.selection = new vscode5.Selection(this.mark.cursor, this.mark.cursor);
@@ -1482,7 +1494,34 @@ var IpcServer = class {
           new vscode5.Range(this.mark.cursor, this.mark.cursor),
           vscode5.TextEditorRevealType.InCenter
         );
-        vscode5.window.setStatusBarMessage("$(bookmark) Voice Coder: jumped to mark", 2e3);
+        vscode5.window.setStatusBarMessage("$(bookmark) PBV: jumped to mark", 2e3);
+        break;
+      }
+      // Navigation bookmark — not overwritten by buffer edits; auto-set on traversal entry.
+      case "setNavMark": {
+        if (!editor) return;
+        this.navMark = {
+          uri: editor.document.uri.toString(),
+          cursor: editor.selection.active
+        };
+        vscode5.window.setStatusBarMessage("$(location) PBV: nav mark set", 2e3);
+        break;
+      }
+      case "jumpToNavMark": {
+        if (!this.navMark) {
+          vscode5.window.showWarningMessage("PBV: no nav mark set");
+          return;
+        }
+        if (!editor || editor.document.uri.toString() !== this.navMark.uri) {
+          vscode5.window.showWarningMessage("PBV: nav mark is from a different file");
+          return;
+        }
+        editor.selection = new vscode5.Selection(this.navMark.cursor, this.navMark.cursor);
+        editor.revealRange(
+          new vscode5.Range(this.navMark.cursor, this.navMark.cursor),
+          vscode5.TextEditorRevealType.InCenter
+        );
+        vscode5.window.setStatusBarMessage("$(location) PBV: jumped to nav mark", 2e3);
         break;
       }
       case "selectWord": {
@@ -1560,12 +1599,13 @@ var IpcServer = class {
   async scrollStep(direction) {
     if (this.traversalMatches && this.traversalMatches.length > 0) {
       this.traversalIndex = (this.traversalIndex + direction + this.traversalMatches.length) % this.traversalMatches.length;
-      const pos = this.traversalMatches[this.traversalIndex];
+      const match = this.traversalMatches[this.traversalIndex];
       const editor = vscode5.window.activeTextEditor;
       if (editor) {
-        editor.selection = new vscode5.Selection(pos, pos);
+        const selectOnTraverse = vscode5.workspace.getConfiguration("pbv").get("selectOnTraverse", false);
+        editor.selection = selectOnTraverse ? new vscode5.Selection(match.start, match.end) : new vscode5.Selection(match.start, match.start);
         editor.revealRange(
-          new vscode5.Range(pos, pos),
+          new vscode5.Range(match.start, match.end),
           vscode5.TextEditorRevealType.InCenter
         );
       }

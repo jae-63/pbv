@@ -100,6 +100,11 @@
           "type": "string",
           "default": "",
           "description": "App name to open the 'What can I say?' help page (e.g. \"Google Chrome\"). Leave blank to use the system default."
+        },
+        "pbv.selectOnTraverse": {
+          "type": "boolean",
+          "default": false,
+          "description": "When traversing matches, select the matched text (true) or just move the cursor to it (false). The navigation bookmark is always auto-set on traversal entry so 'jump back' returns to the pre-traversal position regardless."
         }
       }
     }

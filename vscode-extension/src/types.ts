@@ -34,6 +34,8 @@ export type InboundMessage =
   | { cmd: 'endUndoGroup' }
   | { cmd: 'setMark' }
   | { cmd: 'jumpToMark' }
+  | { cmd: 'setNavMark' }
+  | { cmd: 'jumpToNavMark' }
   | { cmd: 'selectWord' }
   | { cmd: 'matchParen' }
   | { cmd: 'undoTransaction' }
