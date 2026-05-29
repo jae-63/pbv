@@ -174,8 +174,10 @@ final class SpeechEngine: NSObject {
             return
         }
 
-        // Listen for device changes (AirPods connect/disconnect, USB mic plug/unplug).
-        // When the engine reconfigures, tear down and restart cleanly.
+        // Remove before adding — startAudioEngine may be called multiple times
+        // during retry, and we must not accumulate duplicate observers.
+        NotificationCenter.default.removeObserver(
+            self, name: .AVAudioEngineConfigurationChange, object: audioEngine)
         NotificationCenter.default.addObserver(
             forName: .AVAudioEngineConfigurationChange,
             object:  audioEngine,
@@ -211,14 +213,15 @@ final class SpeechEngine: NSObject {
         } catch {
             let code = (error as NSError).code
             // -10868 = kAudioUnitErr_CannotDoInCurrentContext: audio hardware is
-            // still transitioning (e.g. AirPods removed). Retry silently up to 3×.
-            if code == -10868 && retryCount < 3 {
-                NSLog("[PBV] audioEngine -10868 (device transitioning), retry %d/3", retryCount + 1)
+            // still transitioning (AirPods connecting/disconnecting). Retry silently
+            // up to 6× with a 2s gap (12s total window covers slow AirPod pairing).
+            if code == -10868 && retryCount < 6 {
+                NSLog("[PBV] audioEngine -10868 (device transitioning), retry %d/6", retryCount + 1)
                 if tapInstalled {
                     audioEngine.inputNode.removeTap(onBus: 0)
                     tapInstalled = false
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
                     self?.startAudioEngine(retryCount: retryCount + 1)
                 }
             } else {
