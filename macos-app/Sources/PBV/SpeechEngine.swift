@@ -45,7 +45,7 @@ final class SpeechEngine: NSObject {
     // State
     // ---------------------------------------------------------------------------
 
-    private let audioEngine  = AVAudioEngine()
+    private var audioEngine  = AVAudioEngine()
     private var frames       = [AVAudioPCMBuffer]()
     private var silenceTimer: DispatchWorkItem?
     private var isRunning    = false
@@ -228,7 +228,22 @@ final class SpeechEngine: NSObject {
                         self?.startAudioEngine(retryCount: retryCount + 1)
                     }
                 } else {
-                    NSLog("[PBV] audioEngine -10868 after 5 retries — staying idle; use Sleep/Wake to recover")
+                    // reset() didn't help — recreate the engine entirely.
+                    // A flood of config-change notifications can leave the engine in a
+                    // permanently broken hardware-connection state that only a new
+                    // AVAudioEngine() instance can escape.
+                    NSLog("[PBV] audioEngine -10868 — recreating engine after 5 resets")
+                    let staleEngine = audioEngine
+                    NotificationCenter.default.removeObserver(
+                        self, name: .AVAudioEngineConfigurationChange, object: staleEngine)
+                    if staleEngine.isRunning { staleEngine.stop() }
+                    audioEngine  = AVAudioEngine()
+                    tapInstalled = false
+                    isRestarting = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) { [weak self] in
+                        self?.isRestarting = false
+                        self?.startAudioEngine(retryCount: 0)  // fresh count with new engine
+                    }
                 }
             } else {
                 NSLog("[PBV] audioEngine error: %@", error.localizedDescription)
