@@ -6,11 +6,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // ---------------------------------------------------------------------------
     // Components
     // ---------------------------------------------------------------------------
-    private var speech:    SpeechEngine!
-    private var client:    ExtensionClient!
-    private var hotkey:    HotkeyMonitor!
-    private var overlay:   UtteranceOverlay!
+    private var speech:     SpeechEngine!
+    private var client:     ExtensionClient!
+    private var hotkey:     HotkeyMonitor!
+    private var overlay:    UtteranceOverlay!
     private var statusItem: NSStatusItem!
+    private let scroll      = ScrollModeController()
 
     private var mode: Mode = .command {
         didSet {
@@ -31,6 +32,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
+
+        // Accessibility permission is required for CGEventPost (scroll keystrokes).
+        // Prompt once; the user grants it in System Settings → Privacy → Accessibility.
+        AXIsProcessTrustedWithOptions(
+            [kAXTrustedCheckOptionPrompt.takeRetainedValue(): true] as CFDictionary)
+
+        scroll.onIconChange = { [weak self] name in
+            guard let self else { return }
+            self.statusItem.button?.image = NSImage(
+                systemSymbolName: name, accessibilityDescription: "PBV")
+        }
 
         overlay = UtteranceOverlay()
         client  = ExtensionClient()
@@ -73,7 +85,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func handle(transcript: String) {
         NSLog("[PBV] transcript: %@", transcript)
         overlay.showUtterance(transcript)
+        if handleScrollCommand(transcript) { return }
         client.sendTranscript(transcript)
+    }
+
+    // Returns true if the transcript was consumed by scroll/traverse mode.
+    // When scroll mode is active, any unrecognised utterance is silently dropped
+    // (the user must say "stop scrolling" before issuing other commands).
+    @discardableResult
+    private func handleScrollCommand(_ raw: String) -> Bool {
+        let text = raw.lowercased().trimmingCharacters(in: .whitespaces)
+        switch text {
+        case "scroll down":
+            scroll.enter(scrollDirection: "down")
+            client.send(["cmd": "enterScrollMode", "direction": "down"])
+            return true
+        case "scroll up":
+            scroll.enter(scrollDirection: "up")
+            client.send(["cmd": "enterScrollMode", "direction": "up"])
+            return true
+        case "scroll left":
+            scroll.enter(scrollDirection: "left")
+            client.send(["cmd": "enterScrollMode", "direction": "left"])
+            return true
+        case "scroll right":
+            scroll.enter(scrollDirection: "right")
+            client.send(["cmd": "enterScrollMode", "direction": "right"])
+            return true
+        case "traverse definitions", "traverse definition":
+            scroll.enterTraverse()
+            client.send(["cmd": "enterTraversalMode"])
+            return true
+        case "faster":
+            guard scroll.isActive else { return false }
+            scroll.faster()
+            return true
+        case "slower":
+            guard scroll.isActive else { return false }
+            scroll.slower()
+            return true
+        case "stop", "stop scrolling":
+            guard scroll.isActive else { return false }
+            scroll.exit()
+            client.send(["cmd": "exitScrollMode"])
+            restoreScrollIcon()
+            return true
+        default:
+            return scroll.isActive  // drop anything else while scrolling
+        }
+    }
+
+    private func restoreScrollIcon() {
+        let name = speechReady ? "mic.fill" : "mic.slash"
+        statusItem.button?.image = NSImage(systemSymbolName: name, accessibilityDescription: "PBV")
     }
 
     // ---------------------------------------------------------------------------
@@ -150,16 +214,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         switch state {
         case .idle:
             speechReady = false
-            statusItem.button?.image = NSImage(systemSymbolName: "mic.slash", accessibilityDescription: "Voice Coder (idle)")
             client.sendSetReady(false)
+            if !scroll.isActive {
+                statusItem.button?.image = NSImage(systemSymbolName: "mic.slash", accessibilityDescription: "PBV (idle)")
+            }
         case .listening:
             speechReady = true
-            statusItem.button?.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Voice Coder (listening)")
             client.sendSetReady(true)
+            if !scroll.isActive {
+                statusItem.button?.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "PBV (listening)")
+            }
         case .error(let msg):
             speechReady = false
-            statusItem.button?.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: "Voice Coder (error)")
             client.sendSetReady(false)
+            if !scroll.isActive {
+                statusItem.button?.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: "PBV (error)")
+            }
             showError("Speech engine error: \(msg)")
         }
     }

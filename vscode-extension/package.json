@@ -61,6 +61,18 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "key": "ctrl+down",
+        "command": "pbv.scrollStep",
+        "when": "pbv.scrolling && editorFocus"
+      },
+      {
+        "key": "ctrl+up",
+        "command": "pbv.scrollStepBack",
+        "when": "pbv.scrolling && editorFocus"
+      }
+    ],
     "configuration": {
       "title": "PBV",
       "properties": {

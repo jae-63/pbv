@@ -1137,6 +1137,9 @@ var IpcServer = class {
     this.claude = claude;
     this.sockets = /* @__PURE__ */ new Set();
     this.llmAbort = null;
+    // Scroll / traversal state
+    this.traversalMatches = null;
+    this.traversalIndex = 0;
     this.port = port;
     this.server = net.createServer((socket) => this.onConnection(socket));
     this.server.listen(port, "127.0.0.1", () => {
@@ -1145,6 +1148,10 @@ var IpcServer = class {
     this.server.on("error", (err) => {
       vscode5.window.showErrorMessage(`Voice Coder IPC error: ${err.message}`);
     });
+    context.subscriptions.push(
+      vscode5.commands.registerCommand("pbv.scrollStep", () => this.scrollStep(1)),
+      vscode5.commands.registerCommand("pbv.scrollStepBack", () => this.scrollStep(-1))
+    );
   }
   // Push a message to all connected clients (used for cache-update events).
   broadcast(msg) {
@@ -1342,6 +1349,35 @@ var IpcServer = class {
         await editor.edit((eb) => eb.insert(editor.selection.active, '"'));
         break;
       }
+      // --- Scroll / traversal mode ---
+      case "enterScrollMode":
+        this.traversalMatches = null;
+        await vscode5.commands.executeCommand("setContext", "pbv.scrolling", true);
+        break;
+      case "enterTraversalMode": {
+        const ed = vscode5.window.activeTextEditor;
+        if (ed) {
+          const regex = traversalRegex(ed.document.languageId, msg.pattern);
+          const text = ed.document.getText();
+          const matches = [];
+          let m;
+          while ((m = regex.exec(text)) !== null) {
+            matches.push(ed.document.positionAt(m.index));
+          }
+          this.traversalMatches = matches;
+          this.traversalIndex = 0;
+          vscode5.window.setStatusBarMessage(
+            `$(list-selection) PBV: traversing ${matches.length} match${matches.length === 1 ? "" : "es"}`,
+            4e3
+          );
+        }
+        await vscode5.commands.executeCommand("setContext", "pbv.scrolling", true);
+        break;
+      }
+      case "exitScrollMode":
+        this.traversalMatches = null;
+        await vscode5.commands.executeCommand("setContext", "pbv.scrolling", false);
+        break;
       case "cacheSelection": {
         const sel = vscode5.window.activeTextEditor;
         if (sel) {
@@ -1521,6 +1557,24 @@ var IpcServer = class {
       }
     }
   }
+  async scrollStep(direction) {
+    if (this.traversalMatches && this.traversalMatches.length > 0) {
+      this.traversalIndex = (this.traversalIndex + direction + this.traversalMatches.length) % this.traversalMatches.length;
+      const pos = this.traversalMatches[this.traversalIndex];
+      const editor = vscode5.window.activeTextEditor;
+      if (editor) {
+        editor.selection = new vscode5.Selection(pos, pos);
+        editor.revealRange(
+          new vscode5.Range(pos, pos),
+          vscode5.TextEditorRevealType.InCenter
+        );
+      }
+    } else {
+      await vscode5.commands.executeCommand(
+        direction > 0 ? "scrollLineDown" : "scrollLineUp"
+      );
+    }
+  }
   describeCmd(cmd) {
     const c = cmd;
     switch (cmd.cmd) {
@@ -1546,11 +1600,33 @@ var IpcServer = class {
         return `replaceSelection`;
       case "selectToken":
         return `selectToken "${c.token}"`;
+      case "enterScrollMode":
+        return `enterScrollMode(${c.direction})`;
+      case "enterTraversalMode":
+        return `enterTraversalMode`;
+      case "exitScrollMode":
+        return `exitScrollMode`;
       default:
         return cmd.cmd;
     }
   }
 };
+function traversalRegex(languageId, pattern) {
+  if (pattern) return new RegExp(pattern, "gm");
+  switch (languageId) {
+    case "python":
+      return /^\s*def\s+\w+/gm;
+    case "go":
+      return /^func\s+\w+/gm;
+    case "typescript":
+    case "javascript":
+      return /^(?:export\s+)?(?:async\s+)?function\s+\w+/gm;
+    case "rust":
+      return /^(?:pub\s+)?fn\s+\w+/gm;
+    default:
+      return /^[^\s#\/\*].*[:{]\s*$/gm;
+  }
+}
 
 // src/claudeClient.ts
 var vscode6 = __toESM(require("vscode"));

@@ -51,6 +51,10 @@ export class IpcServer {
     private mark: Mark | undefined;
     private llmAbort: AbortController | null = null;
 
+    // Scroll / traversal state
+    private traversalMatches: vscode.Position[] | null = null;
+    private traversalIndex   = 0;
+
     constructor(
         port: number,
         private cache: CachePad,
@@ -66,6 +70,14 @@ export class IpcServer {
         this.server.on('error', err => {
             vscode.window.showErrorMessage(`Voice Coder IPC error: ${err.message}`);
         });
+
+        // Register keybinding targets for Ctrl+Down / Ctrl+Up in scroll mode.
+        // The 'when: "pbv.scrolling"' clause in package.json ensures these only
+        // fire while scroll/traversal mode is active.
+        context.subscriptions.push(
+            vscode.commands.registerCommand('pbv.scrollStep',     () => this.scrollStep(1)),
+            vscode.commands.registerCommand('pbv.scrollStepBack', () => this.scrollStep(-1)),
+        );
     }
 
     // Push a message to all connected clients (used for cache-update events).
@@ -294,6 +306,39 @@ export class IpcServer {
                 await editor.edit(eb => eb.insert(editor.selection.active, '"'));
                 break;
             }
+
+            // --- Scroll / traversal mode ---
+            case 'enterScrollMode':
+                this.traversalMatches = null;
+                await vscode.commands.executeCommand('setContext', 'pbv.scrolling', true);
+                break;
+
+            case 'enterTraversalMode': {
+                const ed = vscode.window.activeTextEditor;
+                if (ed) {
+                    const regex   = traversalRegex(ed.document.languageId, msg.pattern);
+                    const text    = ed.document.getText();
+                    const matches: vscode.Position[] = [];
+                    let m: RegExpExecArray | null;
+                    while ((m = regex.exec(text)) !== null) {
+                        matches.push(ed.document.positionAt(m.index));
+                    }
+                    this.traversalMatches = matches;
+                    this.traversalIndex   = 0;
+                    vscode.window.setStatusBarMessage(
+                        `$(list-selection) PBV: traversing ${matches.length} match${matches.length === 1 ? '' : 'es'}`,
+                        4000
+                    );
+                }
+                await vscode.commands.executeCommand('setContext', 'pbv.scrolling', true);
+                break;
+            }
+
+            case 'exitScrollMode':
+                this.traversalMatches = null;
+                await vscode.commands.executeCommand('setContext', 'pbv.scrolling', false);
+                break;
+
             case 'cacheSelection': {
                 const sel = vscode.window.activeTextEditor;
                 if (sel) {
@@ -477,21 +522,61 @@ export class IpcServer {
         }
     }
 
+    private async scrollStep(direction: 1 | -1): Promise<void> {
+        if (this.traversalMatches && this.traversalMatches.length > 0) {
+            this.traversalIndex =
+                (this.traversalIndex + direction + this.traversalMatches.length) %
+                this.traversalMatches.length;
+            const pos    = this.traversalMatches[this.traversalIndex];
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {
+                editor.selection = new vscode.Selection(pos, pos);
+                editor.revealRange(
+                    new vscode.Range(pos, pos),
+                    vscode.TextEditorRevealType.InCenter
+                );
+            }
+        } else {
+            await vscode.commands.executeCommand(
+                direction > 0 ? 'scrollLineDown' : 'scrollLineUp'
+            );
+        }
+    }
+
     private describeCmd(cmd: InboundMessage): string {
         const c = cmd as Record<string, unknown>;
         switch (cmd.cmd) {
-            case 'gotoLine':         return `gotoLine ${c.line}`;
-            case 'gotoWordOnLine':   return `word ${c.word} on line ${c.line}`;
-            case 'cursorUp':         return `up ${c.n ?? 1}`;
-            case 'cursorDown':       return `down ${c.n ?? 1}`;
-            case 'insertCacheItem':  return `${c.prefix ?? ''}cache[${c.index}]`;
-            case 'jumpToCharOnLine': return `jump [${c.ordinal}] '${c.char}' line ${c.line}`;
-            case 'deleteChars':      return `deleteChars ${c.n}`;
-            case 'deleteWords':      return `deleteWords ${c.n}`;
-            case 'insertText':       return `insertText "${String(c.text).slice(0, 30)}"`;
-            case 'replaceSelection': return `replaceSelection`;
-            case 'selectToken':      return `selectToken "${c.token}"`;
-            default:                 return cmd.cmd;
+            case 'gotoLine':            return `gotoLine ${c.line}`;
+            case 'gotoWordOnLine':      return `word ${c.word} on line ${c.line}`;
+            case 'cursorUp':            return `up ${c.n ?? 1}`;
+            case 'cursorDown':          return `down ${c.n ?? 1}`;
+            case 'insertCacheItem':     return `${c.prefix ?? ''}cache[${c.index}]`;
+            case 'jumpToCharOnLine':    return `jump [${c.ordinal}] '${c.char}' line ${c.line}`;
+            case 'deleteChars':         return `deleteChars ${c.n}`;
+            case 'deleteWords':         return `deleteWords ${c.n}`;
+            case 'insertText':          return `insertText "${String(c.text).slice(0, 30)}"`;
+            case 'replaceSelection':    return `replaceSelection`;
+            case 'selectToken':         return `selectToken "${c.token}"`;
+            case 'enterScrollMode':     return `enterScrollMode(${(c as any).direction})`;
+            case 'enterTraversalMode':  return `enterTraversalMode`;
+            case 'exitScrollMode':      return `exitScrollMode`;
+            default:                    return cmd.cmd;
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Traversal regex patterns — language-aware defaults + custom override
+// ---------------------------------------------------------------------------
+
+function traversalRegex(languageId: string, pattern?: string): RegExp {
+    if (pattern) return new RegExp(pattern, 'gm');
+    switch (languageId) {
+        case 'python':                   return /^\s*def\s+\w+/gm;
+        case 'go':                       return /^func\s+\w+/gm;
+        case 'typescript':
+        case 'javascript':               return /^(?:export\s+)?(?:async\s+)?function\s+\w+/gm;
+        case 'rust':                     return /^(?:pub\s+)?fn\s+\w+/gm;
+        default:                         return /^[^\s#\/\*].*[:{]\s*$/gm;
     }
 }
