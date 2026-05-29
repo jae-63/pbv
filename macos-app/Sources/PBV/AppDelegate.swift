@@ -95,7 +95,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // (the user must say "stop scrolling" before issuing other commands).
     @discardableResult
     private func handleScrollCommand(_ raw: String) -> Bool {
-        let text = raw.lowercased().trimmingCharacters(in: .whitespaces)
+        let text = raw.lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: .punctuationCharacters)
         switch text {
         case "scroll down", "hold down":
             scroll.enter(scrollDirection: "down")
