@@ -170,13 +170,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let btn = statusItem.button {
-            btn.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Voice Coder")
+            btn.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "PBV")
         }
 
         let menu = NSMenu()
         menu.delegate = self
 
-        let titleItem = NSMenuItem(title: "Voice Coder", action: nil, keyEquivalent: "")
+        let titleItem = NSMenuItem(title: "PBV", action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         menu.addItem(titleItem)
         menu.addItem(.separator())
@@ -282,7 +282,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func showError(_ msg: String) {
         DispatchQueue.main.async {
             let alert = NSAlert()
-            alert.messageText     = "Voice Coder"
+            alert.messageText     = "PBV"
             alert.informativeText = msg
             alert.alertStyle      = .warning
             alert.runModal()

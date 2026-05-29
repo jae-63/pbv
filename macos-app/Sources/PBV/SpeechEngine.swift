@@ -163,7 +163,7 @@ final class SpeechEngine: NSObject {
     // Audio capture
     // ---------------------------------------------------------------------------
 
-    private func startAudioEngine() {
+    private func startAudioEngine(retryCount: Int = 0) {
         guard isRunning else { return }
 
         // Guard against accessing inputNode (which can trigger a system mic dialog)
@@ -209,8 +209,22 @@ final class SpeechEngine: NSObject {
                   fmt.sampleRate, fmt.channelCount)
             onStateChange?(.listening)
         } catch {
-            NSLog("[PBV] audioEngine error: %@", error.localizedDescription)
-            onStateChange?(.error(error.localizedDescription))
+            let code = (error as NSError).code
+            // -10868 = kAudioUnitErr_CannotDoInCurrentContext: audio hardware is
+            // still transitioning (e.g. AirPods removed). Retry silently up to 3×.
+            if code == -10868 && retryCount < 3 {
+                NSLog("[PBV] audioEngine -10868 (device transitioning), retry %d/3", retryCount + 1)
+                if tapInstalled {
+                    audioEngine.inputNode.removeTap(onBus: 0)
+                    tapInstalled = false
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                    self?.startAudioEngine(retryCount: retryCount + 1)
+                }
+            } else {
+                NSLog("[PBV] audioEngine error: %@", error.localizedDescription)
+                onStateChange?(.error(error.localizedDescription))
+            }
         }
     }
 
