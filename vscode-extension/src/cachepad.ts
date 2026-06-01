@@ -17,17 +17,20 @@ const STOP_WORDS = new Set([
     // Terraform / k8s
     'resource', 'variable', 'locals', 'module', 'provider',
     'apiVersion', 'kind', 'metadata', 'spec', 'status', 'name', 'namespace',
-    // Common English prose words — avoid polluting the pad from docstrings/comments
-    'the', 'and', 'for', 'with', 'that', 'this', 'from', 'are', 'was', 'were',
-    'has', 'have', 'had', 'not', 'but', 'can', 'all', 'its', 'into', 'than',
-    'then', 'also', 'each', 'when', 'will', 'file', 'text', 'line', 'word',
-    'list', 'dict', 'set', 'map', 'key', 'val', 'value', 'data', 'output',
-    'input', 'path', 'name', 'type', 'size', 'count', 'index', 'item',
-    'note', 'see', 'use', 'used', 'via', 'per', 'any', 'new', 'old',
-    'top', 'end', 'run', 'get', 'add', 'remove', 'read', 'write',
 ]);
 
 const IDENTIFIER_RE = /\b[a-zA-Z_][a-zA-Z0-9_]{2,}\b/g;
+
+// Structural signals that distinguish code identifiers from prose words.
+// Pure lowercase alphabetic words (argparse, filtering, sorted) are excluded —
+// they're indistinguishable from prose without a dictionary. Import detection
+// handles simple module names; the cache fills with compound identifiers here.
+function isStructuredIdentifier(word: string): boolean {
+    return word.includes('_')                        // snake_case or ALL_CAPS
+        || /[a-z][A-Z]/.test(word)                  // camelCase
+        || /^[A-Z][a-z]/.test(word)                 // PascalCase
+        || /[a-zA-Z]\d|\d[a-zA-Z]/.test(word);      // digit mixed with letters
+}
 
 export class CachePadItem extends vscode.TreeItem {
     constructor(
@@ -131,11 +134,13 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
                 this.prependExplicit(importMatch[1]);
             }
 
-            // General identifier scan for everything else being typed.
+            // General identifier scan — only structured identifiers
+            // (snake_case, camelCase, PascalCase, digit-mix) to avoid
+            // polluting the cache with prose words from comments/docstrings.
             let m: RegExpExecArray | null;
             IDENTIFIER_RE.lastIndex = 0;
             while ((m = IDENTIFIER_RE.exec(text)) !== null) {
-                this.prepend(m[0]);
+                if (isStructuredIdentifier(m[0])) this.prepend(m[0]);
             }
         }
     }
@@ -148,7 +153,7 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
         let m: RegExpExecArray | null;
         IDENTIFIER_RE.lastIndex = 0;
         while ((m = IDENTIFIER_RE.exec(text)) !== null) {
-            if (!STOP_WORDS.has(m[0])) found.push(m[0]);
+            if (!STOP_WORDS.has(m[0]) && isStructuredIdentifier(m[0])) found.push(m[0]);
         }
         // Deduplicate, preserving first occurrence order; take last maxItems
         const unique = [...new Set(found)].slice(-this.maxItems).reverse();

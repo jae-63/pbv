@@ -108,73 +108,12 @@ var STOP_WORDS = /* @__PURE__ */ new Set([
   "spec",
   "status",
   "name",
-  "namespace",
-  // Common English prose words — avoid polluting the pad from docstrings/comments
-  "the",
-  "and",
-  "for",
-  "with",
-  "that",
-  "this",
-  "from",
-  "are",
-  "was",
-  "were",
-  "has",
-  "have",
-  "had",
-  "not",
-  "but",
-  "can",
-  "all",
-  "its",
-  "into",
-  "than",
-  "then",
-  "also",
-  "each",
-  "when",
-  "will",
-  "file",
-  "text",
-  "line",
-  "word",
-  "list",
-  "dict",
-  "set",
-  "map",
-  "key",
-  "val",
-  "value",
-  "data",
-  "output",
-  "input",
-  "path",
-  "name",
-  "type",
-  "size",
-  "count",
-  "index",
-  "item",
-  "note",
-  "see",
-  "use",
-  "used",
-  "via",
-  "per",
-  "any",
-  "new",
-  "old",
-  "top",
-  "end",
-  "run",
-  "get",
-  "add",
-  "remove",
-  "read",
-  "write"
+  "namespace"
 ]);
 var IDENTIFIER_RE = /\b[a-zA-Z_][a-zA-Z0-9_]{2,}\b/g;
+function isStructuredIdentifier(word) {
+  return word.includes("_") || /[a-z][A-Z]/.test(word) || /^[A-Z][a-z]/.test(word) || /[a-zA-Z]\d|\d[a-zA-Z]/.test(word);
+}
 var CachePadItem = class extends vscode.TreeItem {
   constructor(index, symbol, recent) {
     super(`${index}.  ${symbol}`, vscode.TreeItemCollapsibleState.None);
@@ -261,7 +200,7 @@ var CachePad = class {
       let m;
       IDENTIFIER_RE.lastIndex = 0;
       while ((m = IDENTIFIER_RE.exec(text)) !== null) {
-        this.prepend(m[0]);
+        if (isStructuredIdentifier(m[0])) this.prepend(m[0]);
       }
     }
   }
@@ -273,7 +212,7 @@ var CachePad = class {
     let m;
     IDENTIFIER_RE.lastIndex = 0;
     while ((m = IDENTIFIER_RE.exec(text)) !== null) {
-      if (!STOP_WORDS.has(m[0])) found.push(m[0]);
+      if (!STOP_WORDS.has(m[0]) && isStructuredIdentifier(m[0])) found.push(m[0]);
     }
     const unique = [...new Set(found)].slice(-this.maxItems).reverse();
     for (const sym of unique) {
