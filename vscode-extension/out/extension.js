@@ -253,6 +253,10 @@ var CachePad = class {
   absorbEdit(event) {
     for (const change of event.contentChanges) {
       const text = change.text;
+      const importMatch = text.match(/(?:from\s+\S+\s+)?import\s+([A-Za-z_][A-Za-z0-9_]*)/);
+      if (importMatch) {
+        this.prependExplicit(importMatch[1]);
+      }
       let m;
       IDENTIFIER_RE.lastIndex = 0;
       while ((m = IDENTIFIER_RE.exec(text)) !== null) {
@@ -2229,12 +2233,8 @@ function activate(context) {
       cache.absorbEdit(event);
     }
   });
-  const editorListener = vscode7.window.onDidChangeActiveTextEditor((editor) => {
-    if (editor) cache.absorbDocument(editor.document);
+  const editorListener = vscode7.window.onDidChangeActiveTextEditor((_editor) => {
   });
-  if (vscode7.window.activeTextEditor) {
-    cache.absorbDocument(vscode7.window.activeTextEditor.document);
-  }
   context.subscriptions.push(statusBar, treeView, server, editListener, editorListener, ...cmds);
 }
 function deactivate() {

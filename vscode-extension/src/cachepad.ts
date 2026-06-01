@@ -119,6 +119,17 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
     absorbEdit(event: vscode.TextDocumentChangeEvent): void {
         for (const change of event.contentChanges) {
             const text = change.text;
+
+            // Import statements: prepend the imported name to slot 1 so it's
+            // immediately available. Handles both forms:
+            //   import argparse          → cache: argparse
+            //   from pathlib import Path → cache: Path
+            const importMatch = text.match(/(?:from\s+\S+\s+)?import\s+([A-Za-z_][A-Za-z0-9_]*)/);
+            if (importMatch) {
+                this.prependExplicit(importMatch[1]);
+            }
+
+            // General identifier scan for everything else being typed.
             let m: RegExpExecArray | null;
             IDENTIFIER_RE.lastIndex = 0;
             while ((m = IDENTIFIER_RE.exec(text)) !== null) {

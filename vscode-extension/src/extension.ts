@@ -47,22 +47,17 @@ export function activate(context: vscode.ExtensionContext): void {
         }),
     ];
 
-    // Auto-populate cache on document edits
+    // Capture identifiers from edits as they happen (imports get priority slot 1).
     const editListener = vscode.workspace.onDidChangeTextDocument(event => {
         if (event.document === vscode.window.activeTextEditor?.document) {
             cache.absorbEdit(event);
         }
     });
 
-    // Rescan on file switch
-    const editorListener = vscode.window.onDidChangeActiveTextEditor(editor => {
-        if (editor) cache.absorbDocument(editor.document);
-    });
-
-    // Initial scan of the already-open file (if any)
-    if (vscode.window.activeTextEditor) {
-        cache.absorbDocument(vscode.window.activeTextEditor.document);
-    }
+    // File-switch no longer triggers a full document scan — that was the main
+    // source of noise (prose words from docstrings, identifiers from unrelated files).
+    // Explicit 'refresh cache pad' still does a full scan on demand.
+    const editorListener = vscode.window.onDidChangeActiveTextEditor(_editor => {});
 
     context.subscriptions.push(statusBar, treeView, server, editListener, editorListener, ...cmds);
 }
