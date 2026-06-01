@@ -4,15 +4,27 @@ import * as vscode from 'vscode';
 // Language-specific keyword lists are loaded from the vocab YAML at runtime (future).
 // For now, a broad union covers Python + Go + Terraform + k8s field names.
 const STOP_WORDS = new Set([
+    // Python keywords
     'if', 'else', 'elif', 'for', 'while', 'with', 'try', 'except', 'finally',
     'def', 'class', 'return', 'yield', 'import', 'from', 'as', 'pass', 'break',
     'continue', 'raise', 'lambda', 'del', 'global', 'nonlocal', 'assert',
     'async', 'await', 'not', 'and', 'or', 'in', 'is',
+    'True', 'False', 'None',
+    // Go keywords
     'func', 'var', 'const', 'type', 'struct', 'interface', 'map', 'chan',
     'go', 'defer', 'select', 'range', 'switch', 'case', 'default', 'fallthrough',
-    'package', 'nil', 'true', 'false', 'True', 'False', 'None',
-    'resource', 'data', 'variable', 'output', 'locals', 'module', 'provider',
+    'package', 'nil', 'true', 'false',
+    // Terraform / k8s
+    'resource', 'variable', 'locals', 'module', 'provider',
     'apiVersion', 'kind', 'metadata', 'spec', 'status', 'name', 'namespace',
+    // Common English prose words — avoid polluting the pad from docstrings/comments
+    'the', 'and', 'for', 'with', 'that', 'this', 'from', 'are', 'was', 'were',
+    'has', 'have', 'had', 'not', 'but', 'can', 'all', 'its', 'into', 'than',
+    'then', 'also', 'each', 'when', 'will', 'file', 'text', 'line', 'word',
+    'list', 'dict', 'set', 'map', 'key', 'val', 'value', 'data', 'output',
+    'input', 'path', 'name', 'type', 'size', 'count', 'index', 'item',
+    'note', 'see', 'use', 'used', 'via', 'per', 'any', 'new', 'old',
+    'top', 'end', 'run', 'get', 'add', 'remove', 'read', 'write',
 ]);
 
 const IDENTIFIER_RE = /\b[a-zA-Z_][a-zA-Z0-9_]{2,}\b/g;

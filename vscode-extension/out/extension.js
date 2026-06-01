@@ -39,6 +39,7 @@ var vscode7 = __toESM(require("vscode"));
 // src/cachepad.ts
 var vscode = __toESM(require("vscode"));
 var STOP_WORDS = /* @__PURE__ */ new Set([
+  // Python keywords
   "if",
   "else",
   "elif",
@@ -71,6 +72,10 @@ var STOP_WORDS = /* @__PURE__ */ new Set([
   "or",
   "in",
   "is",
+  "True",
+  "False",
+  "None",
+  // Go keywords
   "func",
   "var",
   "const",
@@ -91,13 +96,9 @@ var STOP_WORDS = /* @__PURE__ */ new Set([
   "nil",
   "true",
   "false",
-  "True",
-  "False",
-  "None",
+  // Terraform / k8s
   "resource",
-  "data",
   "variable",
-  "output",
   "locals",
   "module",
   "provider",
@@ -107,7 +108,71 @@ var STOP_WORDS = /* @__PURE__ */ new Set([
   "spec",
   "status",
   "name",
-  "namespace"
+  "namespace",
+  // Common English prose words — avoid polluting the pad from docstrings/comments
+  "the",
+  "and",
+  "for",
+  "with",
+  "that",
+  "this",
+  "from",
+  "are",
+  "was",
+  "were",
+  "has",
+  "have",
+  "had",
+  "not",
+  "but",
+  "can",
+  "all",
+  "its",
+  "into",
+  "than",
+  "then",
+  "also",
+  "each",
+  "when",
+  "will",
+  "file",
+  "text",
+  "line",
+  "word",
+  "list",
+  "dict",
+  "set",
+  "map",
+  "key",
+  "val",
+  "value",
+  "data",
+  "output",
+  "input",
+  "path",
+  "name",
+  "type",
+  "size",
+  "count",
+  "index",
+  "item",
+  "note",
+  "see",
+  "use",
+  "used",
+  "via",
+  "per",
+  "any",
+  "new",
+  "old",
+  "top",
+  "end",
+  "run",
+  "get",
+  "add",
+  "remove",
+  "read",
+  "write"
 ]);
 var IDENTIFIER_RE = /\b[a-zA-Z_][a-zA-Z0-9_]{2,}\b/g;
 var CachePadItem = class extends vscode.TreeItem {
@@ -719,6 +784,7 @@ var RULES = [
     return rule(src, (_) => ({ cmd: "insertText", text: tc.text }));
   }),
   // Dictation helpers
+  rule("new\\s+line", (_) => ({ cmd: "insertText", text: "\n" })),
   rule("no\\s+space", (_) => ({ cmd: "deleteChars", n: 1 })),
   rule("open\\s+string", (_) => ({ cmd: "insertText", text: '"' })),
   rule("close\\s+string", (_) => ({ cmd: "closeString" })),
@@ -1960,7 +2026,7 @@ var IpcServer = class {
   }
 };
 function normalizeDictation(text) {
-  let t = text.replace(/\s+comma\b/gi, ",").replace(/\s+period\b/gi, ".").replace(/\s+full\s+stop\b/gi, ".").replace(/\s+exclamation\s+(?:mark|point)\b/gi, "!").replace(/\s+question\s+mark\b/gi, "?").replace(/\s+colon\b/gi, ":").replace(/\s+semicolon\b/gi, ";").replace(/\s+hyphen\b/gi, "-").replace(/\s+dash\b/gi, " \u2014").replace(/\s+apostrophe\b/gi, "'").replace(/\s+close\s+(?:paren|parenthesis)\b/gi, ")").replace(/\s+close\s+(?:bracket|square\s+bracket)\b/gi, "]").replace(/\s+close\s+(?:brace|curly)\b/gi, "}").replace(/\s+close\s+quote\b/gi, '"');
+  let t = text.replace(/\bnew\s+line\b/gi, "\n").replace(/\s+comma\b/gi, ",").replace(/\s+period\b/gi, ".").replace(/\s+full\s+stop\b/gi, ".").replace(/\s+exclamation\s+(?:mark|point)\b/gi, "!").replace(/\s+question\s+mark\b/gi, "?").replace(/\s+colon\b/gi, ":").replace(/\s+semicolon\b/gi, ";").replace(/\s+hyphen\b/gi, "-").replace(/\s+dash\b/gi, " \u2014").replace(/\s+apostrophe\b/gi, "'").replace(/\s+close\s+(?:paren|parenthesis)\b/gi, ")").replace(/\s+close\s+(?:bracket|square\s+bracket)\b/gi, "]").replace(/\s+close\s+(?:brace|curly)\b/gi, "}").replace(/\s+close\s+quote\b/gi, '"');
   t = t.replace(/\bopen\s+(?:paren|parenthesis)\s+/gi, "(").replace(/\bopen\s+(?:bracket|square\s+bracket)\s+/gi, "[").replace(/\bopen\s+(?:brace|curly)\s+/gi, "{").replace(/\bopen\s+quote\s+/gi, '"');
   return t;
 }

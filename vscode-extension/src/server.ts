@@ -690,6 +690,7 @@ export class IpcServer {
 function normalizeDictation(text: string): string {
     // Closing punctuation: remove preceding space, attach to prior word.
     let t = text
+        .replace(/\bnew\s+line\b/gi,                 '\n')
         .replace(/\s+comma\b/gi,                     ',')
         .replace(/\s+period\b/gi,                    '.')
         .replace(/\s+full\s+stop\b/gi,               '.')

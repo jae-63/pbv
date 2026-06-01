@@ -109,6 +109,7 @@ const RULES: Rule[] = [
     }),
 
     // Dictation helpers
+    rule('new\\s+line',    _ => ({ cmd: 'insertText', text: '\n' })),
     rule('no\\s+space',    _ => ({ cmd: 'deleteChars', n: 1 })),
     rule('open\\s+string', _ => ({ cmd: 'insertText', text: '"' })),
     rule('close\\s+string',_ => ({ cmd: 'closeString' })),
