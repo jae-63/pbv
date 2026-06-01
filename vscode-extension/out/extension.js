@@ -1504,7 +1504,8 @@ var IpcServer = class {
             return;
           }
           if (editor) {
-            await editor.edit((eb) => eb.insert(editor.selection.active, raw + " "));
+            const dictated = normalizeDictation(raw);
+            await editor.edit((eb) => eb.insert(editor.selection.active, dictated + " "));
             vscode5.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 1e4);
           }
           return;
@@ -1615,8 +1616,9 @@ var IpcServer = class {
       case "dictateText": {
         if (!editor) return;
         const sel = editor.selection;
+        const dictated = normalizeDictation(msg.text);
         await editor.edit(
-          (eb) => sel.isEmpty ? eb.insert(sel.active, msg.text) : eb.replace(sel, msg.text)
+          (eb) => sel.isEmpty ? eb.insert(sel.active, dictated) : eb.replace(sel, dictated)
         );
         break;
       }
@@ -1957,6 +1959,11 @@ var IpcServer = class {
     }
   }
 };
+function normalizeDictation(text) {
+  let t = text.replace(/\s+comma\b/gi, ",").replace(/\s+period\b/gi, ".").replace(/\s+full\s+stop\b/gi, ".").replace(/\s+exclamation\s+(?:mark|point)\b/gi, "!").replace(/\s+question\s+mark\b/gi, "?").replace(/\s+colon\b/gi, ":").replace(/\s+semicolon\b/gi, ";").replace(/\s+hyphen\b/gi, "-").replace(/\s+dash\b/gi, " \u2014").replace(/\s+apostrophe\b/gi, "'").replace(/\s+close\s+(?:paren|parenthesis)\b/gi, ")").replace(/\s+close\s+(?:bracket|square\s+bracket)\b/gi, "]").replace(/\s+close\s+(?:brace|curly)\b/gi, "}").replace(/\s+close\s+quote\b/gi, '"');
+  t = t.replace(/\bopen\s+(?:paren|parenthesis)\s+/gi, "(").replace(/\bopen\s+(?:bracket|square\s+bracket)\s+/gi, "[").replace(/\bopen\s+(?:brace|curly)\s+/gi, "{").replace(/\bopen\s+quote\s+/gi, '"');
+  return t;
+}
 function traversalRegex(languageId, pattern) {
   if (pattern) return new RegExp(pattern, "gm");
   switch (languageId) {

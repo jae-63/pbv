@@ -190,7 +190,8 @@ export class IpcServer {
                         return;
                     }
                     if (editor) {
-                        await editor.edit(eb => eb.insert(editor.selection.active, raw + ' '));
+                        const dictated = normalizeDictation(raw);
+                        await editor.edit(eb => eb.insert(editor.selection.active, dictated + ' '));
                         vscode.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 10000);
                     }
                     return;
@@ -321,11 +322,12 @@ export class IpcServer {
             // "dictate Word Frequency Counter" → inserts those exact words.
             case 'dictateText': {
                 if (!editor) return;
-                const sel = editor.selection;
+                const sel      = editor.selection;
+                const dictated = normalizeDictation(msg.text as string);
                 await editor.edit(eb =>
                     sel.isEmpty
-                        ? eb.insert(sel.active, msg.text as string)
-                        : eb.replace(sel, msg.text as string)
+                        ? eb.insert(sel.active, dictated)
+                        : eb.replace(sel, dictated)
                 );
                 break;
             }
@@ -677,6 +679,39 @@ export class IpcServer {
 // ---------------------------------------------------------------------------
 // Traversal regex patterns — language-aware defaults + custom override
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Dictation punctuation normalization
+// ---------------------------------------------------------------------------
+// Converts spoken punctuation words to symbols, Dragon-style.
+// Applied to all verbatim-inserted text (dictation mode + Select-and-Say).
+// Rules attach punctuation to the preceding word and preserve following space.
+
+function normalizeDictation(text: string): string {
+    // Closing punctuation: remove preceding space, attach to prior word.
+    let t = text
+        .replace(/\s+comma\b/gi,                     ',')
+        .replace(/\s+period\b/gi,                    '.')
+        .replace(/\s+full\s+stop\b/gi,               '.')
+        .replace(/\s+exclamation\s+(?:mark|point)\b/gi, '!')
+        .replace(/\s+question\s+mark\b/gi,           '?')
+        .replace(/\s+colon\b/gi,                     ':')
+        .replace(/\s+semicolon\b/gi,                 ';')
+        .replace(/\s+hyphen\b/gi,                    '-')
+        .replace(/\s+dash\b/gi,                      ' —')
+        .replace(/\s+apostrophe\b/gi,                "'")
+        .replace(/\s+close\s+(?:paren|parenthesis)\b/gi, ')')
+        .replace(/\s+close\s+(?:bracket|square\s+bracket)\b/gi, ']')
+        .replace(/\s+close\s+(?:brace|curly)\b/gi,  '}')
+        .replace(/\s+close\s+quote\b/gi,             '"');
+    // Opening punctuation: keep preceding space, remove following space.
+    t = t
+        .replace(/\bopen\s+(?:paren|parenthesis)\s+/gi,  '(')
+        .replace(/\bopen\s+(?:bracket|square\s+bracket)\s+/gi, '[')
+        .replace(/\bopen\s+(?:brace|curly)\s+/gi,        '{')
+        .replace(/\bopen\s+quote\s+/gi,                  '"');
+    return t;
+}
 
 function traversalRegex(languageId: string, pattern?: string): RegExp {
     if (pattern) return new RegExp(pattern, 'gm');
