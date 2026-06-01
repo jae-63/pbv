@@ -177,8 +177,18 @@ export class IpcServer {
                 // Drop Whisper artifact-only transcripts ([BLANK_AUDIO], [MUSIC], etc.)
                 if (/^\s*(\[[A-Z_]+\]\s*)+$/.test(raw)) return;
 
-                // Dictation mode: insert transcript verbatim, no LLM.
+                const { commands, remainder } = fastInterpretMulti(raw);
+
+                // Dictation mode: insert verbatim — but mode-switch commands
+                // must still fire so there is always a voice path back to command mode.
                 if (this.statusBar.getMode() === 'dictation') {
+                    const modeCmd = commands.length === 1 && !remainder
+                        ? (commands[0] as Record<string, unknown>).cmd as string
+                        : '';
+                    if (modeCmd === 'commandMode' || modeCmd === 'dictationMode') {
+                        await this.dispatch(commands[0] as InboundMessage, _socket);
+                        return;
+                    }
                     if (editor) {
                         await editor.edit(eb => eb.insert(editor.selection.active, raw + ' '));
                         vscode.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 10000);
@@ -186,7 +196,6 @@ export class IpcServer {
                     return;
                 }
 
-                const { commands, remainder } = fastInterpretMulti(raw);
                 if (commands.length > 0) {
                     const labels = commands.map(c => this.describeCmd(c as InboundMessage)).join(' | ');
                     vscode.window.setStatusBarMessage(`$(mic) "${raw}" → ${labels}`, 10000);
@@ -200,13 +209,23 @@ export class IpcServer {
                 // or the full utterance if nothing was consumed.
                 const llmInput = remainder || raw;
                 if (commands.length > 0 && !remainder) return;
+
+                const snap = this.editorSnapshot();
+
+                // Select-and-Say: if the selection is an ALL_CAPS_TEMPLATE placeholder,
+                // replace it verbatim without the LLM — no "dictate" prefix needed.
+                if (/^[A-Z][A-Z0-9_]*_TEMPLATE$/.test(snap.selectedText.trim())) {
+                    vscode.window.setStatusBarMessage(`$(mic) "${raw}" → replaceSelection`, 10000);
+                    await this.dispatch({ cmd: 'dictateText', text: llmInput } as InboundMessage, _socket);
+                    return;
+                }
+
                 if (!this.claude) {
                     vscode.window.showWarningMessage(
                         'PBV: LLM client not initialized (check pbv.ollamaModel setting)'
                     );
                     return;
                 }
-                const snap = this.editorSnapshot();
 
                 // Rule-based transform fast path (selected text + known utterance).
                 if (snap.selectedText) {

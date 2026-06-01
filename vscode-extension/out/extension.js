@@ -1490,14 +1490,19 @@ var IpcServer = class {
         this.llmAbort = null;
         const raw = msg.text;
         if (/^\s*(\[[A-Z_]+\]\s*)+$/.test(raw)) return;
+        const { commands: commands3, remainder } = fastInterpretMulti(raw);
         if (this.statusBar.getMode() === "dictation") {
+          const modeCmd = commands3.length === 1 && !remainder ? commands3[0].cmd : "";
+          if (modeCmd === "commandMode" || modeCmd === "dictationMode") {
+            await this.dispatch(commands3[0], _socket);
+            return;
+          }
           if (editor) {
             await editor.edit((eb) => eb.insert(editor.selection.active, raw + " "));
             vscode5.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 1e4);
           }
           return;
         }
-        const { commands: commands3, remainder } = fastInterpretMulti(raw);
         if (commands3.length > 0) {
           const labels = commands3.map((c) => this.describeCmd(c)).join(" | ");
           vscode5.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 ${labels}`, 1e4);
@@ -1508,13 +1513,18 @@ var IpcServer = class {
         }
         const llmInput = remainder || raw;
         if (commands3.length > 0 && !remainder) return;
+        const snap = this.editorSnapshot();
+        if (/^[A-Z][A-Z0-9_]*_TEMPLATE$/.test(snap.selectedText.trim())) {
+          vscode5.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 replaceSelection`, 1e4);
+          await this.dispatch({ cmd: "dictateText", text: llmInput }, _socket);
+          return;
+        }
         if (!this.claude) {
           vscode5.window.showWarningMessage(
             "PBV: LLM client not initialized (check pbv.ollamaModel setting)"
           );
           return;
         }
-        const snap = this.editorSnapshot();
         if (snap.selectedText) {
           const transformed = tryTransform(raw, snap.selectedText, snap.language);
           if (transformed !== null) {
