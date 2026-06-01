@@ -21,15 +21,14 @@ const STOP_WORDS = new Set([
 
 const IDENTIFIER_RE = /\b[a-zA-Z_][a-zA-Z0-9_]{2,}\b/g;
 
-// Structural signals that distinguish code identifiers from prose words.
-// Pure lowercase alphabetic words (argparse, filtering, sorted) are excluded —
-// they're indistinguishable from prose without a dictionary. Import detection
-// handles simple module names; the cache fills with compound identifiers here.
-function isStructuredIdentifier(word: string): boolean {
-    return word.includes('_')                        // snake_case or ALL_CAPS
-        || /[a-z][A-Z]/.test(word)                  // camelCase
-        || /^[A-Z][a-z]/.test(word)                 // PascalCase
-        || /[a-zA-Z]\d|\d[a-zA-Z]/.test(word);      // digit mixed with letters
+// Structural signals for file-open document scan — excludes PascalCase because
+// any capitalised English word passes that test (Whisper capitalises sentence
+// starts, so noise like "Wonderful" or "Capitalise" would be absorbed).
+// camelCase, snake_case/ALL_CAPS, and digit-mixed are reliable code signals.
+function isCodeIdentifier(word: string): boolean {
+    return word.includes('_')
+        || /[a-z][A-Z]/.test(word)
+        || /[a-zA-Z]\d|\d[a-zA-Z]/.test(word);
 }
 
 export class CachePadItem extends vscode.TreeItem {
@@ -120,32 +119,27 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
         this.refresh();
     }
 
-    // Scan changed text regions in a document edit for new identifiers.
+    // Scan changed text regions for import statements — the only implicit
+    // absorption that fires on live edits. General identifier scanning is
+    // intentionally omitted: Whisper noise lands in the document and gets
+    // indistinguishable from real identifiers, flooding the cache.
     absorbEdit(event: vscode.TextDocumentChangeEvent): void {
         for (const change of event.contentChanges) {
             const text = change.text;
-
-            // Import statements: prepend the imported name to slot 1 so it's
-            // immediately available. Handles both forms:
-            //   import argparse          → cache: argparse
-            //   from pathlib import Path → cache: Path
+            // "import argparse" → cache argparse
+            // "from pathlib import Path" → cache Path
+            // Min-length 3 excludes single-letter / two-letter module aliases (re, os, io).
             const importMatch = text.match(/(?:from\s+\S+\s+)?import\s+([A-Za-z_][A-Za-z0-9_]*)/);
-            if (importMatch) {
+            if (importMatch && importMatch[1].length >= 3) {
                 this.prependExplicit(importMatch[1]);
-            }
-
-            // General identifier scan — only structured identifiers
-            // (snake_case, camelCase, PascalCase, digit-mix) to avoid
-            // polluting the cache with prose words from comments/docstrings.
-            let m: RegExpExecArray | null;
-            IDENTIFIER_RE.lastIndex = 0;
-            while ((m = IDENTIFIER_RE.exec(text)) !== null) {
-                if (isStructuredIdentifier(m[0])) this.prepend(m[0]);
             }
         }
     }
 
     // Full rescan of the document — used on file open / manual refresh.
+    // Only absorbs snake_case, camelCase, and digit-mixed identifiers; PascalCase
+    // is excluded because any capitalised English word qualifies (too noisy).
+    // _TEMPLATE placeholders are excluded — they're template scaffolding, not identifiers.
     absorbDocument(doc: vscode.TextDocument): void {
         if (this.suppressAbsorb) return;
         const text = doc.getText();
@@ -153,7 +147,10 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
         let m: RegExpExecArray | null;
         IDENTIFIER_RE.lastIndex = 0;
         while ((m = IDENTIFIER_RE.exec(text)) !== null) {
-            if (!STOP_WORDS.has(m[0]) && isStructuredIdentifier(m[0])) found.push(m[0]);
+            const word = m[0];
+            if (STOP_WORDS.has(word)) continue;
+            if (word.endsWith('_TEMPLATE')) continue;
+            if (isCodeIdentifier(word)) found.push(word);
         }
         // Deduplicate, preserving first occurrence order; take last maxItems
         const unique = [...new Set(found)].slice(-this.maxItems).reverse();
@@ -174,6 +171,20 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
         if (!range) return;
         const word = editor.document.getText(range);
         this.prepend(word);
+    }
+
+    // Like cacheWordAtCursor but also checks one character back — needed after a
+    // formatter insertion where the cursor lands at the end of the inserted token.
+    cacheWordAtOrBeforeCursor(): void {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+        const pos = editor.selection.active;
+        const range = editor.document.getWordRangeAtPosition(pos, IDENTIFIER_RE)
+                   ?? (pos.character > 0
+                       ? editor.document.getWordRangeAtPosition(pos.translate(0, -1), IDENTIFIER_RE)
+                       : undefined);
+        if (!range) return;
+        this.prependExplicit(editor.document.getText(range));
     }
 
     // --- Private ----------------------------------------------------------

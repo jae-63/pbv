@@ -115,10 +115,15 @@ const RULES: Rule[] = [
         return rule(src, _ => ({ cmd: 'insertText', text: tc.text }));
     }),
 
-    // Dictation helpers
-    rule('new\\s+line',    _ => ({ cmd: 'insertText', text: '\n' })),
+    // Dictation helpers — "new line", "newline", "return", "enter" all insert \n.
+    // "return"/"enter" are preferred at utterance end: Whisper often swallows
+    // "new line" as end-of-sentence punctuation (converts it to ".").
+    rule('new\\s*line|newline', _ => ({ cmd: 'insertText', text: '\n' })),
+    rule('(?:press\\s+)?(?:return|enter)(?:\\s+key)?', _ => ({ cmd: 'insertText', text: '\n' })),
     // "letter romeo" → 'r',  chainable: "letter romeo letter echo" → two insertions → 're'
     rule('letter\\s+([a-z][a-z-]*)', m => ({ cmd: 'insertText', text: natoToChar(m[1]) })),
+    // "numeral 2" / "number 2" — insert digit literally; avoids Whisper writing "two"
+    rule('(?:numeral|number)\\s+(\\d+)', m => ({ cmd: 'insertText', text: m[1] })),
     rule('no\\s+space',    _ => ({ cmd: 'deleteChars', n: 1 })),
     rule('open\\s+string', _ => ({ cmd: 'insertText', text: '"' })),
     rule('close\\s+string',_ => ({ cmd: 'closeString' })),
@@ -149,7 +154,8 @@ const RULES: Rule[] = [
     // "show commands" handled by canonical; keep human aliases
     rule('what\\s+can\\s+I\\s+say', _ => ({ cmd: 'showCommands' })),
     rule('help',                    _ => ({ cmd: 'showCommands' })),
-    rule('show\\s+cache(?:\\s+pad)?', _ => ({ cmd: 'showCachePad' })),
+    rule('show\\s+cache(?:\\s+pad)?',  _ => ({ cmd: 'showCachePad' })),
+    rule('empty\\s+cache(?:\\s+pad)?', _ => ({ cmd: 'clearCachePad' })),
 
     // Navigation bookmark — survives buffer edits; auto-set on traversal entry.
     // "set bookmark" / "jump to bookmark" to distinguish from transaction mark.
@@ -160,8 +166,12 @@ const RULES: Rule[] = [
     // Accept inline completion (Tab / acceptSelectedSuggestion)
     rule('accept(?:\\s+(?:completion|suggestion))?', _ => ({ cmd: 'acceptCompletion' })),
 
-    // Cache selection
-    rule('cache\\s+(?:this|that|selection)', _ => ({ cmd: 'cacheSelection' })),
+    // Cache word at cursor then insert ' = ' — Dragon-era "cache and assign"
+    // "and" is optional: Whisper often drops it ("cache assign")
+    rule('cache\\s+(?:and\\s+)?assign', _ => ({ cmd: 'cacheAndAssign' })),
+
+    // Cache selection (or word at cursor if nothing selected)
+    rule('cache\\s+(?:this|that|selection|word)', _ => ({ cmd: 'cacheSelection' })),
 
     // Word selection & bracket matching
     rule('double\\s+select',   _ => ({ cmd: 'selectWord' })),

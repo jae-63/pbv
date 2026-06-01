@@ -397,6 +397,8 @@ describe('fast-path commands require no LLM — regression guard', () => {
         expect(commands.length).toBeGreaterThan(0);
         expect(remainder).toBe('');
     });
+
+
 });
 
 // ---------------------------------------------------------------------------

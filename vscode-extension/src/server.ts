@@ -527,6 +527,11 @@ export class IpcServer {
             case 'cacheCurrentWord':
                 this.cache.cacheWordAtCursor();
                 break;
+            case 'cacheAndAssign': {
+                this.cache.cacheWordAtOrBeforeCursor();
+                if (editor) await editor.edit(eb => eb.insert(editor.selection.active, ' = '));
+                break;
+            }
             case 'refreshCachePad':
                 this.cache.unsuppress();
                 if (editor) this.cache.absorbDocument(editor.document);

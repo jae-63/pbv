@@ -39,8 +39,9 @@ const UNIVERSAL: Section[] = [
         cmds: [
             { phrase: 'recent N  (or: cache N)',             desc: 'Insert identifier from slot N (1–20)' },
             { phrase: 'at sign recent N',                    desc: 'Insert @identifier from slot N' },
-            { phrase: 'cache word',                          desc: 'Push word at cursor into slot 1' },
-            { phrase: 'clear cache pad',                     desc: 'Empty all slots' },
+            { phrase: 'cache word  (or: cache this / cache that)', desc: 'Push word at cursor (or selection) into slot 1' },
+            { phrase: 'cache and assign',                    desc: 'Cache word at cursor then insert  =  (Dragon-era compound)' },
+            { phrase: 'empty cache pad  (or: clear cache pad)', desc: 'Empty all slots' },
         ],
     },
     {
@@ -63,6 +64,24 @@ const UNIVERSAL: Section[] = [
             { phrase: 'copy / cut / paste',                  desc: 'Clipboard operations' },
             { phrase: 'undo / redo',                         desc: 'Standard undo / redo' },
             { phrase: 'comment line',                        desc: 'Toggle line comment' },
+        ],
+    },
+    {
+        title: 'Text Formatting  (instant, no LLM)',
+        cmds: [
+            { phrase: 'smash word1 word2 …',   desc: 'Join as lowercase: defaultdict' },
+            { phrase: 'camel word1 word2 …',   desc: 'camelCase: defaultDict' },
+            { phrase: 'pascal word1 word2 …  (or: hammer …)', desc: 'PascalCase: DefaultDict' },
+            { phrase: 'snake word1 word2 …',   desc: 'snake_case: default_dict' },
+            { phrase: 'constant word1 word2 …',desc: 'CONSTANT_CASE: DEFAULT_DICT' },
+            { phrase: 'kebab word1 word2 …',   desc: 'kebab-case: default-dict' },
+            { phrase: 'smash that  (or: camel / snake / pascal / constant / kebab that)', desc: 'Apply format to selected text' },
+            { phrase: 'section header [label]',desc: 'Insert # ─── LABEL ─── comment (fills LABEL_TEMPLATE if no label given)' },
+            { phrase: 'comment block title',   desc: '# ─────────── / # Title / # ─────────── (fast-path)' },
+            { phrase: 'underline',             desc: 'Insert = chars matching length of line above cursor' },
+            { phrase: 'underline dashes',      desc: 'Insert - chars matching length of line above cursor' },
+            { phrase: 'numeral N  (or: number N)', desc: 'Insert digit(s) literally — avoids Whisper writing "two" instead of 2' },
+            { phrase: 'return  (or: enter, new line)', desc: 'Insert newline — prefer "return" at utterance end; Whisper swallows "new line" as punctuation' },
         ],
     },
     {

@@ -111,10 +111,9 @@
   },
   "scripts": {
     "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18",
-    "deploy": "npm run compile && cp out/extension.js ~/.vscode/extensions/local.pbv-0.1.0/out/extension.js",
+    "deploy": "npm run compile && cp out/extension.js ~/.vscode/extensions/local.pbv-0.1.0/out/ && cp package.json ~/.vscode/extensions/local.pbv-0.1.0/",
     "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18 --watch",
     "test": "jest",
-    "deploy": "npm run compile && cp out/extension.js ~/.vscode/extensions/local.pbv-0.1.0/out/ && cp package.json ~/.vscode/extensions/local.pbv-0.1.0/",
     "package": "vsce package"
   },
   "devDependencies": {

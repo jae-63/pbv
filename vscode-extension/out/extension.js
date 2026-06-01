@@ -112,8 +112,8 @@ var STOP_WORDS = /* @__PURE__ */ new Set([
   "namespace"
 ]);
 var IDENTIFIER_RE = /\b[a-zA-Z_][a-zA-Z0-9_]{2,}\b/g;
-function isStructuredIdentifier(word) {
-  return word.includes("_") || /[a-z][A-Z]/.test(word) || /^[A-Z][a-z]/.test(word) || /[a-zA-Z]\d|\d[a-zA-Z]/.test(word);
+function isCodeIdentifier(word) {
+  return word.includes("_") || /[a-z][A-Z]/.test(word) || /[a-zA-Z]\d|\d[a-zA-Z]/.test(word);
 }
 var CachePadItem = class extends vscode.TreeItem {
   constructor(index, symbol, recent) {
@@ -190,22 +190,23 @@ var CachePad = class {
     this.items = items.slice(0, this.maxItems);
     this.refresh();
   }
-  // Scan changed text regions in a document edit for new identifiers.
+  // Scan changed text regions for import statements — the only implicit
+  // absorption that fires on live edits. General identifier scanning is
+  // intentionally omitted: Whisper noise lands in the document and gets
+  // indistinguishable from real identifiers, flooding the cache.
   absorbEdit(event) {
     for (const change of event.contentChanges) {
       const text = change.text;
       const importMatch = text.match(/(?:from\s+\S+\s+)?import\s+([A-Za-z_][A-Za-z0-9_]*)/);
-      if (importMatch) {
+      if (importMatch && importMatch[1].length >= 3) {
         this.prependExplicit(importMatch[1]);
-      }
-      let m;
-      IDENTIFIER_RE.lastIndex = 0;
-      while ((m = IDENTIFIER_RE.exec(text)) !== null) {
-        if (isStructuredIdentifier(m[0])) this.prepend(m[0]);
       }
     }
   }
   // Full rescan of the document — used on file open / manual refresh.
+  // Only absorbs snake_case, camelCase, and digit-mixed identifiers; PascalCase
+  // is excluded because any capitalised English word qualifies (too noisy).
+  // _TEMPLATE placeholders are excluded — they're template scaffolding, not identifiers.
   absorbDocument(doc) {
     if (this.suppressAbsorb) return;
     const text = doc.getText();
@@ -213,7 +214,10 @@ var CachePad = class {
     let m;
     IDENTIFIER_RE.lastIndex = 0;
     while ((m = IDENTIFIER_RE.exec(text)) !== null) {
-      if (!STOP_WORDS.has(m[0]) && isStructuredIdentifier(m[0])) found.push(m[0]);
+      const word = m[0];
+      if (STOP_WORDS.has(word)) continue;
+      if (word.endsWith("_TEMPLATE")) continue;
+      if (isCodeIdentifier(word)) found.push(word);
     }
     const unique = [...new Set(found)].slice(-this.maxItems).reverse();
     for (const sym of unique) {
@@ -232,6 +236,16 @@ var CachePad = class {
     if (!range) return;
     const word = editor.document.getText(range);
     this.prepend(word);
+  }
+  // Like cacheWordAtCursor but also checks one character back — needed after a
+  // formatter insertion where the cursor lands at the end of the inserted token.
+  cacheWordAtOrBeforeCursor() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+    const pos = editor.selection.active;
+    const range = editor.document.getWordRangeAtPosition(pos, IDENTIFIER_RE) ?? (pos.character > 0 ? editor.document.getWordRangeAtPosition(pos.translate(0, -1), IDENTIFIER_RE) : void 0);
+    if (!range) return;
+    this.prependExplicit(editor.document.getText(range));
   }
   // --- Private ----------------------------------------------------------
   markRecent(symbol) {
@@ -737,10 +751,15 @@ var RULES = [
     const src = tc.pattern ?? tc.phrase.replace(/\s+/g, "\\s+");
     return rule(src, (_) => ({ cmd: "insertText", text: tc.text }));
   }),
-  // Dictation helpers
-  rule("new\\s+line", (_) => ({ cmd: "insertText", text: "\n" })),
+  // Dictation helpers — "new line", "newline", "return", "enter" all insert \n.
+  // "return"/"enter" are preferred at utterance end: Whisper often swallows
+  // "new line" as end-of-sentence punctuation (converts it to ".").
+  rule("new\\s*line|newline", (_) => ({ cmd: "insertText", text: "\n" })),
+  rule("(?:press\\s+)?(?:return|enter)(?:\\s+key)?", (_) => ({ cmd: "insertText", text: "\n" })),
   // "letter romeo" → 'r',  chainable: "letter romeo letter echo" → two insertions → 're'
   rule("letter\\s+([a-z][a-z-]*)", (m) => ({ cmd: "insertText", text: natoToChar(m[1]) })),
+  // "numeral 2" / "number 2" — insert digit literally; avoids Whisper writing "two"
+  rule("(?:numeral|number)\\s+(\\d+)", (m) => ({ cmd: "insertText", text: m[1] })),
   rule("no\\s+space", (_) => ({ cmd: "deleteChars", n: 1 })),
   rule("open\\s+string", (_) => ({ cmd: "insertText", text: '"' })),
   rule("close\\s+string", (_) => ({ cmd: "closeString" })),
@@ -774,6 +793,7 @@ var RULES = [
   rule("what\\s+can\\s+I\\s+say", (_) => ({ cmd: "showCommands" })),
   rule("help", (_) => ({ cmd: "showCommands" })),
   rule("show\\s+cache(?:\\s+pad)?", (_) => ({ cmd: "showCachePad" })),
+  rule("empty\\s+cache(?:\\s+pad)?", (_) => ({ cmd: "clearCachePad" })),
   // Navigation bookmark — survives buffer edits; auto-set on traversal entry.
   // "set bookmark" / "jump to bookmark" to distinguish from transaction mark.
   rule("set\\s+bookmark", (_) => ({ cmd: "setNavMark" })),
@@ -781,8 +801,11 @@ var RULES = [
   rule("jump\\s+back", (_) => ({ cmd: "jumpToNavMark" })),
   // Accept inline completion (Tab / acceptSelectedSuggestion)
   rule("accept(?:\\s+(?:completion|suggestion))?", (_) => ({ cmd: "acceptCompletion" })),
-  // Cache selection
-  rule("cache\\s+(?:this|that|selection)", (_) => ({ cmd: "cacheSelection" })),
+  // Cache word at cursor then insert ' = ' — Dragon-era "cache and assign"
+  // "and" is optional: Whisper often drops it ("cache assign")
+  rule("cache\\s+(?:and\\s+)?assign", (_) => ({ cmd: "cacheAndAssign" })),
+  // Cache selection (or word at cursor if nothing selected)
+  rule("cache\\s+(?:this|that|selection|word)", (_) => ({ cmd: "cacheSelection" })),
   // Word selection & bracket matching
   rule("double\\s+select", (_) => ({ cmd: "selectWord" })),
   rule(
@@ -1241,8 +1264,9 @@ var UNIVERSAL = [
     cmds: [
       { phrase: "recent N  (or: cache N)", desc: "Insert identifier from slot N (1\u201320)" },
       { phrase: "at sign recent N", desc: "Insert @identifier from slot N" },
-      { phrase: "cache word", desc: "Push word at cursor into slot 1" },
-      { phrase: "clear cache pad", desc: "Empty all slots" }
+      { phrase: "cache word  (or: cache this / cache that)", desc: "Push word at cursor (or selection) into slot 1" },
+      { phrase: "cache and assign", desc: "Cache word at cursor then insert  =  (Dragon-era compound)" },
+      { phrase: "empty cache pad  (or: clear cache pad)", desc: "Empty all slots" }
     ]
   },
   {
@@ -1265,6 +1289,24 @@ var UNIVERSAL = [
       { phrase: "copy / cut / paste", desc: "Clipboard operations" },
       { phrase: "undo / redo", desc: "Standard undo / redo" },
       { phrase: "comment line", desc: "Toggle line comment" }
+    ]
+  },
+  {
+    title: "Text Formatting  (instant, no LLM)",
+    cmds: [
+      { phrase: "smash word1 word2 \u2026", desc: "Join as lowercase: defaultdict" },
+      { phrase: "camel word1 word2 \u2026", desc: "camelCase: defaultDict" },
+      { phrase: "pascal word1 word2 \u2026  (or: hammer \u2026)", desc: "PascalCase: DefaultDict" },
+      { phrase: "snake word1 word2 \u2026", desc: "snake_case: default_dict" },
+      { phrase: "constant word1 word2 \u2026", desc: "CONSTANT_CASE: DEFAULT_DICT" },
+      { phrase: "kebab word1 word2 \u2026", desc: "kebab-case: default-dict" },
+      { phrase: "smash that  (or: camel / snake / pascal / constant / kebab that)", desc: "Apply format to selected text" },
+      { phrase: "section header [label]", desc: "Insert # \u2500\u2500\u2500 LABEL \u2500\u2500\u2500 comment (fills LABEL_TEMPLATE if no label given)" },
+      { phrase: "comment block title", desc: "# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 / # Title / # \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 (fast-path)" },
+      { phrase: "underline", desc: "Insert = chars matching length of line above cursor" },
+      { phrase: "underline dashes", desc: "Insert - chars matching length of line above cursor" },
+      { phrase: "numeral N  (or: number N)", desc: 'Insert digit(s) literally \u2014 avoids Whisper writing "two" instead of 2' },
+      { phrase: "return  (or: enter, new line)", desc: 'Insert newline \u2014 prefer "return" at utterance end; Whisper swallows "new line" as punctuation' }
     ]
   },
   {
@@ -1878,6 +1920,11 @@ ${dashes}
       case "cacheCurrentWord":
         this.cache.cacheWordAtCursor();
         break;
+      case "cacheAndAssign": {
+        this.cache.cacheWordAtOrBeforeCursor();
+        if (editor) await editor.edit((eb) => eb.insert(editor.selection.active, " = "));
+        break;
+      }
       case "refreshCachePad":
         this.cache.unsuppress();
         if (editor) this.cache.absorbDocument(editor.document);

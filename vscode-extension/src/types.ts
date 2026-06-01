@@ -68,7 +68,8 @@ export type InboundMessage =
   | { cmd: 'dictateText';       text: string }
   | { cmd: 'underlineLine';     char?: string }
   | { cmd: 'revertTransactions'; n: number }
-  | { cmd: 'sectionHeader';     label: string };
+  | { cmd: 'sectionHeader';     label: string }
+  | { cmd: 'cacheAndAssign' };
 
 export type OutboundMessage =
   | { ok: true }
