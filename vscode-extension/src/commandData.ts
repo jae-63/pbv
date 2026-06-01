@@ -19,7 +19,7 @@ export const TEMPLATE_CMDS: TemplateCmd[] = [
     // ---- Python boilerplate -------------------------------------------------
     { lang: 'python', phrase: 'shebang',
       // "hash bang" = technical name; catches "bang" alone and Whisper mishearings
-      pattern: '(?:python\\s+)?(?:shebang|hash\\s*bang)',
+      pattern: '(?:python\\s+)?(?:sh[ea]\\s*bang|hash\\s*bang)',
       text: '#!/usr/bin/env python3\n',
       desc: '#!/usr/bin/env python3  (say "shebang" or "hash bang")' },
 
