@@ -697,6 +697,10 @@ const NATO_SEQ_RE = (() => {
 
 function normalizeDictation(text: string): string {
     let t = text;
+    // Strip Whisper's auto-inserted sentence-end periods ("romeo. Echo." → "romeo Echo").
+    // In code dictation, bare periods from Whisper are always noise — real periods
+    // come from the user saying "period" (the word), handled below.
+    t = t.replace(/\.(\s+)/g, '$1').replace(/\.$/, '');
     // Explicit "letter X" → single char (safe in any context)
     t = t.replace(/\bletter\s+([a-z][a-z-]*)/gi, (_, w) => natoToChar(w));
     // Bare sequences of 2+ consecutive NATO words → abbreviation
@@ -727,6 +731,9 @@ function normalizeDictation(text: string): string {
         .replace(/\bopen\s+(?:bracket|square\s+bracket)\s+/gi, '[')
         .replace(/\bopen\s+(?:brace|curly)\s+/gi,        '{')
         .replace(/\bopen\s+quote\s+/gi,                  '"');
+    // Merge adjacent single-letter contractions: "r e" → "re", "r e n" → "ren"
+    // Handles Whisper splitting "letter romeo letter echo" across sentence boundaries.
+    t = t.replace(/\b([a-z])\s+(?=[a-z]\b)/g, '$1');
     return t;
 }
 

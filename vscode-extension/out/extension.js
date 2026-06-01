@@ -1992,6 +1992,7 @@ var NATO_SEQ_RE = (() => {
 })();
 function normalizeDictation(text) {
   let t = text;
+  t = t.replace(/\.(\s+)/g, "$1").replace(/\.$/, "");
   t = t.replace(/\bletter\s+([a-z][a-z-]*)/gi, (_, w) => natoToChar(w));
   t = t.replace(
     NATO_SEQ_RE,
@@ -1999,6 +2000,7 @@ function normalizeDictation(text) {
   );
   t = t.replace(/\bnew\s*line\b/gi, "\n").replace(/\s+comma\b/gi, ",").replace(/\s+period\b/gi, ".").replace(/\s+full\s+stop\b/gi, ".").replace(/\s+exclamation\s+(?:mark|point)\b/gi, "!").replace(/\s+question\s+mark\b/gi, "?").replace(/\s+colon\b/gi, ":").replace(/\s+semicolon\b/gi, ";").replace(/\s+hyphen\b/gi, "-").replace(/\s+dash\b/gi, " \u2014").replace(/\s+apostrophe\b/gi, "'").replace(/\s+close\s+(?:paren|parenthesis)\b/gi, ")").replace(/\s+close\s+(?:bracket|square\s+bracket)\b/gi, "]").replace(/\s+close\s+(?:brace|curly)\b/gi, "}").replace(/\s+close\s+quote\b/gi, '"');
   t = t.replace(/\bopen\s+(?:paren|parenthesis)\s+/gi, "(").replace(/\bopen\s+(?:bracket|square\s+bracket)\s+/gi, "[").replace(/\bopen\s+(?:brace|curly)\s+/gi, "{").replace(/\bopen\s+quote\s+/gi, '"');
+  t = t.replace(/\b([a-z])\s+(?=[a-z]\b)/g, "$1");
   return t;
 }
 function traversalRegex(languageId, pattern) {
