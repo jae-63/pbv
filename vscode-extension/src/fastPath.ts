@@ -306,6 +306,8 @@ const NO_ARG_COMMANDS = [
     'selectAll', 'selectWord', 'matchParen',
     // Clipboard / history
     'copy', 'cut', 'paste', 'undo', 'redo',
+    // File / tabs
+    'newFile', 'saveAs', 'closeFile', 'nextFile', 'previousFile', 'reopenFile',
     // Document
     'save', 'formatDocument', 'toggleLineComment',
     // Misc

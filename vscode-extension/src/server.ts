@@ -23,6 +23,12 @@ const VSCODE_COMMANDS: Record<string, string> = {
     copy:               'editor.action.clipboardCopyAction',
     paste:              'editor.action.clipboardPasteAction',
     save:               'workbench.action.files.save',
+    saveAs:             'workbench.action.files.saveAs',
+    newFile:            'workbench.action.files.newUntitledFile',
+    closeFile:          'workbench.action.closeActiveEditor',
+    nextFile:           'workbench.action.nextEditor',
+    previousFile:       'workbench.action.previousEditor',
+    reopenFile:         'workbench.action.reopenClosedEditor',
     formatDocument:     'editor.action.formatDocument',
     toggleLineComment:  'editor.action.commentLine',
     find:               'actions.find',
@@ -177,12 +183,6 @@ export class IpcServer {
                     return;
                 }
 
-                if (!this.claude) {
-                    vscode.window.showWarningMessage(
-                        'PBV: LLM client not initialized (check pbv.ollamaModel setting)'
-                    );
-                    return;
-                }
                 const { commands, remainder } = fastInterpretMulti(raw);
                 if (commands.length > 0) {
                     const labels = commands.map(c => this.describeCmd(c as InboundMessage)).join(' | ');
@@ -197,6 +197,12 @@ export class IpcServer {
                 // or the full utterance if nothing was consumed.
                 const llmInput = remainder || raw;
                 if (commands.length > 0 && !remainder) return;
+                if (!this.claude) {
+                    vscode.window.showWarningMessage(
+                        'PBV: LLM client not initialized (check pbv.ollamaModel setting)'
+                    );
+                    return;
+                }
                 const snap = this.editorSnapshot();
 
                 // Rule-based transform fast path (selected text + known utterance).

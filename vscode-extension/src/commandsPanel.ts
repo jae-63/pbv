@@ -57,10 +57,16 @@ const UNIVERSAL: Section[] = [
         ],
     },
     {
-        title: 'Document',
+        title: 'File / Tabs',
         cmds: [
-            { phrase: 'save',    desc: 'Save file' },
-            { phrase: 'format',  desc: 'Format document' },
+            { phrase: 'save',          desc: 'Save current file' },
+            { phrase: 'save as',       desc: 'Save with new name / location' },
+            { phrase: 'new file',      desc: 'Open new untitled buffer' },
+            { phrase: 'close file',    desc: 'Close active editor (prompts if unsaved)' },
+            { phrase: 'next file',     desc: 'Cycle to next open tab' },
+            { phrase: 'previous file', desc: 'Cycle to previous open tab' },
+            { phrase: 'reopen file',   desc: 'Reopen last closed editor' },
+            { phrase: 'format',        desc: 'Format document' },
         ],
     },
     {

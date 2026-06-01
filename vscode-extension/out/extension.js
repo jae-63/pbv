@@ -936,6 +936,13 @@ var NO_ARG_COMMANDS = [
   "paste",
   "undo",
   "redo",
+  // File / tabs
+  "newFile",
+  "saveAs",
+  "closeFile",
+  "nextFile",
+  "previousFile",
+  "reopenFile",
   // Document
   "save",
   "formatDocument",
@@ -1120,9 +1127,15 @@ var UNIVERSAL = [
     ]
   },
   {
-    title: "Document",
+    title: "File / Tabs",
     cmds: [
-      { phrase: "save", desc: "Save file" },
+      { phrase: "save", desc: "Save current file" },
+      { phrase: "save as", desc: "Save with new name / location" },
+      { phrase: "new file", desc: "Open new untitled buffer" },
+      { phrase: "close file", desc: "Close active editor (prompts if unsaved)" },
+      { phrase: "next file", desc: "Cycle to next open tab" },
+      { phrase: "previous file", desc: "Cycle to previous open tab" },
+      { phrase: "reopen file", desc: "Reopen last closed editor" },
       { phrase: "format", desc: "Format document" }
     ]
   },
@@ -1303,6 +1316,12 @@ var VSCODE_COMMANDS = {
   copy: "editor.action.clipboardCopyAction",
   paste: "editor.action.clipboardPasteAction",
   save: "workbench.action.files.save",
+  saveAs: "workbench.action.files.saveAs",
+  newFile: "workbench.action.files.newUntitledFile",
+  closeFile: "workbench.action.closeActiveEditor",
+  nextFile: "workbench.action.nextEditor",
+  previousFile: "workbench.action.previousEditor",
+  reopenFile: "workbench.action.reopenClosedEditor",
   formatDocument: "editor.action.formatDocument",
   toggleLineComment: "editor.action.commentLine",
   find: "actions.find",
@@ -1419,12 +1438,6 @@ var IpcServer = class {
           }
           return;
         }
-        if (!this.claude) {
-          vscode5.window.showWarningMessage(
-            "PBV: LLM client not initialized (check pbv.ollamaModel setting)"
-          );
-          return;
-        }
         const { commands: commands3, remainder } = fastInterpretMulti(raw);
         if (commands3.length > 0) {
           const labels = commands3.map((c) => this.describeCmd(c)).join(" | ");
@@ -1436,6 +1449,12 @@ var IpcServer = class {
         }
         const llmInput = remainder || raw;
         if (commands3.length > 0 && !remainder) return;
+        if (!this.claude) {
+          vscode5.window.showWarningMessage(
+            "PBV: LLM client not initialized (check pbv.ollamaModel setting)"
+          );
+          return;
+        }
         const snap = this.editorSnapshot();
         if (snap.selectedText) {
           const transformed = tryTransform(raw, snap.selectedText, snap.language);
