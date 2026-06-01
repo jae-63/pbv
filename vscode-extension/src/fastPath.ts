@@ -110,6 +110,8 @@ const RULES: Rule[] = [
 
     // Dictation helpers
     rule('new\\s+line',    _ => ({ cmd: 'insertText', text: '\n' })),
+    // "letter romeo" → 'r',  chainable: "letter romeo letter echo" → two insertions → 're'
+    rule('letter\\s+([a-z][a-z-]*)', m => ({ cmd: 'insertText', text: natoToChar(m[1]) })),
     rule('no\\s+space',    _ => ({ cmd: 'deleteChars', n: 1 })),
     rule('open\\s+string', _ => ({ cmd: 'insertText', text: '"' })),
     rule('close\\s+string',_ => ({ cmd: 'closeString' })),
@@ -186,10 +188,12 @@ const NATO: Record<string, string> = {
     'less than':'<', 'greater than':'>', dash:'-', hyphen:'-',
 };
 
-function natoToChar(word: string): string {
+export function natoToChar(word: string): string {
     const key = word.trim().toLowerCase();
     return NATO[key] ?? key[0] ?? '';
 }
+
+export const NATO_WORDS = new Set(Object.keys(NATO).filter(k => k.length > 1 && /^[a-z-]+$/.test(k)));
 
 // Ordinal word → signed integer (1=first, -1=last, -2=penultimate, etc.)
 const ORDINAL_MAP: Record<string, number> = {

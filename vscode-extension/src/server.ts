@@ -5,7 +5,7 @@ import { CachePad } from './cachepad';
 import { ModeStatusBar } from './statusbar';
 import { gotoLine, gotoWordOnLine, selectToken, selectRange, jumpToCharOnLine } from './navigator';
 import { ClaudeClient, EditorSnapshot } from './claudeClient';
-import { fastInterpret, fastInterpretMulti } from './fastPath';
+import { fastInterpret, fastInterpretMulti, natoToChar, NATO_WORDS } from './fastPath';
 import { tryTransform } from './codeTransform';
 import { showCommandsPanel } from './commandsPanel';
 import type { ExtensionContext } from 'vscode';
@@ -687,9 +687,25 @@ export class IpcServer {
 // Applied to all verbatim-inserted text (dictation mode + Select-and-Say).
 // Rules attach punctuation to the preceding word and preserve following space.
 
+// Pre-built regex for sequences of 2+ consecutive NATO words → abbreviation.
+// Single NATO words are not contracted (too many false positives: echo, golf, mike…).
+// "romeo echo" → "re",  "sierra yankee sierra" → "sys"
+const NATO_SEQ_RE = (() => {
+    const words = [...NATO_WORDS].join('|');
+    return new RegExp(`\\b(?:${words})(?:\\s+(?:${words}))+\\b`, 'gi');
+})();
+
 function normalizeDictation(text: string): string {
+    let t = text;
+    // Explicit "letter X" → single char (safe in any context)
+    t = t.replace(/\bletter\s+([a-z][a-z-]*)/gi, (_, w) => natoToChar(w));
+    // Bare sequences of 2+ consecutive NATO words → abbreviation
+    // "romeo echo" → "re",  used in 'dictate' for module names like 're', 'os', 'sys'
+    t = t.replace(NATO_SEQ_RE, match =>
+        match.split(/\s+/).map(w => natoToChar(w.toLowerCase())).join('')
+    );
     // Closing punctuation: remove preceding space, attach to prior word.
-    let t = text
+    t = t
         .replace(/\bnew\s+line\b/gi,                 '\n')
         .replace(/\s+comma\b/gi,                     ',')
         .replace(/\s+period\b/gi,                    '.')
