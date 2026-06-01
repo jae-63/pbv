@@ -29,6 +29,21 @@ function rule(src: string, build: (m: RegExpMatchArray) => Command): Rule {
     };
 }
 
+// Character names for "press X N times" — keys must be lowercase, no spaces.
+const PRESS_CHARS: Record<string, string> = {
+    equal: '=',  equals: '=',
+    dash: '-',   dashes: '-',  hyphen: '-',
+    hash: '#',   hashes: '#',  pound: '#',
+    star: '*',   stars: '*',   asterisk: '*',
+    underscore: '_',  underscores: '_',
+    tilde: '~',  tildes: '~',
+    dot: '.',    dots: '.',    period: '.',
+    pipe: '|',   pipes: '|',
+    slash: '/',  slashes: '/',
+    backtick: '`', backticks: '`',
+    space: ' ',  spaces: ' ',
+};
+
 const RULES: Rule[] = [
     // Navigation — word on line (before bare "line N")
     rule('(?:go\\s+to\\s+)?word\\s+(\\d+)\\s+(?:on\\s+)?line\\s+(\\d+)',
@@ -120,6 +135,14 @@ const RULES: Rule[] = [
     rule('double\\s+select',   _ => ({ cmd: 'selectWord' })),
     rule('match\\s+(?:this\\s+)?paren(?:thesis)?|match\\s+bracket',
          _ => ({ cmd: 'matchParen' })),
+
+    // Repeat-character insertion — "press equals 22 times", "press dash 40 times"
+    // Unambiguous phrasing avoids clashing with dictated code like "equals 22".
+    rule('(?:press|type)\\s+(' + Object.keys(PRESS_CHARS).join('|') + ')\\s+(\\d+)(?:\\s+times?)?',
+        m => ({ cmd: 'insertText', text: (PRESS_CHARS[m[1].toLowerCase()] ?? '').repeat(n(m[2])) })),
+
+    // Underline — inserts chars matching the length of the line above the cursor
+    rule('underline(?:\\s+dashes?)?', m => ({ cmd: 'underlineLine', char: /dash/i.test(m[0]) ? '-' : '=' })),
 
     // Document ops
     rule('save(?:\\s+(?:the\\s+)?(?:file|document))?', _ => ({ cmd: 'save' })),

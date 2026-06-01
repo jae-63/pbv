@@ -24,8 +24,8 @@ export const TEMPLATE_CMDS: TemplateCmd[] = [
       desc: '#!/usr/bin/env python3  (say "shebang" or "hash bang")' },
 
     { lang: 'python', phrase: 'module doc',
-      text: '"""\n{CURSOR}TITLE_TEMPLATE\n====================\nSUMMARY_TEMPLATE\n"""\n',
-      desc: '"""TITLE / SUMMARY docstring"""' },
+      text: '"""\n{CURSOR}TITLE_TEMPLATE\nUNDERLINE_TEMPLATE\nSUMMARY_TEMPLATE\n"""\n',
+      desc: '"""TITLE / underline / SUMMARY  — say "underline" to auto-fill the separator"' },
 
     { lang: 'python', phrase: 'main guard',
       text: 'if __name__ == "__main__":\n    ',

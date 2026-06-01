@@ -479,8 +479,8 @@ var TEMPLATE_CMDS = [
   {
     lang: "python",
     phrase: "module doc",
-    text: '"""\n{CURSOR}TITLE_TEMPLATE\n====================\nSUMMARY_TEMPLATE\n"""\n',
-    desc: '"""TITLE / SUMMARY docstring"""'
+    text: '"""\n{CURSOR}TITLE_TEMPLATE\nUNDERLINE_TEMPLATE\nSUMMARY_TEMPLATE\n"""\n',
+    desc: '"""TITLE / underline / SUMMARY  \u2014 say "underline" to auto-fill the separator"'
   },
   {
     lang: "python",
@@ -607,6 +607,34 @@ function rule(src, build) {
     build
   };
 }
+var PRESS_CHARS = {
+  equal: "=",
+  equals: "=",
+  dash: "-",
+  dashes: "-",
+  hyphen: "-",
+  hash: "#",
+  hashes: "#",
+  pound: "#",
+  star: "*",
+  stars: "*",
+  asterisk: "*",
+  underscore: "_",
+  underscores: "_",
+  tilde: "~",
+  tildes: "~",
+  dot: ".",
+  dots: ".",
+  period: ".",
+  pipe: "|",
+  pipes: "|",
+  slash: "/",
+  slashes: "/",
+  backtick: "`",
+  backticks: "`",
+  space: " ",
+  spaces: " "
+};
 var RULES = [
   // Navigation — word on line (before bare "line N")
   rule(
@@ -714,6 +742,14 @@ var RULES = [
     "match\\s+(?:this\\s+)?paren(?:thesis)?|match\\s+bracket",
     (_) => ({ cmd: "matchParen" })
   ),
+  // Repeat-character insertion — "press equals 22 times", "press dash 40 times"
+  // Unambiguous phrasing avoids clashing with dictated code like "equals 22".
+  rule(
+    "(?:press|type)\\s+(" + Object.keys(PRESS_CHARS).join("|") + ")\\s+(\\d+)(?:\\s+times?)?",
+    (m) => ({ cmd: "insertText", text: (PRESS_CHARS[m[1].toLowerCase()] ?? "").repeat(n(m[2])) })
+  ),
+  // Underline — inserts chars matching the length of the line above the cursor
+  rule("underline(?:\\s+dashes?)?", (m) => ({ cmd: "underlineLine", char: /dash/i.test(m[0]) ? "-" : "=" })),
   // Document ops
   rule("save(?:\\s+(?:the\\s+)?(?:file|document))?", (_) => ({ cmd: "save" })),
   rule("undo(?:\\s+that)?", (_) => ({ cmd: "undo" })),
@@ -1549,6 +1585,17 @@ var IpcServer = class {
       case "replaceSelection": {
         if (!editor) return;
         await editor.edit((eb) => eb.replace(editor.selection, msg.text));
+        break;
+      }
+      case "underlineLine": {
+        if (!editor) break;
+        const cursorLine = editor.selection.active.line;
+        const aboveLine = cursorLine > 0 ? editor.document.lineAt(cursorLine - 1).text.trimEnd() : "";
+        const len = aboveLine.length;
+        const char = msg.char || "=";
+        const text = len > 0 ? char.repeat(len) : char.repeat(20);
+        const lineRange = editor.document.lineAt(cursorLine).range;
+        await editor.edit((eb) => eb.replace(lineRange, text));
         break;
       }
       // --- Navigation ---

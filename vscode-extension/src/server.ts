@@ -298,6 +298,20 @@ export class IpcServer {
                 break;
             }
 
+            case 'underlineLine': {
+                if (!editor) break;
+                const cursorLine = editor.selection.active.line;
+                const aboveLine  = cursorLine > 0
+                    ? editor.document.lineAt(cursorLine - 1).text.trimEnd()
+                    : '';
+                const len  = aboveLine.length;
+                const char = (msg.char as string) || '=';
+                const text = len > 0 ? char.repeat(len) : char.repeat(20);
+                const lineRange = editor.document.lineAt(cursorLine).range;
+                await editor.edit(eb => eb.replace(lineRange, text));
+                break;
+            }
+
             // --- Navigation ---
             case 'gotoLine':
                 await gotoLine(msg.line);
