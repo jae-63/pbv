@@ -12,7 +12,7 @@ import Network
 
 final class SpeechEngine: NSObject {
 
-    var onTranscript:  ((String) -> Void)?
+    var onTranscript:  ((String, Bool) -> Void)?   // (text, lowConfidence)
     var onStateChange: ((State) -> Void)?
     enum State { case idle, listening, error(String) }
 
@@ -479,9 +479,9 @@ final class SpeechEngine: NSObject {
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
-            guard let text = self.transcribe(captured), !text.isEmpty else { return }
-            NSLog("[PBV] transcript: %@", text)
-            DispatchQueue.main.async { self.onTranscript?(text) }
+            guard let result = self.transcribe(captured), !result.text.isEmpty else { return }
+            NSLog("[PBV] transcript: %@ low_conf=%d", result.text, result.lowConfidence)
+            DispatchQueue.main.async { self.onTranscript?(result.text, result.lowConfidence) }
         }
     }
 
@@ -520,7 +520,12 @@ final class SpeechEngine: NSObject {
     // Whisper transcription via HTTP server
     // ---------------------------------------------------------------------------
 
-    private func transcribe(_ buffers: [AVAudioPCMBuffer]) -> String? {
+    private struct WhisperResult {
+        let text:          String
+        let lowConfidence: Bool   // avg_logprob < -0.8 or fallback temperature used
+    }
+
+    private func transcribe(_ buffers: [AVAudioPCMBuffer]) -> WhisperResult? {
         let tmpURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("vc_\(arc4random()).wav")
         defer { try? FileManager.default.removeItem(at: tmpURL) }
@@ -554,7 +559,7 @@ final class SpeechEngine: NSObject {
         req.httpBody = body
 
         let sem  = DispatchSemaphore(value: 0)
-        var text: String?
+        var result: WhisperResult?
         URLSession.shared.dataTask(with: req) { data, _, _ in
             defer { sem.signal() }
             guard let data,
@@ -564,6 +569,25 @@ final class SpeechEngine: NSObject {
                 return
             }
             SpeechEngine.transcriptLog("raw:     \(raw.trimmingCharacters(in: .whitespacesAndNewlines))")
+
+            // --- Segment-level confidence metrics ---
+            let segs = json["segments"] as? [[String: Any]] ?? []
+            let maxNoSpeechProb = segs.compactMap { $0["no_speech_prob"] as? Double }.max() ?? 0
+            let minAvgLogProb   = segs.compactMap { $0["avg_logprob"]   as? Double }.min() ?? 0
+            let anyFallbackTemp = segs.compactMap { $0["temperature"]   as? Double }.contains { $0 > 0 }
+            SpeechEngine.transcriptLog(String(format: "conf:    no_speech=%.2f logprob=%.2f fallback_temp=%@",
+                                              maxNoSpeechProb, minAvgLogProb, anyFallbackTemp ? "yes" : "no"))
+
+            // Filter 1: no_speech_prob — silence/hallucination detector.
+            // Whisper's own internal threshold is 0.6; we use 0.65 to be slightly
+            // more permissive (prefer missing a filter over blocking real speech).
+            if maxNoSpeechProb > 0.65 {
+                SpeechEngine.transcriptLog(String(format: "filtered (no_speech=%.2f): %@",
+                                                  maxNoSpeechProb,
+                                                  raw.trimmingCharacters(in: .whitespacesAndNewlines)))
+                return
+            }
+
             let cleaned = raw
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .replacingOccurrences(of: #"<\|[^|]+\|>"#, with: "",
@@ -571,18 +595,26 @@ final class SpeechEngine: NSObject {
                 .replacingOccurrences(of: #"\[[A-Z_]+\]"#, with: "",
                                       options: .regularExpression)  // [BLANK_AUDIO], [MUSIC], etc.
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            // Filter common Whisper hallucinations on near-silence.
+
+            // Filter 2: text-based hallucination list (covers zero-segment edge case).
             let lower = cleaned.lowercased()
             let hallucinations = ["you", "thank you", "thanks", ".", ""]
             if hallucinations.contains(lower) {
-                SpeechEngine.transcriptLog("filtered: \(cleaned)")
+                SpeechEngine.transcriptLog("filtered (hallucination): \(cleaned)")
                 return
             }
-            SpeechEngine.transcriptLog("sent:    \(cleaned)")
-            text = cleaned
+
+            // Low-confidence flag — passed to extension to gate destructive commands.
+            // avg_logprob < -0.8: model was uncertain about the whole segment.
+            // anyFallbackTemp: greedy decode failed; Whisper resampled at higher temp.
+            let lowConfidence = minAvgLogProb < -0.8 || anyFallbackTemp
+            SpeechEngine.transcriptLog(lowConfidence
+                ? "sent [low_conf]: \(cleaned)"
+                : "sent:    \(cleaned)")
+            result = WhisperResult(text: cleaned, lowConfidence: lowConfidence)
         }.resume()
         sem.wait()
-        return text
+        return result
     }
 
     // ---------------------------------------------------------------------------

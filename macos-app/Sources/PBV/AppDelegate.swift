@@ -66,7 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         speech = SpeechEngine()
         speech.preferBuiltInMic = UserDefaults.standard.object(forKey: "preferBuiltInMic") as? Bool ?? false
-        speech.onTranscript = { [weak self] text in self?.handle(transcript: text) }
+        speech.onTranscript = { [weak self] text, lowConf in self?.handle(transcript: text, lowConfidence: lowConf) }
         speech.onStateChange = { [weak self] state in self?.handleSpeechState(state) }
 
         speech.requestPermissions { [weak self] granted in
@@ -84,11 +84,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // Transcript handler — forward raw speech to VSCode for Claude interpretation
     // ---------------------------------------------------------------------------
 
-    private func handle(transcript: String) {
+    private func handle(transcript: String, lowConfidence: Bool = false) {
         NSLog("[PBV] transcript: %@", transcript)
         overlay.showUtterance(transcript)
         if handleScrollCommand(transcript) { return }
-        client.sendTranscript(transcript)
+        client.sendTranscript(transcript, lowConfidence: lowConfidence)
     }
 
     // Returns true if the transcript was consumed by scroll/traverse mode.

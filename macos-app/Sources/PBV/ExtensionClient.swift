@@ -46,8 +46,10 @@ final class ExtensionClient {
         send(["cmd": "insertText", "text": text])
     }
 
-    func sendTranscript(_ text: String) {
-        send(["cmd": "transcript", "text": text])
+    func sendTranscript(_ text: String, lowConfidence: Bool = false) {
+        var msg: [String: Any] = ["cmd": "transcript", "text": text]
+        if lowConfidence { msg["lowConfidence"] = true }
+        send(msg)
     }
 
     func sendSetMode(_ mode: String) {
