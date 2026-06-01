@@ -192,6 +192,57 @@ describe('opening punctuation', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Dragon-style modifiers: cap, no-space
+// ---------------------------------------------------------------------------
+describe('cap modifier', () => {
+    test('"cap path" → "Path"', () => {
+        expect(normalizeDictation('cap path')).toBe('Path');
+    });
+
+    test('"capitalize path" → "Path" (alias for cap)', () => {
+        expect(normalizeDictation('capitalize path')).toBe('Path');
+    });
+
+    test('"from pathlib import cap path" → "from pathlib import Path"', () => {
+        expect(normalizeDictation('from pathlib import cap path')).toBe('from pathlib import Path');
+    });
+
+    test('"from pathlib import capitalize path" → "from pathlib import Path"', () => {
+        expect(normalizeDictation('from pathlib import capitalize path')).toBe('from pathlib import Path');
+    });
+
+    test('"cap letter romeo" → "R" (cap + NATO contraction)', () => {
+        expect(normalizeDictation('cap letter romeo')).toBe('R');
+    });
+
+    test('"cap" does not fire mid-word on "no-space" keyword', () => {
+        // Supported ordering is "no-space cap dict" (no-space before cap).
+        // "cap no-space dict" is ambiguous; no-space parks \x00 between cap and dict
+        // leaving "capdict" — acceptable since "no-space cap" is the canonical form.
+        expect(normalizeDictation('text no-space cap dict')).toBe('textDict');
+    });
+});
+
+describe('no-space modifier', () => {
+    test('"default no-space dict" → "defaultdict"', () => {
+        expect(normalizeDictation('from collections import default no-space dict'))
+            .toBe('from collections import defaultdict');
+    });
+
+    test('"no space" (two words) also works', () => {
+        expect(normalizeDictation('default no space dict')).toBe('defaultdict');
+    });
+
+    test('"default no-space cap dict" → "defaultDict"', () => {
+        expect(normalizeDictation('default no-space cap dict')).toBe('defaultDict');
+    });
+
+    test('"ordered no-space dict" → "ordereddict"', () => {
+        expect(normalizeDictation('ordered no-space dict')).toBe('ordereddict');
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Combined / real-world utterances
 // ---------------------------------------------------------------------------
 describe('combined real-world utterances', () => {

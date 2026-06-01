@@ -34,6 +34,7 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
+var fs2 = __toESM(require("fs"));
 var vscode7 = __toESM(require("vscode"));
 
 // src/cachepad.ts
@@ -722,6 +723,14 @@ var RULES = [
     "delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?",
     (_) => ({ cmd: "deleteToEndOfLine" })
   ),
+  // Templates with optional inline argument — must precede TEMPLATE_CMDS rules
+  // so the more-specific pattern wins over the bare phrase match.
+  // "section header"          → LABEL_TEMPLATE placeholder (language-aware comment char)
+  // "section header Constants" → inserts with "Constants" filled in immediately
+  rule(
+    "section\\s+header(?:\\s+(.+))?",
+    (m) => ({ cmd: "sectionHeader", label: m[1] ?? "" })
+  ),
   // Text-insertion templates — derived from TEMPLATE_CMDS in commandData.ts.
   // Add new templates there; no change here needed.
   ...TEMPLATE_CMDS.map((tc) => {
@@ -1167,6 +1176,32 @@ ${indent}`
   }
   if (/\b(make\s+)?upper\s*(case)?\b/.test(utt)) return selected.toUpperCase();
   if (/\b(make\s+)?lower\s*(case)?\b/.test(utt)) return selected.toLowerCase();
+  const thatMatch = utt.match(
+    /^(smash|camel|hammer|pascal|snake|constant|kebab|dotted|packed)\s+that$/
+  );
+  if (thatMatch) {
+    const cap1 = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    const tokens = selected.trim().split(/[\s_\-]+/).filter(Boolean);
+    switch (thatMatch[1]) {
+      case "smash":
+        return tokens.map((s) => s.toLowerCase()).join("");
+      case "camel":
+        return tokens[0].toLowerCase() + tokens.slice(1).map(cap1).join("");
+      case "hammer":
+      case "pascal":
+        return tokens.map(cap1).join("");
+      case "snake":
+        return tokens.map((s) => s.toLowerCase()).join("_");
+      case "constant":
+        return tokens.map((s) => s.toUpperCase()).join("_");
+      case "kebab":
+        return tokens.map((s) => s.toLowerCase()).join("-");
+      case "dotted":
+        return tokens.map((s) => s.toLowerCase()).join(".");
+      case "packed":
+        return tokens.map((s) => s.toLowerCase()).join("::");
+    }
+  }
   return null;
 }
 
@@ -1176,6 +1211,14 @@ var fs = __toESM(require("fs"));
 var os = __toESM(require("os"));
 var path = __toESM(require("path"));
 var import_child_process = require("child_process");
+function extensionMtime() {
+  try {
+    const t = require("fs").statSync(__filename).mtime;
+    return t.toISOString().slice(0, 16).replace("T", " ");
+  } catch {
+    return "unknown";
+  }
+}
 var UNIVERSAL = [
   {
     title: "Navigation",
@@ -1372,7 +1415,7 @@ function buildHtml(lang) {
 </style>
 </head>
 <body>
-<h1>PBV Commands${langLabel ? ` <small style="font-weight:400;color:#888">${esc(langLabel.slice(3))}</small>` : ""} <small style="font-weight:400;font-size:10px;color:#555;font-family:monospace">${"26d6e24"}</small></h1>
+<h1>PBV Commands${langLabel ? ` <small style="font-weight:400;color:#888">${esc(langLabel.slice(3))}</small>` : ""} <small style="font-weight:400;font-size:10px;color:#555;font-family:monospace">${extensionMtime()}</small></h1>
 <input id="filter" type="text" placeholder="Filter commands\u2026" autofocus>
 ${sections.map(renderSection).join("\n")}
 <script>
@@ -1674,6 +1717,43 @@ var IpcServer = class {
         await editor.edit(
           (eb) => sel.isEmpty ? eb.insert(sel.active, dictated) : eb.replace(sel, dictated)
         );
+        break;
+      }
+      case "sectionHeader": {
+        if (!editor) break;
+        const COMMENT = {
+          python: "#",
+          terraform: "#",
+          yaml: "#",
+          shellscript: "#",
+          go: "//",
+          typescript: "//",
+          javascript: "//",
+          rust: "//",
+          c: "//",
+          cpp: "//"
+        };
+        const ch = COMMENT[editor.document.languageId] ?? "#";
+        const dashes = `${ch} ${"-".repeat(75)}`;
+        const raw = msg.label;
+        const label = raw ? normalizeDictation(raw) : "LABEL_TEMPLATE";
+        const startLine = editor.selection.active.line;
+        await editor.edit((eb) => eb.insert(
+          editor.selection.active,
+          `${dashes}
+${ch} ${label}
+${dashes}
+`
+        ));
+        if (raw) {
+          const after = new vscode5.Position(startLine + 3, 0);
+          editor.selection = new vscode5.Selection(after, after);
+        } else {
+          const col = ch.length + 1;
+          const start = new vscode5.Position(startLine + 1, col);
+          const end = new vscode5.Position(startLine + 1, col + "LABEL_TEMPLATE".length);
+          editor.selection = new vscode5.Selection(start, end);
+        }
         break;
       }
       case "underlineLine": {
@@ -2080,6 +2160,9 @@ function normalizeDictation(text) {
     NATO_SEQ_RE,
     (match) => match.split(/\s+/).map((w) => natoToChar(w.toLowerCase())).join("")
   );
+  t = t.replace(/\s+no[\s-]space\s+/gi, "\0");
+  t = t.replace(/\b(?:cap|capitalize)\s+(\w)(\w*)/gi, (_, f, r) => f.toUpperCase() + r);
+  t = t.replace(/\x00/g, "");
   t = t.replace(/\bnew\s*line\b/gi, "\n").replace(/\s+comma\b/gi, ",").replace(/\s+period\b/gi, ".").replace(/\s+full\s+stop\b/gi, ".").replace(/\s+exclamation\s+(?:mark|point)\b/gi, "!").replace(/\s+question\s+mark\b/gi, "?").replace(/\s+colon\b/gi, ":").replace(/\s+semicolon\b/gi, ";").replace(/\s+hyphen\b\s*/gi, "-").replace(/\s+dash\b/gi, " \u2014").replace(/\s+apostrophe\b\s*/gi, "'").replace(/\s+close\s+(?:paren|parenthesis)\b/gi, ")").replace(/\s+close\s+(?:bracket|square\s+bracket)\b/gi, "]").replace(/\s+close\s+(?:brace|curly)\b/gi, "}").replace(/\s+close\s+quote\b/gi, '"');
   t = t.replace(/\bopen\s+(?:paren|parenthesis)\s+/gi, "(").replace(/\bopen\s+(?:bracket|square\s+bracket)\s+/gi, "[").replace(/\bopen\s+(?:brace|curly)\s+/gi, "{").replace(/\bopen\s+quote\s+/gi, '"');
   t = t.replace(/\b([a-z])\s+(?=[a-z]\b)/g, "$1");
@@ -2247,8 +2330,16 @@ function windowForLines(content, startLine, endLine) {
 }
 
 // src/extension.ts
+function extensionMtime2() {
+  try {
+    const t = fs2.statSync(__filename).mtime;
+    return t.toISOString().slice(0, 16).replace("T", " ");
+  } catch {
+    return "unknown";
+  }
+}
 function activate(context) {
-  vscode7.window.setStatusBarMessage(`PBV loaded (${"26d6e24"})`, 6e3);
+  vscode7.window.setStatusBarMessage(`PBV loaded (${extensionMtime2()})`, 6e3);
   const config = vscode7.workspace.getConfiguration("pbv");
   const port = config.get("port", 7890);
   const maxItems = config.get("maxCacheItems", 20);

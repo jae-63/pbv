@@ -1,7 +1,14 @@
 import * as vscode from 'vscode';
 import { TEMPLATE_CMDS } from './commandData';
 
-declare const BUILD_HASH: string;
+function extensionMtime(): string {
+    try {
+        // fs is imported later in this file for the panel writer — use require to avoid duplicate
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const t = (require('fs') as typeof import('fs')).statSync(__filename).mtime;
+        return t.toISOString().slice(0, 16).replace('T', ' ');
+    } catch { return 'unknown'; }
+}
 
 // ---------------------------------------------------------------------------
 // Command data
@@ -222,7 +229,7 @@ function buildHtml(lang: string): string {
 </style>
 </head>
 <body>
-<h1>PBV Commands${langLabel ? ` <small style="font-weight:400;color:#888">${esc(langLabel.slice(3))}</small>` : ''} <small style="font-weight:400;font-size:10px;color:#555;font-family:monospace">${BUILD_HASH}</small></h1>
+<h1>PBV Commands${langLabel ? ` <small style="font-weight:400;color:#888">${esc(langLabel.slice(3))}</small>` : ''} <small style="font-weight:400;font-size:10px;color:#555;font-family:monospace">${extensionMtime()}</small></h1>
 <input id="filter" type="text" placeholder="Filter commands…" autofocus>
 ${sections.map(renderSection).join('\n')}
 <script>

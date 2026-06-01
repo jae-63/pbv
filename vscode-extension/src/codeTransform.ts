@@ -81,5 +81,32 @@ export function tryTransform(utterance: string, selected: string, language: stri
     if (/\b(make\s+)?upper\s*(case)?\b/.test(utt)) return selected.toUpperCase();
     if (/\b(make\s+)?lower\s*(case)?\b/.test(utt)) return selected.toLowerCase();
 
+    // ── "smash that", "camel that", "snake that" etc. on selected words ──────
+    // Splits selection on whitespace/underscores/hyphens, then reformats.
+    // "smash that"    → "defaultdict"   (all lower, joined)
+    // "camel that"    → "defaultDict"   (camelCase)
+    // "hammer that"   → "DefaultDict"   (PascalCase)
+    // "snake that"    → "default_dict"
+    // "constant that" → "DEFAULT_DICT"
+    // "kebab that"    → "default-dict"
+    const thatMatch = utt.match(
+        /^(smash|camel|hammer|pascal|snake|constant|kebab|dotted|packed)\s+that$/
+    );
+    if (thatMatch) {
+        const cap1 = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+        const tokens = selected.trim().split(/[\s_\-]+/).filter(Boolean);
+        switch (thatMatch[1]) {
+            case 'smash':    return tokens.map(s => s.toLowerCase()).join('');
+            case 'camel':    return tokens[0].toLowerCase() + tokens.slice(1).map(cap1).join('');
+            case 'hammer':
+            case 'pascal':   return tokens.map(cap1).join('');
+            case 'snake':    return tokens.map(s => s.toLowerCase()).join('_');
+            case 'constant': return tokens.map(s => s.toUpperCase()).join('_');
+            case 'kebab':    return tokens.map(s => s.toLowerCase()).join('-');
+            case 'dotted':   return tokens.map(s => s.toLowerCase()).join('.');
+            case 'packed':   return tokens.map(s => s.toLowerCase()).join('::');
+        }
+    }
+
     return null;
 }

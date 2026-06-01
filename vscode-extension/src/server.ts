@@ -367,6 +367,34 @@ export class IpcServer {
                 break;
             }
 
+            case 'sectionHeader': {
+                if (!editor) break;
+                const COMMENT: Record<string, string> = {
+                    python: '#', terraform: '#', yaml: '#', shellscript: '#',
+                    go: '//', typescript: '//', javascript: '//', rust: '//', c: '//', cpp: '//',
+                };
+                const ch        = COMMENT[editor.document.languageId] ?? '#';
+                const dashes    = `${ch} ${'-'.repeat(75)}`;
+                const raw       = msg.label as string;
+                const label     = raw ? normalizeDictation(raw) : 'LABEL_TEMPLATE';
+                const startLine = editor.selection.active.line;
+                await editor.edit(eb =>
+                    eb.insert(editor.selection.active,
+                        `${dashes}\n${ch} ${label}\n${dashes}\n`));
+                if (raw) {
+                    // Filled: cursor on the blank line after the block.
+                    const after = new vscode.Position(startLine + 3, 0);
+                    editor.selection = new vscode.Selection(after, after);
+                } else {
+                    // Template: select LABEL_TEMPLATE so Select-and-Say fires immediately.
+                    const col   = ch.length + 1;  // skip "ch " prefix
+                    const start = new vscode.Position(startLine + 1, col);
+                    const end   = new vscode.Position(startLine + 1, col + 'LABEL_TEMPLATE'.length);
+                    editor.selection = new vscode.Selection(start, end);
+                }
+                break;
+            }
+
             case 'underlineLine': {
                 if (!editor) break;
                 const cursorLine = editor.selection.active.line;
@@ -799,6 +827,13 @@ export function normalizeDictation(text: string): string {
     t = t.replace(NATO_SEQ_RE, match =>
         match.split(/\s+/).map(w => natoToChar(w.toLowerCase())).join('')
     );
+    // Dragon-style word modifiers — applied after letter contractions so
+    // "cap letter romeo" → 'R' and "default no-space dict" → "defaultdict".
+    // no-space is parked as a join marker first so "no-space cap dict" → "Dict"
+    // attached to the previous word works even when cap follows no-space.
+    t = t.replace(/\s+no[\s-]space\s+/gi, '\x00');
+    t = t.replace(/\b(?:cap|capitalize)\s+(\w)(\w*)/gi, (_, f, r) => f.toUpperCase() + r);
+    t = t.replace(/\x00/g, '');
     // Closing punctuation: remove preceding space, attach to prior word.
     t = t
         .replace(/\bnew\s*line\b/gi,                  '\n')

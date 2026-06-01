@@ -101,6 +101,13 @@ const RULES: Rule[] = [
     rule('delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?',
          _ => ({ cmd: 'deleteToEndOfLine' })),
 
+    // Templates with optional inline argument — must precede TEMPLATE_CMDS rules
+    // so the more-specific pattern wins over the bare phrase match.
+    // "section header"          → LABEL_TEMPLATE placeholder (language-aware comment char)
+    // "section header Constants" → inserts with "Constants" filled in immediately
+    rule('section\\s+header(?:\\s+(.+))?',
+        m => ({ cmd: 'sectionHeader', label: m[1] ?? '' })),
+
     // Text-insertion templates — derived from TEMPLATE_CMDS in commandData.ts.
     // Add new templates there; no change here needed.
     ...TEMPLATE_CMDS.map(tc => {
