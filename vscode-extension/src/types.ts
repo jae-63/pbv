@@ -65,8 +65,9 @@ export type InboundMessage =
   | { cmd: 'deleteLine' }
   | { cmd: 'deleteToEndOfLine' }
   | { cmd: 'duplicateLine' }
-  | { cmd: 'dictateText';  text: string }
-  | { cmd: 'underlineLine'; char?: string };
+  | { cmd: 'dictateText';       text: string }
+  | { cmd: 'underlineLine';     char?: string }
+  | { cmd: 'revertTransactions'; n: number };
 
 export type OutboundMessage =
   | { ok: true }

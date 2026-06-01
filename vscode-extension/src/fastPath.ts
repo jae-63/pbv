@@ -173,6 +173,8 @@ const RULES: Rule[] = [
     // ("save as" must beat the "save" prefix; "undo transaction" must beat "undo")
     rule('save\\s+as', _ => ({ cmd: 'saveAs' })),
     rule('save(?:\\s+(?:the\\s+)?(?:file|document))?', _ => ({ cmd: 'save' })),
+    rule('(?:revert|undo)\\s+(\\d+)\\s+transactions?',
+        m => ({ cmd: 'revertTransactions', n: n(m[1]) })),
     rule('undo\\s+transaction', _ => ({ cmd: 'undoTransaction' })),
     rule('undo(?:\\s+that)?', _ => ({ cmd: 'undo' })),
     rule('format(?:\\s+(?:the\\s+)?(?:file|document))?', _ => ({ cmd: 'formatDocument' })),

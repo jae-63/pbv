@@ -792,6 +792,10 @@ var RULES = [
   // ("save as" must beat the "save" prefix; "undo transaction" must beat "undo")
   rule("save\\s+as", (_) => ({ cmd: "saveAs" })),
   rule("save(?:\\s+(?:the\\s+)?(?:file|document))?", (_) => ({ cmd: "save" })),
+  rule(
+    "(?:revert|undo)\\s+(\\d+)\\s+transactions?",
+    (m) => ({ cmd: "revertTransactions", n: n(m[1]) })
+  ),
   rule("undo\\s+transaction", (_) => ({ cmd: "undoTransaction" })),
   rule("undo(?:\\s+that)?", (_) => ({ cmd: "undo" })),
   rule("format(?:\\s+(?:the\\s+)?(?:file|document))?", (_) => ({ cmd: "formatDocument" })),
@@ -1430,6 +1434,13 @@ var VSCODE_COMMANDS = {
   pageUp: "scrollPageUp",
   pageDown: "scrollPageDown"
 };
+var TX_COLORS = ["#1a7a1a", "#4ca64c", "#80c080", "#b3d9b3"];
+function txGutterIcon(color) {
+  const hex = color.replace("#", "%23");
+  return vscode5.Uri.parse(
+    `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14'><circle cx='7' cy='7' r='5' fill='${hex}'/></svg>`
+  );
+}
 var IpcServer = class {
   constructor(port, cache, statusBar, context, claude) {
     this.cache = cache;
@@ -1438,6 +1449,9 @@ var IpcServer = class {
     this.claude = claude;
     this.sockets = /* @__PURE__ */ new Set();
     this.llmAbort = null;
+    // Transaction stack — each startUndoGroup pushes a frame; revertTransactions pops N.
+    this.txStack = [];
+    this.txDecoTypes = [];
     // Scroll / traversal state
     this.traversalMatches = null;
     this.traversalIndex = 0;
@@ -1449,6 +1463,16 @@ var IpcServer = class {
     this.server.on("error", (err) => {
       vscode5.window.showErrorMessage(`PBV IPC error: ${err.message}`);
     });
+    this.txDecoTypes = TX_COLORS.map(
+      (color) => vscode5.window.createTextEditorDecorationType({
+        gutterIconPath: txGutterIcon(color),
+        gutterIconSize: "contain"
+      })
+    );
+    context.subscriptions.push(...this.txDecoTypes);
+    context.subscriptions.push(
+      vscode5.window.onDidChangeActiveTextEditor(() => this.refreshTxDecorations())
+    );
     context.subscriptions.push(
       vscode5.commands.registerCommand("pbv.scrollStep", () => this.scrollStep(1)),
       vscode5.commands.registerCommand("pbv.scrollStepBack", () => this.scrollStep(-1))
@@ -1873,35 +1897,67 @@ var IpcServer = class {
         );
         break;
       }
-      case "undoTransaction": {
-        if (!this.mark) {
-          vscode5.window.setStatusBarMessage("$(warning) PBV: no mark set", 3e3);
-          return;
+      case "undoTransaction":
+        await this.dispatch({ cmd: "revertTransactions", n: 1 }, _socket);
+        break;
+      case "revertTransactions": {
+        const requested = msg.n;
+        const available = this.txStack.length;
+        if (available === 0) {
+          vscode5.window.setStatusBarMessage("$(warning) PBV: no transactions on stack", 3e3);
+          break;
         }
-        if (!editor || editor.document.uri.toString() !== this.mark.uri) {
-          vscode5.window.setStatusBarMessage("$(warning) PBV: mark is from a different file", 3e3);
-          return;
+        let count = requested;
+        if (requested > available) {
+          const overflow = vscode5.workspace.getConfiguration("pbv").get("revertOverflow", "warn");
+          if (overflow === "error") {
+            vscode5.window.setStatusBarMessage(
+              `$(warning) PBV: only ${available} transaction(s) on stack`,
+              3e3
+            );
+            break;
+          }
+          vscode5.window.setStatusBarMessage(
+            `$(warning) PBV: only ${available} transaction(s) \u2014 reverting all`,
+            3e3
+          );
+          count = available;
         }
-        const { text, cursor } = this.mark;
-        this.mark = void 0;
-        const fullRange = new vscode5.Range(
-          editor.document.positionAt(0),
-          editor.document.positionAt(editor.document.getText().length)
+        this.txStack.splice(this.txStack.length - count, count);
+        for (let i = 0; i < count; i++)
+          await vscode5.commands.executeCommand("undo");
+        this.refreshTxDecorations();
+        vscode5.window.setStatusBarMessage(
+          `$(discard) PBV: reverted ${count} transaction(s)`,
+          2e3
         );
-        await editor.edit((eb) => eb.replace(fullRange, text));
-        editor.selection = new vscode5.Selection(cursor, cursor);
-        vscode5.window.setStatusBarMessage("$(discard) PBV: transaction undone", 2e3);
         break;
       }
       // --- Undo grouping ---
-      case "startUndoGroup":
-        if (editor) await editor.edit((_eb) => {
-        }, { undoStopBefore: true, undoStopAfter: false });
+      case "startUndoGroup": {
+        if (editor) {
+          await editor.edit((_eb) => {
+          }, { undoStopBefore: true, undoStopAfter: false });
+          this.txStack.push({
+            uri: editor.document.uri.toString(),
+            startLine: editor.selection.active.line,
+            endLine: null
+          });
+          this.refreshTxDecorations();
+        }
         break;
-      case "endUndoGroup":
-        if (editor) await editor.edit((_eb) => {
-        }, { undoStopBefore: false, undoStopAfter: true });
+      }
+      case "endUndoGroup": {
+        if (editor) {
+          await editor.edit((_eb) => {
+          }, { undoStopBefore: false, undoStopAfter: true });
+          const top = this.txStack[this.txStack.length - 1];
+          if (top && top.uri === editor.document.uri.toString())
+            top.endLine = editor.selection.active.line;
+          this.refreshTxDecorations();
+        }
         break;
+      }
       // --- Char / word deletion ---
       case "deleteChars":
         for (let i = 0; i < msg.n; i++)
@@ -1933,6 +1989,29 @@ var IpcServer = class {
         break;
       }
     }
+  }
+  refreshTxDecorations() {
+    const editor = vscode5.window.activeTextEditor;
+    for (const dt of this.txDecoTypes) {
+      if (editor) editor.setDecorations(dt, []);
+    }
+    if (!editor) return;
+    const uri = editor.document.uri.toString();
+    const byShade = TX_COLORS.map(() => []);
+    const stackLen = this.txStack.length;
+    for (let i = 0; i < stackLen; i++) {
+      const frame = this.txStack[i];
+      if (frame.uri !== uri) continue;
+      const depth = stackLen - 1 - i;
+      const shadeIdx = Math.min(depth, TX_COLORS.length - 1);
+      const lineCount = editor.document.lineCount;
+      if (frame.startLine < lineCount)
+        byShade[shadeIdx].push({ range: new vscode5.Range(frame.startLine, 0, frame.startLine, 0) });
+      if (frame.endLine !== null && frame.endLine < lineCount && frame.endLine !== frame.startLine)
+        byShade[shadeIdx].push({ range: new vscode5.Range(frame.endLine, 0, frame.endLine, 0) });
+    }
+    for (let i = 0; i < this.txDecoTypes.length; i++)
+      editor.setDecorations(this.txDecoTypes[i], byShade[i]);
   }
   async scrollStep(direction) {
     if (this.traversalMatches && this.traversalMatches.length > 0) {

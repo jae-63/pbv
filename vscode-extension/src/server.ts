@@ -50,6 +50,23 @@ interface Mark {
     cursor: vscode.Position;
 }
 
+interface TxFrame {
+    uri:       string;
+    startLine: number;
+    endLine:   number | null;
+}
+
+// Gutter dot colors: index 0 = top of stack (darkest green), index 3 = oldest visible.
+const TX_COLORS = ['#1a7a1a', '#4ca64c', '#80c080', '#b3d9b3'];
+
+function txGutterIcon(color: string): vscode.Uri {
+    const hex = color.replace('#', '%23');
+    return vscode.Uri.parse(
+        `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14'>` +
+        `<circle cx='7' cy='7' r='5' fill='${hex}'/></svg>`
+    );
+}
+
 export class IpcServer {
     private server: net.Server;
     private sockets = new Set<net.Socket>();
@@ -61,6 +78,10 @@ export class IpcServer {
     // Separate from `mark` (which is the undo-transaction anchor and is overwritten
     // on every LLM buffer edit).
     private navMark: { uri: string; cursor: vscode.Position } | undefined;
+
+    // Transaction stack — each startUndoGroup pushes a frame; revertTransactions pops N.
+    private txStack: TxFrame[] = [];
+    private txDecoTypes: vscode.TextEditorDecorationType[] = [];
 
     // Scroll / traversal state
     private traversalMatches: { start: vscode.Position; end: vscode.Position }[] | null = null;
@@ -81,6 +102,20 @@ export class IpcServer {
         this.server.on('error', err => {
             vscode.window.showErrorMessage(`PBV IPC error: ${err.message}`);
         });
+
+        // One decoration type per color shade, created once and reused.
+        this.txDecoTypes = TX_COLORS.map(color =>
+            vscode.window.createTextEditorDecorationType({
+                gutterIconPath: txGutterIcon(color),
+                gutterIconSize: 'contain',
+            })
+        );
+        context.subscriptions.push(...this.txDecoTypes);
+
+        // Refresh gutter dots when the user switches to a different editor tab.
+        context.subscriptions.push(
+            vscode.window.onDidChangeActiveTextEditor(() => this.refreshTxDecorations())
+        );
 
         // Register keybinding targets for Ctrl+Down / Ctrl+Up in scroll mode.
         // The 'when: "pbv.scrolling"' clause in package.json ensures these only
@@ -562,36 +597,65 @@ export class IpcServer {
                     wordRange.start, wordRange.end);
                 break;
             }
-            case 'undoTransaction': {
-                if (!this.mark) {
-                    vscode.window.setStatusBarMessage('$(warning) PBV: no mark set', 3000);
-                    return;
+            case 'undoTransaction':
+                await this.dispatch({ cmd: 'revertTransactions', n: 1 }, _socket);
+                break;
+
+            case 'revertTransactions': {
+                const requested = msg.n;
+                const available = this.txStack.length;
+                if (available === 0) {
+                    vscode.window.setStatusBarMessage('$(warning) PBV: no transactions on stack', 3000);
+                    break;
                 }
-                if (!editor || editor.document.uri.toString() !== this.mark.uri) {
-                    vscode.window.setStatusBarMessage('$(warning) PBV: mark is from a different file', 3000);
-                    return;
+                let count = requested;
+                if (requested > available) {
+                    const overflow = vscode.workspace
+                        .getConfiguration('pbv')
+                        .get<string>('revertOverflow', 'warn');
+                    if (overflow === 'error') {
+                        vscode.window.setStatusBarMessage(
+                            `$(warning) PBV: only ${available} transaction(s) on stack`, 3000);
+                        break;
+                    }
+                    vscode.window.setStatusBarMessage(
+                        `$(warning) PBV: only ${available} transaction(s) — reverting all`, 3000);
+                    count = available;
                 }
-                const { text, cursor } = this.mark;
-                this.mark = undefined;
-                const fullRange = new vscode.Range(
-                    editor.document.positionAt(0),
-                    editor.document.positionAt(editor.document.getText().length),
-                );
-                await editor.edit(eb => eb.replace(fullRange, text));
-                editor.selection = new vscode.Selection(cursor, cursor);
-                vscode.window.setStatusBarMessage('$(discard) PBV: transaction undone', 2000);
+                this.txStack.splice(this.txStack.length - count, count);
+                for (let i = 0; i < count; i++)
+                    await vscode.commands.executeCommand('undo');
+                this.refreshTxDecorations();
+                vscode.window.setStatusBarMessage(
+                    `$(discard) PBV: reverted ${count} transaction(s)`, 2000);
                 break;
             }
 
             // --- Undo grouping ---
-            case 'startUndoGroup':
+            case 'startUndoGroup': {
                 // VSCode doesn't expose a direct undo-group API; a no-op stop
                 // inserted before and after a group achieves the same result.
-                if (editor) await editor.edit(_eb => {}, { undoStopBefore: true, undoStopAfter: false });
+                if (editor) {
+                    await editor.edit(_eb => {}, { undoStopBefore: true, undoStopAfter: false });
+                    this.txStack.push({
+                        uri:       editor.document.uri.toString(),
+                        startLine: editor.selection.active.line,
+                        endLine:   null,
+                    });
+                    this.refreshTxDecorations();
+                }
                 break;
-            case 'endUndoGroup':
-                if (editor) await editor.edit(_eb => {}, { undoStopBefore: false, undoStopAfter: true });
+            }
+            case 'endUndoGroup': {
+                if (editor) {
+                    await editor.edit(_eb => {}, { undoStopBefore: false, undoStopAfter: true });
+                    const top = this.txStack[this.txStack.length - 1];
+                    if (top && top.uri === editor.document.uri.toString())
+                        top.endLine = editor.selection.active.line;
+                    this.refreshTxDecorations();
+                }
                 break;
+            }
 
             // --- Char / word deletion ---
             case 'deleteChars':
@@ -626,6 +690,33 @@ export class IpcServer {
                 break;
             }
         }
+    }
+
+    private refreshTxDecorations(): void {
+        const editor = vscode.window.activeTextEditor;
+        // Clear all shades first.
+        for (const dt of this.txDecoTypes) {
+            if (editor) editor.setDecorations(dt, []);
+        }
+        if (!editor) return;
+        const uri = editor.document.uri.toString();
+        // Assign shades newest-first: txStack[last] is top (darkest).
+        const byShade: vscode.DecorationOptions[][] = TX_COLORS.map(() => []);
+        const stackLen = this.txStack.length;
+        for (let i = 0; i < stackLen; i++) {
+            const frame = this.txStack[i];
+            if (frame.uri !== uri) continue;
+            // Depth from top: 0 = top of stack.
+            const depth = stackLen - 1 - i;
+            const shadeIdx = Math.min(depth, TX_COLORS.length - 1);
+            const lineCount = editor.document.lineCount;
+            if (frame.startLine < lineCount)
+                byShade[shadeIdx].push({ range: new vscode.Range(frame.startLine, 0, frame.startLine, 0) });
+            if (frame.endLine !== null && frame.endLine < lineCount && frame.endLine !== frame.startLine)
+                byShade[shadeIdx].push({ range: new vscode.Range(frame.endLine, 0, frame.endLine, 0) });
+        }
+        for (let i = 0; i < this.txDecoTypes.length; i++)
+            editor.setDecorations(this.txDecoTypes[i], byShade[i]);
     }
 
     private async scrollStep(direction: 1 | -1): Promise<void> {
