@@ -68,6 +68,13 @@ final class SpeechEngine: NSObject {
     private var isRestarting = false
     private var tapInstalled = false
 
+    // Health check — detects "engine running but capturing from dead/wrong device."
+    // A live mic always has a background-noise floor; exactly-zero RMS means the
+    // tap is connected to a device that isn't producing audio (post-phone-call state).
+    private var healthCheck:       DispatchWorkItem?
+    private var healthFrameCount:  Int   = 0
+    private var healthEnergySum:   Float = 0
+
     // ---------------------------------------------------------------------------
     // Permissions — only mic needed now (no SFSpeechRecognizer)
     // ---------------------------------------------------------------------------
@@ -107,6 +114,8 @@ final class SpeechEngine: NSObject {
         isRunning = false
         silenceTimer?.cancel()
         silenceTimer = nil
+        healthCheck?.cancel()
+        healthCheck = nil
         frames.removeAll()
         NotificationCenter.default.removeObserver(
             self, name: .AVAudioEngineConfigurationChange, object: audioEngine)
@@ -126,6 +135,8 @@ final class SpeechEngine: NSObject {
         frames.removeAll()
         silenceTimer?.cancel()
         silenceTimer = nil
+        healthCheck?.cancel()
+        healthCheck = nil
         NotificationCenter.default.removeObserver(
             self, name: .AVAudioEngineConfigurationChange, object: audioEngine)
         if audioEngine.isRunning {
@@ -233,6 +244,7 @@ final class SpeechEngine: NSObject {
             NSLog("[PBV] audioEngine started — %.0f Hz, %u ch",
                   fmt.sampleRate, fmt.channelCount)
             onStateChange?(.listening)
+            scheduleHealthCheck()
         } catch {
             let code = (error as NSError).code
             if code == -10868 {
@@ -405,8 +417,11 @@ final class SpeechEngine: NSObject {
 
     private func receive(_ buffer: AVAudioPCMBuffer) {
         frames.append(buffer)
+        let rms = rmsBuffer(buffer)
+        healthFrameCount += 1
+        healthEnergySum  += rms
 
-        if rmsBuffer(buffer) >= energyThreshold {
+        if rms >= energyThreshold {
             // Speech detected — reset the post-speech silence timer.
             speechDetected = true
             silenceTimer?.cancel()
@@ -421,6 +436,32 @@ final class SpeechEngine: NSObject {
         // so the buffer doesn't grow unbounded.
         let maxFrames = Int(48_000 * 10 / 4800) // ~10 s at 48 kHz / 4800 frames per buffer
         if frames.count >= maxFrames { flush() }
+    }
+
+    private func scheduleHealthCheck() {
+        healthCheck?.cancel()
+        healthFrameCount = 0
+        healthEnergySum  = 0
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, self.isRunning, !self.isRestarting else { return }
+            let avg = self.healthFrameCount > 0
+                ? self.healthEnergySum / Float(self.healthFrameCount)
+                : 0
+            // A live mic always has background noise above ~0.00005.
+            // Effectively-zero RMS means the tap is on a dead/wrong device.
+            if avg < 0.00005 {
+                NSLog("[PBV] healthCheck: avg RMS %.6f over %d frames — dead device, full restart",
+                      avg, self.healthFrameCount)
+                // Use stop()+start() rather than restartAudioEngine() to avoid
+                // inheriting any existing retry state or isRestarting flag.
+                self.stop()
+                self.start()
+            } else {
+                NSLog("[PBV] healthCheck: avg RMS %.6f — device OK", avg)
+            }
+        }
+        healthCheck = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15, execute: item)
     }
 
     private func flush() {
