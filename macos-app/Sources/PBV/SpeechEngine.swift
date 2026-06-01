@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreAudio
 import Foundation
 import Network
 
@@ -34,6 +35,11 @@ final class SpeechEngine: NSObject {
         "Traverse definitions. Traverse definitions. Stop scrolling. " +
         "Faster. Slower. Much faster. Much slower."
     private var serverURL:  URL { URL(string: "http://127.0.0.1:\(serverPort)/inference")! }
+
+    // When true (default), pins AVAudioEngine input to the built-in mic.
+    // Set false to allow AirPods to be used as mic (better SNR, but degrades
+    // AirPods audio output quality by switching them to HFP/SCO mode).
+    var preferBuiltInMic: Bool = true
 
     // RMS below this level is treated as silence and not sent to Whisper.
     private let energyThreshold: Float = 0.002
@@ -188,6 +194,12 @@ final class SpeechEngine: NSObject {
             self?.restartAudioEngine()
         }
 
+        // When preferBuiltInMic is set, pin the engine's input to the built-in
+        // mic so AirPods stay in high-quality A2DP output mode. Clearing this
+        // allows AirPods to be used as mic (better SNR) at the cost of switching
+        // them to HFP/SCO, which degrades audio output for all apps.
+        if preferBuiltInMic { pinInputToBuiltInMic() }
+
         let inputNode = audioEngine.inputNode
 
         guard !tapInstalled else {
@@ -302,6 +314,77 @@ final class SpeechEngine: NSObject {
             return mono
         }
         return err == nil && out.frameLength > 0 ? out : nil
+    }
+
+    // ---------------------------------------------------------------------------
+    // Input device selection
+    // ---------------------------------------------------------------------------
+
+    // Set the AVAudioEngine's underlying HAL input device to the built-in mic.
+    // This prevents AirPods from switching to HFP/SCO mode (which degrades
+    // their audio output quality) just because PBV needs a mic.
+    // Falls back silently to system default if no built-in mic is found.
+    private func pinInputToBuiltInMic() {
+        var inputDeviceID = AudioDeviceID(kAudioObjectUnknown)
+
+        // Find a device whose UID contains "BuiltIn" and has input channels.
+        var propAddr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
+            mScope:    kAudioObjectPropertyScopeGlobal,
+            mElement:  kAudioObjectPropertyElementMain)
+        var dataSize: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject),
+                                             &propAddr, 0, nil, &dataSize) == noErr else { return }
+        let deviceCount = Int(dataSize) / MemoryLayout<AudioDeviceID>.size
+        var deviceIDs = [AudioDeviceID](repeating: 0, count: deviceCount)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject),
+                                         &propAddr, 0, nil, &dataSize, &deviceIDs) == noErr else { return }
+
+        for deviceID in deviceIDs {
+            // Check for input channels.
+            var inputAddr = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyStreamConfiguration,
+                mScope:    kAudioDevicePropertyScopeInput,
+                mElement:  kAudioObjectPropertyElementMain)
+            var bufSize: UInt32 = 0
+            guard AudioObjectGetPropertyDataSize(deviceID, &inputAddr, 0, nil, &bufSize) == noErr,
+                  bufSize > 0 else { continue }
+
+            // Check UID for "BuiltIn".
+            var uidAddr = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyDeviceUID,
+                mScope:    kAudioObjectPropertyScopeGlobal,
+                mElement:  kAudioObjectPropertyElementMain)
+            var uidRef: Unmanaged<CFString>? = nil
+            var uidSize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+            guard AudioObjectGetPropertyData(deviceID, &uidAddr, 0, nil, &uidSize, &uidRef) == noErr
+            else { continue }
+            let uid = uidRef?.takeRetainedValue() as String? ?? ""
+            if uid.contains("BuiltIn") {
+                inputDeviceID = deviceID
+                break
+            }
+        }
+
+        guard inputDeviceID != kAudioObjectUnknown else {
+            NSLog("[PBV] pinInputToBuiltInMic: no built-in mic found, using default")
+            return
+        }
+
+        // Set it on the engine's audio unit.
+        let audioUnit = audioEngine.inputNode.audioUnit
+        let err = AudioUnitSetProperty(
+            audioUnit!,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &inputDeviceID,
+            UInt32(MemoryLayout<AudioDeviceID>.size))
+        if err == noErr {
+            NSLog("[PBV] pinInputToBuiltInMic: pinned to device %u", inputDeviceID)
+        } else {
+            NSLog("[PBV] pinInputToBuiltInMic: AudioUnitSetProperty err=%d", err)
+        }
     }
 
     // ---------------------------------------------------------------------------

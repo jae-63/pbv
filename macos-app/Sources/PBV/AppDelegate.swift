@@ -22,9 +22,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     private var speechReady  = false
     private var micSleeping  = false
-    private var modeMenuItem:  NSMenuItem?
-    private var micMenuItem:   NSMenuItem?
-    private var sleepMenuItem: NSMenuItem?
+    private var modeMenuItem:      NSMenuItem?
+    private var micMenuItem:       NSMenuItem?
+    private var sleepMenuItem:     NSMenuItem?
+    private var builtInMicMenuItem: NSMenuItem?
 
     enum Mode: String { case command, dictation }
 
@@ -64,6 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         speech = SpeechEngine()
+        speech.preferBuiltInMic = UserDefaults.standard.object(forKey: "preferBuiltInMic") as? Bool ?? true
         speech.onTranscript = { [weak self] text in self?.handle(transcript: text) }
         speech.onStateChange = { [weak self] state in self?.handleSpeechState(state) }
 
@@ -207,6 +209,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(reconnectItem)
 
         menu.addItem(.separator())
+
+        let builtInMicItem = NSMenuItem(title: "Use Built-in Mic", action: #selector(toggleBuiltInMic), keyEquivalent: "")
+        builtInMicItem.target = self
+        builtInMicItem.state  = speech.preferBuiltInMic ? .on : .off
+        builtInMicItem.toolTip = "On: built-in mic (AirPods stay in high-quality output mode)\nOff: system default mic (AirPods used as mic, but audio output quality degrades)"
+        builtInMicMenuItem = builtInMicItem
+        menu.addItem(builtInMicItem)
+
+        menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 
         statusItem.menu = menu
@@ -214,6 +225,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleModeFromMenu() { toggleMode() }
     @objc private func reconnect() { client = ExtensionClient() }
+
+    @objc private func toggleBuiltInMic() {
+        let newValue = !speech.preferBuiltInMic
+        speech.preferBuiltInMic = newValue
+        UserDefaults.standard.set(newValue, forKey: "preferBuiltInMic")
+        builtInMicMenuItem?.state = newValue ? .on : .off
+        // Restart the audio engine so the new device preference takes effect.
+        speech.stop()
+        speech.start()
+    }
 
     @objc private func toggleSleep() {
         micSleeping.toggle()
