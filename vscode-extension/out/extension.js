@@ -750,8 +750,11 @@ var RULES = [
   ),
   // Underline — inserts chars matching the length of the line above the cursor
   rule("underline(?:\\s+dashes?)?", (m) => ({ cmd: "underlineLine", char: /dash/i.test(m[0]) ? "-" : "=" })),
-  // Document ops
+  // Document ops — specific multi-word forms must precede their shorter prefixes
+  // ("save as" must beat the "save" prefix; "undo transaction" must beat "undo")
+  rule("save\\s+as", (_) => ({ cmd: "saveAs" })),
   rule("save(?:\\s+(?:the\\s+)?(?:file|document))?", (_) => ({ cmd: "save" })),
+  rule("undo\\s+transaction", (_) => ({ cmd: "undoTransaction" })),
   rule("undo(?:\\s+that)?", (_) => ({ cmd: "undo" })),
   rule("format(?:\\s+(?:the\\s+)?(?:file|document))?", (_) => ({ cmd: "formatDocument" })),
   rule("(?:toggle\\s+)?comment(?:\\s+line)?", (_) => ({ cmd: "toggleLineComment" }))

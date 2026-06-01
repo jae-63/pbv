@@ -363,3 +363,104 @@ describe('fastInterpretMulti', () => {
         expect(r.remainder).toBe('');
     });
 });
+
+// ---------------------------------------------------------------------------
+// Regression: LLM gate must not block fast-path commands
+//
+// The dispatch pipeline checks !claude AFTER fastInterpretMulti — if that
+// guard ever moves above it again, these commands would silently stop working.
+// Each phrase here must produce ≥1 command AND empty remainder (meaning the
+// LLM is never needed, so an uninitialised claude client cannot block them).
+// ---------------------------------------------------------------------------
+describe('fast-path commands require no LLM — regression guard', () => {
+    const CRITICAL: string[] = [
+        // UI / mode
+        'what can I say', 'help', 'show commands',
+        'command mode', 'dictation mode',
+        // Navigation
+        'go to line 32', 'line 7', 'top', 'bottom', 'home', 'end',
+        'up 3', 'down 5', 'page up', 'page down',
+        // Editing
+        'save', 'undo', 'redo', 'copy', 'cut', 'paste',
+        'delete line', 'delete word', 'select all', 'format document',
+        // Cache pad
+        'clear cache pad', 'show cache pad', 'cache this', 'cache 1', 'recent 2',
+        // Marks
+        'set mark', 'jump to mark', 'undo transaction',
+        'set bookmark', 'jump to bookmark', 'jump back',
+        // File / tabs
+        'new file', 'close file', 'next file', 'previous file', 'save as',
+    ];
+
+    test.each(CRITICAL)('"%s" resolves without LLM', phrase => {
+        const { commands, remainder } = fastInterpretMulti(phrase);
+        expect(commands.length).toBeGreaterThan(0);
+        expect(remainder).toBe('');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Whisper mishearing aliases — regression guard
+// If a pattern alias is accidentally removed, the mishearing goes to the LLM
+// instead of routing to the right template.
+// ---------------------------------------------------------------------------
+describe('Whisper alias patterns', () => {
+    const insertCmd = (text: string) => ({ cmd: 'insertText', text });
+
+    test('shebang variants', () => {
+        expect(fastInterpret('shebang')).toEqual(insertCmd('#!/usr/bin/env python3\n'));
+        expect(fastInterpret('shabang')).toEqual(insertCmd('#!/usr/bin/env python3\n'));
+        expect(fastInterpret('hash bang')).toEqual(insertCmd('#!/usr/bin/env python3\n'));
+        expect(fastInterpret('python shebang')).toEqual(insertCmd('#!/usr/bin/env python3\n'));
+    });
+
+    test('sys exit / "this exit" mishearing', () => {
+        expect(fastInterpret('sys exit')).toEqual(insertCmd('sys.exit({CURSOR})'));
+        expect(fastInterpret('this exit')).toEqual(insertCmd('sys.exit({CURSOR})'));
+    });
+
+    test('list comprehension / "less comprehension" mishearing', () => {
+        expect(fastInterpret('list comprehension')).toEqual(insertCmd('[{CURSOR} for  in ]'));
+        expect(fastInterpret('less comprehension')).toEqual(insertCmd('[{CURSOR} for  in ]'));
+    });
+
+    test('while loop / "why unloop" mishearing', () => {
+        expect(fastInterpret('while loop')).toEqual(insertCmd('while {CURSOR}:\n    '));
+        expect(fastInterpret('why unloop')).toEqual(insertCmd('while {CURSOR}:\n    '));
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Press N times — character repeat command
+// ---------------------------------------------------------------------------
+describe('press N times', () => {
+    test('equals', () => {
+        expect(fastInterpret('press equals 5 times')).toEqual({ cmd: 'insertText', text: '=====' });
+        expect(fastInterpret('press equal 3 times')).toEqual({ cmd: 'insertText', text: '===' });
+        expect(fastInterpret('press equals 22')).toEqual({ cmd: 'insertText', text: '======================' });
+    });
+
+    test('dash / hash / star', () => {
+        expect(fastInterpret('press dash 10 times')).toEqual({ cmd: 'insertText', text: '----------' });
+        expect(fastInterpret('press hash 3 times')).toEqual({ cmd: 'insertText', text: '###' });
+        expect(fastInterpret('press star 4 times')).toEqual({ cmd: 'insertText', text: '****' });
+    });
+
+    test('type synonym', () => {
+        expect(fastInterpret('type equals 3 times')).toEqual({ cmd: 'insertText', text: '===' });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// TEMPLATE_CMDS coverage — every commandData.ts entry must match fast-path
+// Prevents phrase drift where the data file is updated but the pattern breaks
+// ---------------------------------------------------------------------------
+import { TEMPLATE_CMDS } from '../commandData';
+
+describe('commandData.ts — every phrase matches fast-path', () => {
+    test.each(TEMPLATE_CMDS)('$phrase', ({ phrase }) => {
+        const result = fastInterpret(phrase);
+        expect(result).not.toBeNull();
+        expect(result?.cmd).toBe('insertText');
+    });
+});
