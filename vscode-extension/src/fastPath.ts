@@ -124,7 +124,8 @@ const RULES: Rule[] = [
     // Dictate — replace selection (or insert at cursor) without LLM.
     // "dictate Word Frequency Counter" → inserts/replaces with exactly those words.
     // Dragon-style "Select and Say": select a placeholder, say "dictate <title>".
-    rule('dictate\\s+(.+)', m => ({ cmd: 'dictateText', text: m[1] })),
+    // "dict" is a common Whisper mishearing of "dictate" — alias it here.
+    rule('(?:dictate|dict)\\s+(.+)', m => ({ cmd: 'dictateText', text: m[1] })),
 
     // UI — voice-only access to help and cache pad
     // "show commands" handled by canonical; keep human aliases

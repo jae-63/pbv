@@ -34,6 +34,9 @@ final class SpeechEngine: NSObject {
         "Word 3 on line 68. Go to top. Go to bottom. End of line. Home. " +
         "Scroll down. Scroll up. Stop scrolling. Faster. Slower. " +
         "Traverse definitions. Jump to mark. Jump back. Cache this. " +
+        // Dictation commands
+        "Dictate import argparse. Dictate from pathlib import Path. " +
+        "Dictation mode. Command mode. New line. Letter romeo. Letter echo. " +
         // Python templates — listed so Whisper learns the vocabulary
         "Shebang. Python shebang. Module doc. Main guard. Sys exit. " +
         "Define function. Define method. For loop. While loop. " +
