@@ -588,8 +588,9 @@ final class SpeechEngine: NSObject {
     // ---------------------------------------------------------------------------
 
     static func transcriptLog(_ message: String) {
-        let ts   = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
-        let line = "[\(ts)] \(message)\n"
+        let ts      = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+        let escaped = message.replacingOccurrences(of: "\n", with: "\\n")
+        let line    = "[\(ts)] \(escaped)\n"
         if let data = line.data(using: .utf8) {
             let url = URL(fileURLWithPath: "/tmp/pbv-transcripts.log")
             if let fh = try? FileHandle(forWritingTo: url) {

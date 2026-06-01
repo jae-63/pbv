@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { TEMPLATE_CMDS } from './commandData';
 
+declare const BUILD_HASH: string;
+
 // ---------------------------------------------------------------------------
 // Command data
 // ---------------------------------------------------------------------------
@@ -220,7 +222,7 @@ function buildHtml(lang: string): string {
 </style>
 </head>
 <body>
-<h1>PBV Commands${langLabel ? ` <small style="font-weight:400;color:#888">${esc(langLabel.slice(3))}</small>` : ''}</h1>
+<h1>PBV Commands${langLabel ? ` <small style="font-weight:400;color:#888">${esc(langLabel.slice(3))}</small>` : ''} <small style="font-weight:400;font-size:10px;color:#555;font-family:monospace">${BUILD_HASH}</small></h1>
 <input id="filter" type="text" placeholder="Filter commands…" autofocus>
 ${sections.map(renderSection).join('\n')}
 <script>

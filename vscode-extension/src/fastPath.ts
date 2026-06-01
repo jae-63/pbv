@@ -274,7 +274,9 @@ function prepare(utterance: string): string {
     const stripped = utterance.trim().replace(/^[.…,!?\s]+/, '').replace(/[.…,!?]+$/, '');
     // Strip Whisper's mid-sentence auto-periods ("argparse. New line." → "argparse New line")
     // so multi-command sequences remain parseable by the prefix-lookahead rules.
-    const deperioded = stripped.replace(/\.(\s+)/g, '$1');
+    // Also flatten embedded newlines — Whisper sometimes inserts literal \n between
+    // sentences which breaks regex rules that don't match across line boundaries.
+    const deperioded = stripped.replace(/\.(\s+)/g, '$1').replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ');
     return normalizeNumbers(deperioded);
 }
 

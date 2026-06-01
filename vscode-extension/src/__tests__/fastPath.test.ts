@@ -470,6 +470,19 @@ describe('import fast-path — multi-command utterances', () => {
         });
     });
 
+    test('two imports with embedded \\n from Whisper — newline must not break import rule', () => {
+        // Regression: Whisper embeds literal \n between sentences; .+? in the import
+        // rule doesn't cross \n, so "Letter\necho" would orphan "echo" to the LLM.
+        // prepare() now flattens \n to space before any rule matching.
+        const result = fastInterpretMulti('. Import argparse. New line. Import letter romeo. Letter\n echo. New line.');
+        expect(result.commands).toHaveLength(4);
+        expect(result.commands[0]).toEqual({ cmd: 'dictateText', text: 'import argparse' });
+        expect(result.commands[1]).toEqual({ cmd: 'insertText',  text: '\n' });
+        expect(result.commands[2]).toEqual({ cmd: 'dictateText', text: 'import letter romeo Letter echo' });
+        expect(result.commands[3]).toEqual({ cmd: 'insertText',  text: '\n' });
+        expect(result.remainder).toBe('');
+    });
+
     test('two imports separated by new line — must dispatch as 3 commands, not 1', () => {
         // Regression: greedy .+ swallowed entire utterance into one dictateText.
         // prepare() now strips Whisper mid-sentence periods; import rule is non-greedy.

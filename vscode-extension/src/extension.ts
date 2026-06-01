@@ -6,7 +6,10 @@ import { OutboundMessage } from './types';
 import { ClaudeClient } from './claudeClient';
 import { showCommandsPanel } from './commandsPanel';
 
+declare const BUILD_HASH: string;
+
 export function activate(context: vscode.ExtensionContext): void {
+    vscode.window.setStatusBarMessage(`PBV loaded (${BUILD_HASH})`, 6000);
     const config      = vscode.workspace.getConfiguration('pbv');
     const port        = config.get<number>('port', 7890);
     const maxItems    = config.get<number>('maxCacheItems', 20);

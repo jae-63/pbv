@@ -110,7 +110,8 @@
     }
   },
   "scripts": {
-    "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18",
+    "compile": "sh -c 'HASH=$(git rev-parse --short HEAD 2>/dev/null || echo unknown); esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18 --define:BUILD_HASH=\"\\\"$HASH\\\"\"'",
+    "deploy": "npm run compile && cp out/extension.js ~/.vscode/extensions/local.pbv-0.1.0/out/extension.js",
     "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --target=node18 --watch",
     "test": "jest",
     "deploy": "npm run compile && cp out/extension.js ~/.vscode/extensions/local.pbv-0.1.0/out/ && cp package.json ~/.vscode/extensions/local.pbv-0.1.0/",

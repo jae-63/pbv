@@ -955,7 +955,7 @@ function normalizeNumbers(text) {
 }
 function prepare(utterance) {
   const stripped = utterance.trim().replace(/^[.…,!?\s]+/, "").replace(/[.…,!?]+$/, "");
-  const deperioded = stripped.replace(/\.(\s+)/g, "$1");
+  const deperioded = stripped.replace(/\.(\s+)/g, "$1").replace(/\n+/g, " ").replace(/\s{2,}/g, " ");
   return normalizeNumbers(deperioded);
 }
 var FORMATTERS = {
@@ -1372,7 +1372,7 @@ function buildHtml(lang) {
 </style>
 </head>
 <body>
-<h1>PBV Commands${langLabel ? ` <small style="font-weight:400;color:#888">${esc(langLabel.slice(3))}</small>` : ""}</h1>
+<h1>PBV Commands${langLabel ? ` <small style="font-weight:400;color:#888">${esc(langLabel.slice(3))}</small>` : ""} <small style="font-weight:400;font-size:10px;color:#555;font-family:monospace">${"26d6e24"}</small></h1>
 <input id="filter" type="text" placeholder="Filter commands\u2026" autofocus>
 ${sections.map(renderSection).join("\n")}
 <script>
@@ -2248,6 +2248,7 @@ function windowForLines(content, startLine, endLine) {
 
 // src/extension.ts
 function activate(context) {
+  vscode7.window.setStatusBarMessage(`PBV loaded (${"26d6e24"})`, 6e3);
   const config = vscode7.workspace.getConfiguration("pbv");
   const port = config.get("port", 7890);
   const maxItems = config.get("maxCacheItems", 20);
