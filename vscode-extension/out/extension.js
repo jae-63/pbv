@@ -1431,6 +1431,7 @@ var IpcServer = class {
         this.llmAbort?.abort();
         this.llmAbort = null;
         const raw = msg.text;
+        if (/^\s*(\[[A-Z_]+\]\s*)+$/.test(raw)) return;
         if (this.statusBar.getMode() === "dictation") {
           if (editor) {
             await editor.edit((eb) => eb.insert(editor.selection.active, raw + " "));

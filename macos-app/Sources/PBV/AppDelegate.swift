@@ -65,7 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         speech = SpeechEngine()
-        speech.preferBuiltInMic = UserDefaults.standard.object(forKey: "preferBuiltInMic") as? Bool ?? true
+        speech.preferBuiltInMic = UserDefaults.standard.object(forKey: "preferBuiltInMic") as? Bool ?? false
         speech.onTranscript = { [weak self] text in self?.handle(transcript: text) }
         speech.onStateChange = { [weak self] state in self?.handleSpeechState(state) }
 
@@ -212,7 +212,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let builtInMicItem = NSMenuItem(title: "Use Built-in Mic", action: #selector(toggleBuiltInMic), keyEquivalent: "")
         builtInMicItem.target = self
-        builtInMicItem.state  = speech.preferBuiltInMic ? .on : .off
+        builtInMicItem.state  = (UserDefaults.standard.object(forKey: "preferBuiltInMic") as? Bool ?? false) ? .on : .off
         builtInMicItem.toolTip = "On: built-in mic (AirPods stay in high-quality output mode)\nOff: system default mic (AirPods used as mic, but audio output quality degrades)"
         builtInMicMenuItem = builtInMicItem
         menu.addItem(builtInMicItem)

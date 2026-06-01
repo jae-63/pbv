@@ -39,7 +39,7 @@ final class SpeechEngine: NSObject {
     // When true (default), pins AVAudioEngine input to the built-in mic.
     // Set false to allow AirPods to be used as mic (better SNR, but degrades
     // AirPods audio output quality by switching them to HFP/SCO mode).
-    var preferBuiltInMic: Bool = true
+    var preferBuiltInMic: Bool = false
 
     // RMS below this level is treated as silence and not sent to Whisper.
     private let energyThreshold: Float = 0.002
@@ -509,7 +509,9 @@ final class SpeechEngine: NSObject {
             let cleaned = raw
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .replacingOccurrences(of: #"<\|[^|]+\|>"#, with: "",
-                                      options: .regularExpression)
+                                      options: .regularExpression)  // <|token|> style
+                .replacingOccurrences(of: #"\[[A-Z_]+\]"#, with: "",
+                                      options: .regularExpression)  // [BLANK_AUDIO], [MUSIC], etc.
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             // Filter common Whisper hallucinations on near-silence.
             let lower = cleaned.lowercased()

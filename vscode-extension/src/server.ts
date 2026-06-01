@@ -174,6 +174,9 @@ export class IpcServer {
 
                 const raw = msg.text;
 
+                // Drop Whisper artifact-only transcripts ([BLANK_AUDIO], [MUSIC], etc.)
+                if (/^\s*(\[[A-Z_]+\]\s*)+$/.test(raw)) return;
+
                 // Dictation mode: insert transcript verbatim, no LLM.
                 if (this.statusBar.getMode() === 'dictation') {
                     if (editor) {
