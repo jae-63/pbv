@@ -26,14 +26,21 @@ final class SpeechEngine: NSObject {
     // Initial prompt — biases Whisper toward our command vocabulary.
     // Phrased as natural command utterances so the model learns the pattern.
     private static let whisperPrompt =
+        // Navigation & editing
         "Go to line 75. Line 32. Cursor up 5. Cursor down 3. Page up. Page down. " +
         "Delete word. Delete line. Delete 3 words. Delete to end. " +
         "Set mark. Undo transaction. Undo. Redo. Save. Format document. " +
         "Comment line. Select all. Copy. Cut. Paste. " +
         "Word 3 on line 68. Go to top. Go to bottom. End of line. Home. " +
-        "Scroll down. Scroll up. Scroll left. Scroll right. " +
-        "Traverse definitions. Traverse definitions. Stop scrolling. " +
-        "Faster. Slower. Much faster. Much slower."
+        "Scroll down. Scroll up. Stop scrolling. Faster. Slower. " +
+        "Traverse definitions. Jump to mark. Jump back. Cache this. " +
+        // Python templates — listed so Whisper learns the vocabulary
+        "Shebang. Python shebang. Module doc. Main guard. Sys exit. " +
+        "Define function. Define method. For loop. While loop. " +
+        "If block. Elif block. Else block. Try except. With block. " +
+        "List comprehension. Dict comprehension. F string. Raw string. " +
+        "Function doc. Go doc. New file. Close file. Save as. " +
+        "Next file. Previous file. Reopen file. Clear cache pad. Show commands."
     private var serverURL:  URL { URL(string: "http://127.0.0.1:\(serverPort)/inference")! }
 
     // When true (default), pins AVAudioEngine input to the built-in mic.

@@ -18,9 +18,10 @@ export const TEMPLATE_CMDS: TemplateCmd[] = [
 
     // ---- Python boilerplate -------------------------------------------------
     { lang: 'python', phrase: 'shebang',
-      pattern: '(?:python\\s+)?shebang',
+      // "hash bang" = technical name; catches "bang" alone and Whisper mishearings
+      pattern: '(?:python\\s+)?(?:shebang|hash\\s*bang)',
       text: '#!/usr/bin/env python3\n',
-      desc: '#!/usr/bin/env python3' },
+      desc: '#!/usr/bin/env python3  (say "shebang" or "hash bang")' },
 
     { lang: 'python', phrase: 'module doc',
       text: '"""\n{CURSOR}TITLE_TEMPLATE\n====================\nSUMMARY_TEMPLATE\n"""\n',
@@ -31,6 +32,7 @@ export const TEMPLATE_CMDS: TemplateCmd[] = [
       desc: 'if __name__ == "__main__":' },
 
     { lang: 'python', phrase: 'sys exit',
+      pattern: '(?:sys|this)\\s+exit',   // "this exit" is a common Whisper mishearing
       text: 'sys.exit({CURSOR})',
       desc: 'sys.exit(…)' },
 
@@ -48,6 +50,7 @@ export const TEMPLATE_CMDS: TemplateCmd[] = [
       desc: 'for {cursor} in …:' },
 
     { lang: 'python', phrase: 'while loop',
+      pattern: '(?:while|why\\s+un)\\s*loop',  // "why unloop" is a common Whisper mishearing
       text: 'while {CURSOR}:\n    ',
       desc: 'while …:' },
 
@@ -73,6 +76,7 @@ export const TEMPLATE_CMDS: TemplateCmd[] = [
       desc: 'with … as …:' },
 
     { lang: 'python', phrase: 'list comprehension',
+      pattern: '(?:list|less)\\s+comprehension',  // "less comprehension" is a common Whisper mishearing
       text: '[{CURSOR} for  in ]',
       desc: '[expr for item in …]' },
 

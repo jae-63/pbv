@@ -38,6 +38,7 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
     private recentSet = new Set<string>();  // items inserted within last 5 s
     private maxItems: number;
     private broadcast: (msg: object) => void;
+    private suppressAbsorbUri: string | null = null;  // set by clear(); blocks next absorbDocument for same file
 
     private _onDidChangeTreeData = new vscode.EventEmitter<undefined>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -90,6 +91,7 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
     clear(): void {
         this.items = [];
         this.recentSet.clear();
+        this.suppressAbsorbUri = vscode.window.activeTextEditor?.document.uri.toString() ?? null;
         this.refresh();
     }
 
@@ -112,6 +114,11 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
 
     // Full rescan of the document — used on file open / manual refresh.
     absorbDocument(doc: vscode.TextDocument): void {
+        if (this.suppressAbsorbUri === doc.uri.toString()) {
+            this.suppressAbsorbUri = null;  // consume — allow future scans
+            return;
+        }
+        this.suppressAbsorbUri = null;
         const text = doc.getText();
         const found: string[] = [];
         let m: RegExpExecArray | null;

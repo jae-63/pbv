@@ -128,6 +128,8 @@ var CachePad = class {
   constructor(maxItems, broadcast) {
     this.items = [];
     this.recentSet = /* @__PURE__ */ new Set();
+    this.suppressAbsorbUri = null;
+    // set by clear(); blocks next absorbDocument for same file
     this._onDidChangeTreeData = new vscode.EventEmitter();
     this.onDidChangeTreeData = this._onDidChangeTreeData.event;
     this.maxItems = maxItems;
@@ -171,6 +173,7 @@ var CachePad = class {
   clear() {
     this.items = [];
     this.recentSet.clear();
+    this.suppressAbsorbUri = vscode.window.activeTextEditor?.document.uri.toString() ?? null;
     this.refresh();
   }
   sync(items) {
@@ -190,6 +193,11 @@ var CachePad = class {
   }
   // Full rescan of the document — used on file open / manual refresh.
   absorbDocument(doc) {
+    if (this.suppressAbsorbUri === doc.uri.toString()) {
+      this.suppressAbsorbUri = null;
+      return;
+    }
+    this.suppressAbsorbUri = null;
     const text = doc.getText();
     const found = [];
     let m;
@@ -463,9 +471,10 @@ var TEMPLATE_CMDS = [
   {
     lang: "python",
     phrase: "shebang",
-    pattern: "(?:python\\s+)?shebang",
+    // "hash bang" = technical name; catches "bang" alone and Whisper mishearings
+    pattern: "(?:python\\s+)?(?:shebang|hash\\s*bang)",
     text: "#!/usr/bin/env python3\n",
-    desc: "#!/usr/bin/env python3"
+    desc: '#!/usr/bin/env python3  (say "shebang" or "hash bang")'
   },
   {
     lang: "python",
@@ -482,6 +491,8 @@ var TEMPLATE_CMDS = [
   {
     lang: "python",
     phrase: "sys exit",
+    pattern: "(?:sys|this)\\s+exit",
+    // "this exit" is a common Whisper mishearing
     text: "sys.exit({CURSOR})",
     desc: "sys.exit(\u2026)"
   },
@@ -507,6 +518,8 @@ var TEMPLATE_CMDS = [
   {
     lang: "python",
     phrase: "while loop",
+    pattern: "(?:while|why\\s+un)\\s*loop",
+    // "why unloop" is a common Whisper mishearing
     text: "while {CURSOR}:\n    ",
     desc: "while \u2026:"
   },
@@ -544,6 +557,8 @@ var TEMPLATE_CMDS = [
   {
     lang: "python",
     phrase: "list comprehension",
+    pattern: "(?:list|less)\\s+comprehension",
+    // "less comprehension" is a common Whisper mishearing
     text: "[{CURSOR} for  in ]",
     desc: "[expr for item in \u2026]"
   },
