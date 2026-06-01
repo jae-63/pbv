@@ -17,7 +17,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Cache pad — broadcast fn will be wired to the server once it's created.
     let broadcastFn: (msg: object) => void = () => {};
-    const cache = new CachePad(maxItems, (msg) => broadcastFn(msg));
+    const cache = new CachePad(
+        maxItems,
+        (msg) => broadcastFn(msg),
+        (items) => context.workspaceState.update('pbv.cacheItems', items),
+    );
 
     // IPC server
     const claude = new ClaudeClient(ollamaModel, ollamaUrl);
@@ -58,6 +62,10 @@ export function activate(context: vscode.ExtensionContext): void {
     // source of noise (prose words from docstrings, identifiers from unrelated files).
     // Explicit 'refresh cache pad' still does a full scan on demand.
     const editorListener = vscode.window.onDidChangeActiveTextEditor(_editor => {});
+
+    // Restore cache from previous session (workspace-scoped).
+    const persisted = context.workspaceState.get<string[]>('pbv.cacheItems', []);
+    if (persisted.length > 0) cache.sync(persisted);
 
     context.subscriptions.push(statusBar, treeView, server, editListener, editorListener, ...cmds);
 }

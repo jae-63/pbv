@@ -190,7 +190,7 @@ var CachePadItem = class extends vscode.TreeItem {
   }
 };
 var CachePad = class {
-  constructor(maxItems, broadcast) {
+  constructor(maxItems, broadcast, onChange) {
     this.items = [];
     this.recentSet = /* @__PURE__ */ new Set();
     this.suppressAbsorb = false;
@@ -199,6 +199,7 @@ var CachePad = class {
     this.onDidChangeTreeData = this._onDidChangeTreeData.event;
     this.maxItems = maxItems;
     this.broadcast = broadcast;
+    this.onChange = onChange;
   }
   // --- TreeDataProvider ------------------------------------------------
   getTreeItem(element) {
@@ -303,6 +304,7 @@ var CachePad = class {
   refresh() {
     this._onDidChangeTreeData.fire(void 0);
     this.broadcast({ event: "cacheUpdate", items: this.items });
+    this.onChange?.(this.items);
   }
 };
 
@@ -2205,7 +2207,11 @@ function activate(context) {
   const statusBar = new ModeStatusBar();
   let broadcastFn = () => {
   };
-  const cache = new CachePad(maxItems, (msg) => broadcastFn(msg));
+  const cache = new CachePad(
+    maxItems,
+    (msg) => broadcastFn(msg),
+    (items) => context.workspaceState.update("pbv.cacheItems", items)
+  );
   const claude = new ClaudeClient(ollamaModel, ollamaUrl);
   const server = new IpcServer(port, cache, statusBar, context, claude);
   broadcastFn = (msg) => server.broadcast(msg);
@@ -2235,6 +2241,8 @@ function activate(context) {
   });
   const editorListener = vscode7.window.onDidChangeActiveTextEditor((_editor) => {
   });
+  const persisted = context.workspaceState.get("pbv.cacheItems", []);
+  if (persisted.length > 0) cache.sync(persisted);
   context.subscriptions.push(statusBar, treeView, server, editListener, editorListener, ...cmds);
 }
 function deactivate() {

@@ -50,14 +50,16 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
     private recentSet = new Set<string>();  // items inserted within last 5 s
     private maxItems: number;
     private broadcast: (msg: object) => void;
+    private onChange?: (items: string[]) => void;
     private suppressAbsorb = false;  // set by clear(); blocks absorbDocument until user adds an item or switches file
 
     private _onDidChangeTreeData = new vscode.EventEmitter<undefined>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-    constructor(maxItems: number, broadcast: (msg: object) => void) {
+    constructor(maxItems: number, broadcast: (msg: object) => void, onChange?: (items: string[]) => void) {
         this.maxItems  = maxItems;
         this.broadcast = broadcast;
+        this.onChange  = onChange;
     }
 
     // --- TreeDataProvider ------------------------------------------------
@@ -182,5 +184,6 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
     private refresh(): void {
         this._onDidChangeTreeData.fire(undefined);
         this.broadcast({ event: 'cacheUpdate', items: this.items });
+        this.onChange?.(this.items);
     }
 }
