@@ -298,6 +298,19 @@ export class IpcServer {
                 break;
             }
 
+            // Verbatim insertion without LLM — replaces selection or inserts at cursor.
+            // "dictate Word Frequency Counter" → inserts those exact words.
+            case 'dictateText': {
+                if (!editor) return;
+                const sel = editor.selection;
+                await editor.edit(eb =>
+                    sel.isEmpty
+                        ? eb.insert(sel.active, msg.text as string)
+                        : eb.replace(sel, msg.text as string)
+                );
+                break;
+            }
+
             case 'underlineLine': {
                 if (!editor) break;
                 const cursorLine = editor.selection.active.line;
@@ -431,6 +444,7 @@ export class IpcServer {
                 this.cache.cacheWordAtCursor();
                 break;
             case 'refreshCachePad':
+                this.cache.unsuppress();
                 if (editor) this.cache.absorbDocument(editor.document);
                 break;
             case 'evictCacheItem':

@@ -128,8 +128,8 @@ var CachePad = class {
   constructor(maxItems, broadcast) {
     this.items = [];
     this.recentSet = /* @__PURE__ */ new Set();
-    this.suppressAbsorbUri = null;
-    // set by clear(); blocks next absorbDocument for same file
+    this.suppressAbsorb = false;
+    // set by clear(); blocks absorbDocument until user adds an item or switches file
     this._onDidChangeTreeData = new vscode.EventEmitter();
     this.onDidChangeTreeData = this._onDidChangeTreeData.event;
     this.maxItems = maxItems;
@@ -157,6 +157,7 @@ var CachePad = class {
   // where the user explicitly chose what to cache.
   prependExplicit(symbol) {
     if (symbol.length < 1) return;
+    this.suppressAbsorb = false;
     this.items = [symbol, ...this.items.filter((s) => s !== symbol)].slice(0, this.maxItems);
     this.markRecent(symbol);
     this.refresh();
@@ -173,8 +174,11 @@ var CachePad = class {
   clear() {
     this.items = [];
     this.recentSet.clear();
-    this.suppressAbsorbUri = vscode.window.activeTextEditor?.document.uri.toString() ?? null;
+    this.suppressAbsorb = true;
     this.refresh();
+  }
+  unsuppress() {
+    this.suppressAbsorb = false;
   }
   sync(items) {
     this.items = items.slice(0, this.maxItems);
@@ -193,11 +197,7 @@ var CachePad = class {
   }
   // Full rescan of the document — used on file open / manual refresh.
   absorbDocument(doc) {
-    if (this.suppressAbsorbUri === doc.uri.toString()) {
-      this.suppressAbsorbUri = null;
-      return;
-    }
-    this.suppressAbsorbUri = null;
+    if (this.suppressAbsorb) return;
     const text = doc.getText();
     const found = [];
     let m;
@@ -722,6 +722,10 @@ var RULES = [
   rule("no\\s+space", (_) => ({ cmd: "deleteChars", n: 1 })),
   rule("open\\s+string", (_) => ({ cmd: "insertText", text: '"' })),
   rule("close\\s+string", (_) => ({ cmd: "closeString" })),
+  // Dictate — replace selection (or insert at cursor) without LLM.
+  // "dictate Word Frequency Counter" → inserts/replaces with exactly those words.
+  // Dragon-style "Select and Say": select a placeholder, say "dictate <title>".
+  rule("dictate\\s+(.+)", (m) => ({ cmd: "dictateText", text: m[1] })),
   // UI — voice-only access to help and cache pad
   // "show commands" handled by canonical; keep human aliases
   rule("what\\s+can\\s+I\\s+say", (_) => ({ cmd: "showCommands" })),
@@ -1590,6 +1594,16 @@ var IpcServer = class {
         await editor.edit((eb) => eb.replace(editor.selection, msg.text));
         break;
       }
+      // Verbatim insertion without LLM — replaces selection or inserts at cursor.
+      // "dictate Word Frequency Counter" → inserts those exact words.
+      case "dictateText": {
+        if (!editor) return;
+        const sel = editor.selection;
+        await editor.edit(
+          (eb) => sel.isEmpty ? eb.insert(sel.active, msg.text) : eb.replace(sel, msg.text)
+        );
+        break;
+      }
       case "underlineLine": {
         if (!editor) break;
         const cursorLine = editor.selection.active.line;
@@ -1713,6 +1727,7 @@ var IpcServer = class {
         this.cache.cacheWordAtCursor();
         break;
       case "refreshCachePad":
+        this.cache.unsuppress();
         if (editor) this.cache.absorbDocument(editor.document);
         break;
       case "evictCacheItem":

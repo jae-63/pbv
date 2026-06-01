@@ -38,7 +38,7 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
     private recentSet = new Set<string>();  // items inserted within last 5 s
     private maxItems: number;
     private broadcast: (msg: object) => void;
-    private suppressAbsorbUri: string | null = null;  // set by clear(); blocks next absorbDocument for same file
+    private suppressAbsorb = false;  // set by clear(); blocks absorbDocument until user adds an item or switches file
 
     private _onDidChangeTreeData = new vscode.EventEmitter<undefined>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -72,6 +72,7 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
     // where the user explicitly chose what to cache.
     prependExplicit(symbol: string): void {
         if (symbol.length < 1) return;
+        this.suppressAbsorb = false;  // explicit add re-enables auto-population
         this.items = [symbol, ...this.items.filter(s => s !== symbol)].slice(0, this.maxItems);
         this.markRecent(symbol);
         this.refresh();
@@ -91,9 +92,11 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
     clear(): void {
         this.items = [];
         this.recentSet.clear();
-        this.suppressAbsorbUri = vscode.window.activeTextEditor?.document.uri.toString() ?? null;
+        this.suppressAbsorb = true;
         this.refresh();
     }
+
+    unsuppress(): void { this.suppressAbsorb = false; }
 
     sync(items: string[]): void {
         this.items = items.slice(0, this.maxItems);
@@ -114,11 +117,7 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
 
     // Full rescan of the document — used on file open / manual refresh.
     absorbDocument(doc: vscode.TextDocument): void {
-        if (this.suppressAbsorbUri === doc.uri.toString()) {
-            this.suppressAbsorbUri = null;  // consume — allow future scans
-            return;
-        }
-        this.suppressAbsorbUri = null;
+        if (this.suppressAbsorb) return;
         const text = doc.getText();
         const found: string[] = [];
         let m: RegExpExecArray | null;
