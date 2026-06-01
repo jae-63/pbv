@@ -44,6 +44,71 @@ const PRESS_CHARS: Record<string, string> = {
     space: ' ',  spaces: ' ',
 };
 
+// Named special-character insertions.
+// Sorted longest-first so multi-word phrases beat any shared prefix.
+const SYMBOL_MAP: Record<string, string> = {
+    // Paired brackets — open/left and close/right forms
+    'open bracket':          '[',  'left bracket':          '[',
+    'close bracket':         ']',  'right bracket':         ']',
+    'open brace':            '{',  'left brace':            '{',
+    'close brace':           '}',  'right brace':           '}',
+    'open paren':            '(',  'left paren':            '(',
+    'close paren':           ')',  'right paren':           ')',
+    'open angle bracket':    '<',  'left angle bracket':    '<',
+    'close angle bracket':   '>',  'right angle bracket':   '>',
+    'open angle':            '<',  'left angle':            '<',
+    'close angle':           '>',  'right angle':           '>',
+    // Multi-word names
+    'exclamation mark':      '!',  'question mark':         '?',
+    'dollar sign':           '$',  'percent sign':          '%',
+    'forward slash':         '/',  'back slash':            '\\',
+    'single quote':          "'",  'double quote':          '"',
+    'plus sign':             '+',  'at sign':               '@',
+    // Comparison operators
+    'greater than or equal': '>=', 'less than or equal': '<=',
+    'not equal':    '!=',  'double equals':     '==',
+    'equals equals':'==',
+    'greater than': '>',   'less than':         '<',
+    // Single-word names
+    'backslash':  '\\',  'caret':      '^',
+    'ampersand':  '&',   'bang':       '!',
+    'tilde':      '~',   'semicolon':  ';',
+    'colon':      ':',   'apostrophe': "'",
+    'backtick':   '`',   'plus':       '+',
+};
+const SYMBOL_PATTERN = Object.keys(SYMBOL_MAP)
+    .sort((a, b) => b.length - a.length)
+    .map(k => k.replace(/\s+/g, '\\s+'))
+    .join('|');
+
+// Python keywords safe as bare words (code-specific, no collision risk).
+const BARE_KEYWORDS: Record<string, string> = {
+    'lambda':   'lambda ',
+    'yield':    'yield ',
+    'raise':    'raise ',
+    'pass':     'pass',
+    'break':    'break',
+    'continue': 'continue',
+    'len':      'len(',    // most-used builtin; opening paren included
+};
+const BARE_KEYWORD_PATTERN = Object.keys(BARE_KEYWORDS).join('|');
+
+// Python keywords that are common English words — require "keyword" prefix to
+// avoid false positives in multi-command sequences ("save for later", etc.).
+const KEYWORD_MAP: Record<string, string> = {
+    'return':   'return ',   'for':      'for ',
+    'in':       'in ',       'if':       'if ',
+    'else':     'else ',     'elif':     'elif ',
+    'and':      'and ',      'or':       'or ',
+    'not':      'not ',      'is':       'is ',
+    'as':       'as ',       'while':    'while ',
+    'with':     'with ',     'from':     'from ',
+    'import':   'import ',   'del':      'del ',
+    'assert':   'assert ',   'global':   'global ',
+    'nonlocal': 'nonlocal ',
+};
+const KEYWORD_PATTERN = Object.keys(KEYWORD_MAP).join('|');
+
 const RULES: Rule[] = [
     // Navigation — word on line (before bare "line N")
     rule('(?:go\\s+to\\s+)?word\\s+(\\d+)\\s+(?:on\\s+)?line\\s+(\\d+)',
@@ -55,17 +120,24 @@ const RULES: Rule[] = [
     rule('(?:go\\s+to\\s+|goto\\s+|jump\\s+to\\s+)?line\\s+(\\d+)',
          m => ({ cmd: 'gotoLine', line: n(m[1]) })),
 
-    // Navigation — cursor up/down
-    rule('(?:cursor\\s+)?up\\s+(\\d+)(?:\\s+lines?)?',
+    // Navigation — cursor up/down  ("cursor up N", "move up N", "up N", all with optional "lines")
+    rule('(?:(?:cursor|move)\\s+)?up\\s+(\\d+)(?:\\s+lines?)?',
          m => ({ cmd: 'cursorUp', n: n(m[1]) })),
-    rule('(?:cursor\\s+)?up',
+    rule('(?:(?:cursor|move)\\s+)?up',
          _  => ({ cmd: 'cursorUp', n: 1 })),
-    rule('(?:cursor\\s+)?down\\s+(\\d+)(?:\\s+lines?)?',
+    rule('(?:(?:cursor|move)\\s+)?down\\s+(\\d+)(?:\\s+lines?)?',
          m => ({ cmd: 'cursorDown', n: n(m[1]) })),
-    rule('(?:cursor\\s+)?down',
+    rule('(?:(?:cursor|move)\\s+)?down',
          _  => ({ cmd: 'cursorDown', n: 1 })),
 
-    // Navigation — cursor movement
+    // Navigation — cursor left/right N characters  ("cursor right 3", "move right 3 characters")
+    // Require "cursor" or "move" prefix to avoid matching bare "right/left" mid-utterance.
+    rule('(?:cursor|move)\\s+right\\s+(\\d+)(?:\\s+characters?)?',
+         m => ({ cmd: 'cursorRight', n: n(m[1]) })),
+    rule('(?:cursor|move)\\s+left\\s+(\\d+)(?:\\s+characters?)?',
+         m => ({ cmd: 'cursorLeft',  n: n(m[1]) })),
+
+    // Navigation — cursor movement (single step)
     rule('(?:cursor\\s+)?home', _ => ({ cmd: 'cursorHome' })),
     rule('(?:cursor\\s+)?end(?:\\s+of\\s+line)?', _ => ({ cmd: 'cursorEnd' })),
     rule('(?:(?:cursor|go)\\s+to\\s+)?top',    _ => ({ cmd: 'cursorTop' })),
@@ -97,7 +169,8 @@ const RULES: Rule[] = [
     rule('delete\\s+(?:this\\s+)?line',         _ => ({ cmd: 'deleteLine' })),
     rule('delete\\s+(\\d+)\\s+words?',          m => ({ cmd: 'deleteWords', n: n(m[1]) })),
     rule('delete\\s+(?:a\\s+)?word',            _ => ({ cmd: 'deleteWords', n: 1 })),
-    rule('delete\\s+(\\d+)\\s+chars?(?:acters?)?', m => ({ cmd: 'deleteChars', n: n(m[1]) })),
+    rule('backspace',                        _ => ({ cmd: 'deleteChars', n: 1 })),
+    rule('delete\\s+(\\d+)\\s+characters?', m => ({ cmd: 'deleteChars', n: n(m[1]) })),
     rule('delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?',
          _ => ({ cmd: 'deleteToEndOfLine' })),
 
@@ -120,11 +193,32 @@ const RULES: Rule[] = [
     // "new line" as end-of-sentence punctuation (converts it to ".").
     rule('new\\s*line|newline', _ => ({ cmd: 'insertText', text: '\n' })),
     rule('(?:press\\s+)?(?:return|enter)(?:\\s+key)?', _ => ({ cmd: 'insertText', text: '\n' })),
+    // "cap letter november" → 'N'  (must precede bare "letter" rule to win the prefix match)
+    rule('cap\\s+letter\\s+([a-z][a-z-]*)', m => ({ cmd: 'insertText', text: natoToChar(m[1]).toUpperCase() })),
     // "letter romeo" → 'r',  chainable: "letter romeo letter echo" → two insertions → 're'
     rule('letter\\s+([a-z][a-z-]*)', m => ({ cmd: 'insertText', text: natoToChar(m[1]) })),
     // "numeral 2" / "number 2" — insert digit literally; avoids Whisper writing "two"
     rule('(?:numeral|number)\\s+(\\d+)', m => ({ cmd: 'insertText', text: m[1] })),
     rule('no\\s+space',    _ => ({ cmd: 'deleteChars', n: 1 })),
+    // Named special characters — "open bracket", "caret", "backslash", etc.
+    rule(SYMBOL_PATTERN, m => ({
+        cmd: 'insertText',
+        text: SYMBOL_MAP[m[0].toLowerCase().replace(/\s+/g, ' ').trim()] ?? '',
+    })),
+
+    // Python keywords — bare for code-specific words, "keyword X" for English words.
+    rule(BARE_KEYWORD_PATTERN, m => ({
+        cmd: 'insertText',
+        text: BARE_KEYWORDS[m[0].toLowerCase()] ?? '',
+    })),
+    rule('keyword\\s+(' + KEYWORD_PATTERN + ')', m => ({
+        cmd: 'insertText',
+        text: KEYWORD_MAP[m[1].toLowerCase()] ?? m[1] + ' ',
+    })),
+
+    // Python return-type annotation — "returns value", "arrow", "right arrow"
+    rule('returns?\\s+(?:value|type)|(?:right\\s+)?arrow', _ => ({ cmd: 'insertText', text: ' -> ' })),
+
     rule('open\\s+string', _ => ({ cmd: 'insertText', text: '"' })),
     rule('close\\s+string',_ => ({ cmd: 'closeString' })),
 
@@ -208,15 +302,33 @@ const NATO: Record<string, string> = {
     mike:'m', november:'n', oscar:'o', papa:'p', quebec:'q', romeo:'r',
     sierra:'s', tango:'t', uniform:'u', victor:'v', whiskey:'w',
     'x-ray':'x', xray:'x', yankee:'y', zulu:'z',
-    // Named punctuation
+    // Named punctuation — mirrors SYMBOL_MAP so "jump to last X on N" works
+    // for every character that can be inserted by name.
     underscore:'_', 'at sign':'@', at:'@', 'percent sign':'%',
-    asterisk:'*', 'dollar sign':'$', 'equals sign':'=', 'equal sign':'=',
-    'open paren':'(', 'close paren':')', 'left paren':'(', 'right paren':')',
-    'open bracket':'[', 'close bracket':']',
-    'open brace':'{', 'close brace':'}',
-    semicolon:';', colon:':', comma:',', period:'.', slash:'/',
-    backslash:'\\', 'exclamation mark':'!', 'question mark':'?',
-    'less than':'<', 'greater than':'>', dash:'-', hyphen:'-',
+    asterisk:'*',  star:'*',
+    'dollar sign':'$', 'equals sign':'=', 'equal sign':'=',
+    'open paren':'(',  'close paren':')',  'left paren':'(',  'right paren':')',
+    'open bracket':'[','close bracket':']','left bracket':'[','right bracket':']',
+    'open brace':'{',  'close brace':'}', 'left brace':'{',  'right brace':'}',
+    'open angle':'<',  'close angle':'>', 'left angle':'<',  'right angle':'>',
+    'open angle bracket':'<', 'close angle bracket':'>',
+    'left angle bracket':'<', 'right angle bracket':'>',
+    semicolon:';', colon:':', comma:',', period:'.', dot:'.',
+    slash:'/', 'forward slash':'/',
+    backslash:'\\', 'back slash':'\\',
+    'exclamation mark':'!', bang:'!',
+    'question mark':'?',
+    'less than':'<', 'greater than':'>',
+    'greater than or equal':'>', 'less than or equal':'<',
+    dash:'-', hyphen:'-',
+    // Quotes
+    'double quote':'"', 'double-quote':'"', 'double quotes':'"',
+    'single quote':"'", apostrophe:"'",
+    quote:'"',
+    // Other
+    backtick:'`', 'back tick':'`',
+    caret:'^', tilde:'~', ampersand:'&', pipe:'|',
+    plus:'+', 'plus sign':'+',
 };
 
 export function natoToChar(word: string): string {

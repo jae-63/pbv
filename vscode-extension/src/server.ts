@@ -34,8 +34,7 @@ const VSCODE_COMMANDS: Record<string, string> = {
     find:               'actions.find',
     replace:            'editor.action.startFindReplaceAction',
     matchParen:         'editor.action.jumpToBracket',
-    cursorLeft:         'cursorLeft',
-    cursorRight:        'cursorRight',
+    // cursorLeft / cursorRight handled explicitly below to support repeat count
     cursorHome:         'cursorHome',
     cursorEnd:          'cursorEnd',
     cursorTop:          'cursorTop',
@@ -43,6 +42,20 @@ const VSCODE_COMMANDS: Record<string, string> = {
     pageUp:             'scrollPageUp',
     pageDown:           'scrollPageDown',
 };
+
+// Utterances beginning with these verbs are LLM transform commands, not dictation.
+// Everything else with an active selection is treated as replacement text.
+const TRANSFORM_VERBS = new Set([
+    'insert', 'add', 'remove', 'delete', 'convert', 'make', 'change',
+    'refactor', 'replace', 'rename', 'extract', 'move', 'wrap', 'unwrap',
+    'transform', 'format', 'generate', 'create', 'update', 'fix',
+    'improve', 'simplify', 'complete', 'explain', 'annotate', 'document',
+]);
+
+function looksLikeDictation(utterance: string): boolean {
+    const first = utterance.trim().toLowerCase().split(/\s+/)[0];
+    return !TRANSFORM_VERBS.has(first);
+}
 
 // Commands that should not fire on low-confidence (uncertain) transcripts.
 // Destructive / hard-to-reverse operations where a mishearing is costly.
@@ -233,7 +246,11 @@ export class IpcServer {
                     }
                     if (editor) {
                         const dictated = normalizeDictation(raw);
-                        await editor.edit(eb => eb.insert(editor.selection.active, dictated + ' '));
+                        const sel = editor.selection;
+                        await editor.edit(eb =>
+                            sel.isEmpty
+                                ? eb.insert(sel.active, dictated + ' ')
+                                : eb.replace(sel, dictated));
                         vscode.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 10000);
                     }
                     return;
@@ -291,6 +308,15 @@ export class IpcServer {
                         return;
                     }
                 }
+                // Extended Select-and-Say: any non-empty selection + prose utterance
+                // (no leading action verb) → replace verbatim without LLM.
+                // Action verbs route to LLM so transforms ("convert to snake case") still work.
+                if (snap.selectedText && looksLikeDictation(llmInput)) {
+                    vscode.window.setStatusBarMessage(`$(mic) "${raw}" → replaceSelection`, 10000);
+                    await this.dispatch({ cmd: 'dictateText', text: llmInput } as InboundMessage, _socket);
+                    return;
+                }
+
                 const savedSelection = vscode.window.activeTextEditor?.selection;
                 const abort = new AbortController();
                 this.llmAbort = abort;
@@ -527,6 +553,14 @@ export class IpcServer {
             case 'cursorDown':
                 for (let i = 0; i < (msg.n ?? 1); i++)
                     await vscode.commands.executeCommand('cursorDown');
+                break;
+            case 'cursorLeft':
+                for (let i = 0; i < (msg.n ?? 1); i++)
+                    await vscode.commands.executeCommand('cursorLeft');
+                break;
+            case 'cursorRight':
+                for (let i = 0; i < (msg.n ?? 1); i++)
+                    await vscode.commands.executeCommand('cursorRight');
                 break;
 
             // --- Cache pad ---

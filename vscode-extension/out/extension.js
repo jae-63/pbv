@@ -402,12 +402,13 @@ async function jumpToCharOnLine(ordinal, char, targetMod) {
   else if (targetMod === -102) line = editor.selection.active.line - 1;
   else line = resolveModLine(targetMod, editor);
   if (line === null || line < 0 || line >= editor.document.lineCount) return;
-  const text = editor.document.lineAt(line).text;
+  const text = editor.document.lineAt(line).text.toLowerCase();
+  const query = char.toLowerCase();
   const positions = [];
-  let idx = text.indexOf(char);
+  let idx = text.indexOf(query);
   while (idx !== -1) {
     positions.push(idx);
-    idx = text.indexOf(char, idx + 1);
+    idx = text.indexOf(query, idx + 1);
   }
   if (positions.length === 0) return;
   let col;
@@ -589,6 +590,13 @@ var TEMPLATE_CMDS = [
   },
   {
     lang: "python",
+    phrase: "filtered comprehension",
+    pattern: "(?:filtered|filter)\\s+comprehension",
+    text: "[{CURSOR} for  in  if ]",
+    desc: "[expr for item in \u2026 if condition]"
+  },
+  {
+    lang: "python",
     phrase: "dict comprehension",
     text: "{{CURSOR}: for  in }",
     desc: "{k: v for item in \u2026}"
@@ -660,6 +668,93 @@ var PRESS_CHARS = {
   space: " ",
   spaces: " "
 };
+var SYMBOL_MAP = {
+  // Paired brackets — open/left and close/right forms
+  "open bracket": "[",
+  "left bracket": "[",
+  "close bracket": "]",
+  "right bracket": "]",
+  "open brace": "{",
+  "left brace": "{",
+  "close brace": "}",
+  "right brace": "}",
+  "open paren": "(",
+  "left paren": "(",
+  "close paren": ")",
+  "right paren": ")",
+  "open angle bracket": "<",
+  "left angle bracket": "<",
+  "close angle bracket": ">",
+  "right angle bracket": ">",
+  "open angle": "<",
+  "left angle": "<",
+  "close angle": ">",
+  "right angle": ">",
+  // Multi-word names
+  "exclamation mark": "!",
+  "question mark": "?",
+  "dollar sign": "$",
+  "percent sign": "%",
+  "forward slash": "/",
+  "back slash": "\\",
+  "single quote": "'",
+  "double quote": '"',
+  "plus sign": "+",
+  "at sign": "@",
+  // Comparison operators
+  "greater than or equal": ">=",
+  "less than or equal": "<=",
+  "not equal": "!=",
+  "double equals": "==",
+  "equals equals": "==",
+  "greater than": ">",
+  "less than": "<",
+  // Single-word names
+  "backslash": "\\",
+  "caret": "^",
+  "ampersand": "&",
+  "bang": "!",
+  "tilde": "~",
+  "semicolon": ";",
+  "colon": ":",
+  "apostrophe": "'",
+  "backtick": "`",
+  "plus": "+"
+};
+var SYMBOL_PATTERN = Object.keys(SYMBOL_MAP).sort((a, b) => b.length - a.length).map((k) => k.replace(/\s+/g, "\\s+")).join("|");
+var BARE_KEYWORDS = {
+  "lambda": "lambda ",
+  "yield": "yield ",
+  "raise": "raise ",
+  "pass": "pass",
+  "break": "break",
+  "continue": "continue",
+  "len": "len("
+  // most-used builtin; opening paren included
+};
+var BARE_KEYWORD_PATTERN = Object.keys(BARE_KEYWORDS).join("|");
+var KEYWORD_MAP = {
+  "return": "return ",
+  "for": "for ",
+  "in": "in ",
+  "if": "if ",
+  "else": "else ",
+  "elif": "elif ",
+  "and": "and ",
+  "or": "or ",
+  "not": "not ",
+  "is": "is ",
+  "as": "as ",
+  "while": "while ",
+  "with": "with ",
+  "from": "from ",
+  "import": "import ",
+  "del": "del ",
+  "assert": "assert ",
+  "global": "global ",
+  "nonlocal": "nonlocal "
+};
+var KEYWORD_PATTERN = Object.keys(KEYWORD_MAP).join("|");
 var RULES = [
   // Navigation — word on line (before bare "line N")
   rule(
@@ -675,24 +770,34 @@ var RULES = [
     "(?:go\\s+to\\s+|goto\\s+|jump\\s+to\\s+)?line\\s+(\\d+)",
     (m) => ({ cmd: "gotoLine", line: n(m[1]) })
   ),
-  // Navigation — cursor up/down
+  // Navigation — cursor up/down  ("cursor up N", "move up N", "up N", all with optional "lines")
   rule(
-    "(?:cursor\\s+)?up\\s+(\\d+)(?:\\s+lines?)?",
+    "(?:(?:cursor|move)\\s+)?up\\s+(\\d+)(?:\\s+lines?)?",
     (m) => ({ cmd: "cursorUp", n: n(m[1]) })
   ),
   rule(
-    "(?:cursor\\s+)?up",
+    "(?:(?:cursor|move)\\s+)?up",
     (_) => ({ cmd: "cursorUp", n: 1 })
   ),
   rule(
-    "(?:cursor\\s+)?down\\s+(\\d+)(?:\\s+lines?)?",
+    "(?:(?:cursor|move)\\s+)?down\\s+(\\d+)(?:\\s+lines?)?",
     (m) => ({ cmd: "cursorDown", n: n(m[1]) })
   ),
   rule(
-    "(?:cursor\\s+)?down",
+    "(?:(?:cursor|move)\\s+)?down",
     (_) => ({ cmd: "cursorDown", n: 1 })
   ),
-  // Navigation — cursor movement
+  // Navigation — cursor left/right N characters  ("cursor right 3", "move right 3 characters")
+  // Require "cursor" or "move" prefix to avoid matching bare "right/left" mid-utterance.
+  rule(
+    "(?:cursor|move)\\s+right\\s+(\\d+)(?:\\s+characters?)?",
+    (m) => ({ cmd: "cursorRight", n: n(m[1]) })
+  ),
+  rule(
+    "(?:cursor|move)\\s+left\\s+(\\d+)(?:\\s+characters?)?",
+    (m) => ({ cmd: "cursorLeft", n: n(m[1]) })
+  ),
+  // Navigation — cursor movement (single step)
   rule("(?:cursor\\s+)?home", (_) => ({ cmd: "cursorHome" })),
   rule("(?:cursor\\s+)?end(?:\\s+of\\s+line)?", (_) => ({ cmd: "cursorEnd" })),
   rule("(?:(?:cursor|go)\\s+to\\s+)?top", (_) => ({ cmd: "cursorTop" })),
@@ -732,7 +837,8 @@ var RULES = [
   rule("delete\\s+(?:this\\s+)?line", (_) => ({ cmd: "deleteLine" })),
   rule("delete\\s+(\\d+)\\s+words?", (m) => ({ cmd: "deleteWords", n: n(m[1]) })),
   rule("delete\\s+(?:a\\s+)?word", (_) => ({ cmd: "deleteWords", n: 1 })),
-  rule("delete\\s+(\\d+)\\s+chars?(?:acters?)?", (m) => ({ cmd: "deleteChars", n: n(m[1]) })),
+  rule("backspace", (_) => ({ cmd: "deleteChars", n: 1 })),
+  rule("delete\\s+(\\d+)\\s+characters?", (m) => ({ cmd: "deleteChars", n: n(m[1]) })),
   rule(
     "delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?",
     (_) => ({ cmd: "deleteToEndOfLine" })
@@ -756,11 +862,29 @@ var RULES = [
   // "new line" as end-of-sentence punctuation (converts it to ".").
   rule("new\\s*line|newline", (_) => ({ cmd: "insertText", text: "\n" })),
   rule("(?:press\\s+)?(?:return|enter)(?:\\s+key)?", (_) => ({ cmd: "insertText", text: "\n" })),
+  // "cap letter november" → 'N'  (must precede bare "letter" rule to win the prefix match)
+  rule("cap\\s+letter\\s+([a-z][a-z-]*)", (m) => ({ cmd: "insertText", text: natoToChar(m[1]).toUpperCase() })),
   // "letter romeo" → 'r',  chainable: "letter romeo letter echo" → two insertions → 're'
   rule("letter\\s+([a-z][a-z-]*)", (m) => ({ cmd: "insertText", text: natoToChar(m[1]) })),
   // "numeral 2" / "number 2" — insert digit literally; avoids Whisper writing "two"
   rule("(?:numeral|number)\\s+(\\d+)", (m) => ({ cmd: "insertText", text: m[1] })),
   rule("no\\s+space", (_) => ({ cmd: "deleteChars", n: 1 })),
+  // Named special characters — "open bracket", "caret", "backslash", etc.
+  rule(SYMBOL_PATTERN, (m) => ({
+    cmd: "insertText",
+    text: SYMBOL_MAP[m[0].toLowerCase().replace(/\s+/g, " ").trim()] ?? ""
+  })),
+  // Python keywords — bare for code-specific words, "keyword X" for English words.
+  rule(BARE_KEYWORD_PATTERN, (m) => ({
+    cmd: "insertText",
+    text: BARE_KEYWORDS[m[0].toLowerCase()] ?? ""
+  })),
+  rule("keyword\\s+(" + KEYWORD_PATTERN + ")", (m) => ({
+    cmd: "insertText",
+    text: KEYWORD_MAP[m[1].toLowerCase()] ?? m[1] + " "
+  })),
+  // Python return-type annotation — "returns value", "arrow", "right arrow"
+  rule("returns?\\s+(?:value|type)|(?:right\\s+)?arrow", (_) => ({ cmd: "insertText", text: " -> " })),
   rule("open\\s+string", (_) => ({ cmd: "insertText", text: '"' })),
   rule("close\\s+string", (_) => ({ cmd: "closeString" })),
   // Template placeholder navigation — "select title template" → selects TITLE_TEMPLATE
@@ -862,12 +986,14 @@ var NATO = {
   xray: "x",
   yankee: "y",
   zulu: "z",
-  // Named punctuation
+  // Named punctuation — mirrors SYMBOL_MAP so "jump to last X on N" works
+  // for every character that can be inserted by name.
   underscore: "_",
   "at sign": "@",
   at: "@",
   "percent sign": "%",
   asterisk: "*",
+  star: "*",
   "dollar sign": "$",
   "equals sign": "=",
   "equal sign": "=",
@@ -877,20 +1003,54 @@ var NATO = {
   "right paren": ")",
   "open bracket": "[",
   "close bracket": "]",
+  "left bracket": "[",
+  "right bracket": "]",
   "open brace": "{",
   "close brace": "}",
+  "left brace": "{",
+  "right brace": "}",
+  "open angle": "<",
+  "close angle": ">",
+  "left angle": "<",
+  "right angle": ">",
+  "open angle bracket": "<",
+  "close angle bracket": ">",
+  "left angle bracket": "<",
+  "right angle bracket": ">",
   semicolon: ";",
   colon: ":",
   comma: ",",
   period: ".",
+  dot: ".",
   slash: "/",
+  "forward slash": "/",
   backslash: "\\",
+  "back slash": "\\",
   "exclamation mark": "!",
+  bang: "!",
   "question mark": "?",
   "less than": "<",
   "greater than": ">",
+  "greater than or equal": ">",
+  "less than or equal": "<",
   dash: "-",
-  hyphen: "-"
+  hyphen: "-",
+  // Quotes
+  "double quote": '"',
+  "double-quote": '"',
+  "double quotes": '"',
+  "single quote": "'",
+  apostrophe: "'",
+  quote: '"',
+  // Other
+  backtick: "`",
+  "back tick": "`",
+  caret: "^",
+  tilde: "~",
+  ampersand: "&",
+  pipe: "|",
+  plus: "+",
+  "plus sign": "+"
 };
 function natoToChar(word) {
   const key = word.trim().toLowerCase();
@@ -1254,8 +1414,10 @@ var UNIVERSAL = [
       { phrase: "match paren / match bracket", desc: "Jump to matching bracket or brace" },
       { phrase: "top / bottom", desc: "Start / end of file" },
       { phrase: "home / end", desc: "Start / end of line" },
-      { phrase: "up N / down N", desc: "Move cursor N lines" },
-      { phrase: "cursor left / cursor right", desc: "Move one character" },
+      { phrase: "up N / down N  (or: move up/down N lines)", desc: "Move cursor N lines" },
+      { phrase: "cursor right N characters  (or: move right N)", desc: "Move N characters right" },
+      { phrase: "cursor left N characters   (or: move left N)", desc: "Move N characters left" },
+      { phrase: "cursor left / cursor right", desc: "Move one character (single step)" },
       { phrase: "page up / page down", desc: "Scroll one page" }
     ]
   },
@@ -1284,11 +1446,35 @@ var UNIVERSAL = [
       { phrase: "select all", desc: "Select entire file" },
       { phrase: "delete word / delete N words", desc: "Delete words leftward" },
       { phrase: "delete line", desc: "Delete current line" },
-      { phrase: "delete N chars", desc: "Delete N characters left" },
+      { phrase: "backspace", desc: "Delete previous character" },
+      { phrase: "delete N characters", desc: "Delete N characters left" },
       { phrase: "delete to end", desc: "Delete to end of line" },
       { phrase: "copy / cut / paste", desc: "Clipboard operations" },
       { phrase: "undo / redo", desc: "Standard undo / redo" },
       { phrase: "comment line", desc: "Toggle line comment" }
+    ]
+  },
+  {
+    title: "Special Characters  (instant, no LLM)",
+    cmds: [
+      { phrase: "open bracket / close bracket  (or: left / right bracket)", desc: "[ ]" },
+      { phrase: "open brace / close brace      (or: left / right brace)", desc: "{ }" },
+      { phrase: "open paren / close paren      (or: left / right paren)", desc: "( )" },
+      { phrase: "open angle / close angle", desc: "< >" },
+      { phrase: "backslash  (or: back slash)", desc: "\\" },
+      { phrase: "caret", desc: "^" },
+      { phrase: "ampersand", desc: "&" },
+      { phrase: "bang  (or: exclamation mark)", desc: "!" },
+      { phrase: "tilde", desc: "~" },
+      { phrase: "semicolon / colon", desc: "; :" },
+      { phrase: "apostrophe  (or: single quote)", desc: "'" },
+      { phrase: "double quote", desc: '"  (see also: open string)' },
+      { phrase: "backtick", desc: "`" },
+      { phrase: "plus  (or: plus sign)", desc: "+" },
+      { phrase: "at sign", desc: "@" },
+      { phrase: "dollar sign / percent sign", desc: "$ %" },
+      { phrase: "question mark / forward slash", desc: "? /" },
+      { phrase: "arrow  (or: returns value)", desc: " ->  (Python return-type annotation)" }
     ]
   },
   {
@@ -1510,8 +1696,7 @@ var VSCODE_COMMANDS = {
   find: "actions.find",
   replace: "editor.action.startFindReplaceAction",
   matchParen: "editor.action.jumpToBracket",
-  cursorLeft: "cursorLeft",
-  cursorRight: "cursorRight",
+  // cursorLeft / cursorRight handled explicitly below to support repeat count
   cursorHome: "cursorHome",
   cursorEnd: "cursorEnd",
   cursorTop: "cursorTop",
@@ -1519,6 +1704,38 @@ var VSCODE_COMMANDS = {
   pageUp: "scrollPageUp",
   pageDown: "scrollPageDown"
 };
+var TRANSFORM_VERBS = /* @__PURE__ */ new Set([
+  "insert",
+  "add",
+  "remove",
+  "delete",
+  "convert",
+  "make",
+  "change",
+  "refactor",
+  "replace",
+  "rename",
+  "extract",
+  "move",
+  "wrap",
+  "unwrap",
+  "transform",
+  "format",
+  "generate",
+  "create",
+  "update",
+  "fix",
+  "improve",
+  "simplify",
+  "complete",
+  "explain",
+  "annotate",
+  "document"
+]);
+function looksLikeDictation(utterance) {
+  const first = utterance.trim().toLowerCase().split(/\s+/)[0];
+  return !TRANSFORM_VERBS.has(first);
+}
 var DESTRUCTIVE_CMDS = /* @__PURE__ */ new Set([
   "clearCachePad",
   "deleteLine",
@@ -1653,7 +1870,8 @@ var IpcServer = class {
           }
           if (editor) {
             const dictated = normalizeDictation(raw);
-            await editor.edit((eb) => eb.insert(editor.selection.active, dictated + " "));
+            const sel = editor.selection;
+            await editor.edit((eb) => sel.isEmpty ? eb.insert(sel.active, dictated + " ") : eb.replace(sel, dictated));
             vscode5.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 1e4);
           }
           return;
@@ -1701,6 +1919,11 @@ var IpcServer = class {
             }
             return;
           }
+        }
+        if (snap.selectedText && looksLikeDictation(llmInput)) {
+          vscode5.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 replaceSelection`, 1e4);
+          await this.dispatch({ cmd: "dictateText", text: llmInput }, _socket);
+          return;
         }
         const savedSelection = vscode5.window.activeTextEditor?.selection;
         const abort = new AbortController();
@@ -1925,6 +2148,14 @@ ${dashes}
       case "cursorDown":
         for (let i = 0; i < (msg.n ?? 1); i++)
           await vscode5.commands.executeCommand("cursorDown");
+        break;
+      case "cursorLeft":
+        for (let i = 0; i < (msg.n ?? 1); i++)
+          await vscode5.commands.executeCommand("cursorLeft");
+        break;
+      case "cursorRight":
+        for (let i = 0; i < (msg.n ?? 1); i++)
+          await vscode5.commands.executeCommand("cursorRight");
         break;
       // --- Cache pad ---
       case "insertCacheItem": {

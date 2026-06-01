@@ -80,6 +80,11 @@ export const TEMPLATE_CMDS: TemplateCmd[] = [
       text: '[{CURSOR} for  in ]',
       desc: '[expr for item in …]' },
 
+    { lang: 'python', phrase: 'filtered comprehension',
+      pattern: '(?:filtered|filter)\\s+comprehension',
+      text: '[{CURSOR} for  in  if ]',
+      desc: '[expr for item in … if condition]' },
+
     { lang: 'python', phrase: 'dict comprehension',
       text: '{{CURSOR}: for  in }',
       desc: '{k: v for item in …}' },

@@ -48,8 +48,8 @@ describe('fastInterpret — deletion', () => {
         expect(fastInterpret('delete end of line')).toEqual({ cmd: 'deleteToEndOfLine' });
     });
 
-    test('delete chars', () => {
-        expect(fastInterpret('delete 5 chars')).toEqual({ cmd: 'deleteChars', n: 5 });
+    test('delete characters', () => {
+        expect(fastInterpret('delete 5 characters')).toEqual({ cmd: 'deleteChars', n: 5 });
         expect(fastInterpret('delete 1 character')).toEqual({ cmd: 'deleteChars', n: 1 });
     });
 });

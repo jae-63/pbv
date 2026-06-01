@@ -45,8 +45,8 @@ export type InboundMessage =
   | { cmd: 'deleteWords';      n: number }
   | { cmd: 'cursorUp';         n?: number }
   | { cmd: 'cursorDown';       n?: number }
-  | { cmd: 'cursorLeft' }
-  | { cmd: 'cursorRight' }
+  | { cmd: 'cursorLeft';  n?: number }
+  | { cmd: 'cursorRight'; n?: number }
   | { cmd: 'cursorHome' }
   | { cmd: 'cursorEnd' }
   | { cmd: 'cursorTop' }

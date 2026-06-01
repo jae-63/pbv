@@ -85,12 +85,14 @@ export async function jumpToCharOnLine(
     else                         line = resolveModLine(targetMod, editor);
     if (line === null || line < 0 || line >= editor.document.lineCount) return;
 
-    const text = editor.document.lineAt(line).text;
+    // Case-insensitive: NATO 'd' (delta) must match 'D' in ALL_CAPS identifiers.
+    const text  = editor.document.lineAt(line).text.toLowerCase();
+    const query = char.toLowerCase();
 
     // Collect all occurrence indices.
     const positions: number[] = [];
-    let idx = text.indexOf(char);
-    while (idx !== -1) { positions.push(idx); idx = text.indexOf(char, idx + 1); }
+    let idx = text.indexOf(query);
+    while (idx !== -1) { positions.push(idx); idx = text.indexOf(query, idx + 1); }
     if (positions.length === 0) return;
 
     // Resolve ordinal: 1=first, -1=last, -2=penultimate, etc.
