@@ -722,6 +722,12 @@ var RULES = [
   rule("no\\s+space", (_) => ({ cmd: "deleteChars", n: 1 })),
   rule("open\\s+string", (_) => ({ cmd: "insertText", text: '"' })),
   rule("close\\s+string", (_) => ({ cmd: "closeString" })),
+  // Template placeholder navigation — "select title template" → selects TITLE_TEMPLATE
+  // Covers all ALL_CAPS_TEMPLATE names without LLM; works for any template word.
+  rule(
+    "select\\s+(\\w+(?:\\s+\\w+)*)\\s+template",
+    (m) => ({ cmd: "selectToken", token: m[1].trim().replace(/\s+/g, "_").toUpperCase() + "_TEMPLATE" })
+  ),
   // Dictate — replace selection (or insert at cursor) without LLM.
   // "dictate Word Frequency Counter" → inserts/replaces with exactly those words.
   // Dragon-style "Select and Say": select a placeholder, say "dictate <title>".
