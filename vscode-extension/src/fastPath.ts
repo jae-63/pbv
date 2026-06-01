@@ -121,6 +121,15 @@ const RULES: Rule[] = [
     rule('select\\s+(\\w+(?:\\s+\\w+)*)\\s+template',
         m => ({ cmd: 'selectToken', token: m[1].trim().replace(/\s+/g, '_').toUpperCase() + '_TEMPLATE' })),
 
+    // Import statements — never need the LLM; go straight to dictateText so
+    // normalizeDictation handles letter contractions ("letter romeo" → 'r' etc.)
+    // "from pathlib import Path" → inserts that line + newline
+    // "import letter romeo letter echo" → "import re\n"
+    rule('from\\s+(\\S+)\\s+import\\s+(.+)',
+        m => ({ cmd: 'dictateText', text: `from ${m[1]} import ${m[2]}` })),
+    rule('import\\s+(.+)',
+        m => ({ cmd: 'dictateText', text: `import ${m[1]}` })),
+
     // Dictate — replace selection (or insert at cursor) without LLM.
     // "dictate Word Frequency Counter" → inserts/replaces with exactly those words.
     // Dragon-style "Select and Say": select a placeholder, say "dictate <title>".
