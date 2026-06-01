@@ -749,8 +749,10 @@ var RULES = [
     "from\\s+(\\S+)\\s+import\\s+(.+)",
     (m) => ({ cmd: "dictateText", text: `from ${m[1]} import ${m[2]}` })
   ),
+  // Non-greedy: stop at "new line" or a following "import" so multi-import
+  // utterances ("import argparse new line import re") dispatch as separate commands.
   rule(
-    "import\\s+(.+)",
+    "import\\s+(.+?)(?=\\s+(?:new\\s*line\\b|import\\s+)|$)",
     (m) => ({ cmd: "dictateText", text: `import ${m[1]}` })
   ),
   // Dictate — replace selection (or insert at cursor) without LLM.
@@ -949,7 +951,8 @@ function normalizeNumbers(text) {
 }
 function prepare(utterance) {
   const stripped = utterance.trim().replace(/^[.…,!?\s]+/, "").replace(/[.…,!?]+$/, "");
-  return normalizeNumbers(stripped);
+  const deperioded = stripped.replace(/\.(\s+)/g, "$1");
+  return normalizeNumbers(deperioded);
 }
 var FORMATTERS = {
   snake: (ts) => ts.map((t) => t.toLowerCase()).join("_"),
@@ -1998,7 +2001,7 @@ function normalizeDictation(text) {
     NATO_SEQ_RE,
     (match) => match.split(/\s+/).map((w) => natoToChar(w.toLowerCase())).join("")
   );
-  t = t.replace(/\bnew\s*line\b/gi, "\n").replace(/\s+comma\b/gi, ",").replace(/\s+period\b/gi, ".").replace(/\s+full\s+stop\b/gi, ".").replace(/\s+exclamation\s+(?:mark|point)\b/gi, "!").replace(/\s+question\s+mark\b/gi, "?").replace(/\s+colon\b/gi, ":").replace(/\s+semicolon\b/gi, ";").replace(/\s+hyphen\b/gi, "-").replace(/\s+dash\b/gi, " \u2014").replace(/\s+apostrophe\b/gi, "'").replace(/\s+close\s+(?:paren|parenthesis)\b/gi, ")").replace(/\s+close\s+(?:bracket|square\s+bracket)\b/gi, "]").replace(/\s+close\s+(?:brace|curly)\b/gi, "}").replace(/\s+close\s+quote\b/gi, '"');
+  t = t.replace(/\bnew\s*line\b/gi, "\n").replace(/\s+comma\b/gi, ",").replace(/\s+period\b/gi, ".").replace(/\s+full\s+stop\b/gi, ".").replace(/\s+exclamation\s+(?:mark|point)\b/gi, "!").replace(/\s+question\s+mark\b/gi, "?").replace(/\s+colon\b/gi, ":").replace(/\s+semicolon\b/gi, ";").replace(/\s+hyphen\b\s*/gi, "-").replace(/\s+dash\b/gi, " \u2014").replace(/\s+apostrophe\b\s*/gi, "'").replace(/\s+close\s+(?:paren|parenthesis)\b/gi, ")").replace(/\s+close\s+(?:bracket|square\s+bracket)\b/gi, "]").replace(/\s+close\s+(?:brace|curly)\b/gi, "}").replace(/\s+close\s+quote\b/gi, '"');
   t = t.replace(/\bopen\s+(?:paren|parenthesis)\s+/gi, "(").replace(/\bopen\s+(?:bracket|square\s+bracket)\s+/gi, "[").replace(/\bopen\s+(?:brace|curly)\s+/gi, "{").replace(/\bopen\s+quote\s+/gi, '"');
   t = t.replace(/\b([a-z])\s+(?=[a-z]\b)/g, "$1");
   return t;

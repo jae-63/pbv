@@ -127,7 +127,9 @@ const RULES: Rule[] = [
     // "import letter romeo letter echo" → "import re\n"
     rule('from\\s+(\\S+)\\s+import\\s+(.+)',
         m => ({ cmd: 'dictateText', text: `from ${m[1]} import ${m[2]}` })),
-    rule('import\\s+(.+)',
+    // Non-greedy: stop at "new line" or a following "import" so multi-import
+    // utterances ("import argparse new line import re") dispatch as separate commands.
+    rule('import\\s+(.+?)(?=\\s+(?:new\\s*line\\b|import\\s+)|$)',
         m => ({ cmd: 'dictateText', text: `import ${m[1]}` })),
 
     // Dictate — replace selection (or insert at cursor) without LLM.
@@ -268,7 +270,10 @@ function normalizeNumbers(text: string): string {
 function prepare(utterance: string): string {
     // Strip leading AND trailing punctuation/whitespace that Whisper sometimes adds.
     const stripped = utterance.trim().replace(/^[.…,!?\s]+/, '').replace(/[.…,!?]+$/, '');
-    return normalizeNumbers(stripped);
+    // Strip Whisper's mid-sentence auto-periods ("argparse. New line." → "argparse New line")
+    // so multi-command sequences remain parseable by the prefix-lookahead rules.
+    const deperioded = stripped.replace(/\.(\s+)/g, '$1');
+    return normalizeNumbers(deperioded);
 }
 
 // ---------------------------------------------------------------------------

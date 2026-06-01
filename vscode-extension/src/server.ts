@@ -695,7 +695,7 @@ const NATO_SEQ_RE = (() => {
     return new RegExp(`\\b(?:${words})(?:\\s+(?:${words}))+\\b`, 'gi');
 })();
 
-function normalizeDictation(text: string): string {
+export function normalizeDictation(text: string): string {
     let t = text;
     // Strip Whisper's auto-inserted sentence-end periods ("romeo. Echo." → "romeo Echo").
     // In code dictation, bare periods from Whisper are always noise — real periods
@@ -718,9 +718,9 @@ function normalizeDictation(text: string): string {
         .replace(/\s+question\s+mark\b/gi,           '?')
         .replace(/\s+colon\b/gi,                     ':')
         .replace(/\s+semicolon\b/gi,                 ';')
-        .replace(/\s+hyphen\b/gi,                    '-')
+        .replace(/\s+hyphen\b\s*/gi,                 '-')
         .replace(/\s+dash\b/gi,                      ' —')
-        .replace(/\s+apostrophe\b/gi,                "'")
+        .replace(/\s+apostrophe\b\s*/gi,             "'")
         .replace(/\s+close\s+(?:paren|parenthesis)\b/gi, ')')
         .replace(/\s+close\s+(?:bracket|square\s+bracket)\b/gi, ']')
         .replace(/\s+close\s+(?:brace|curly)\b/gi,  '}')

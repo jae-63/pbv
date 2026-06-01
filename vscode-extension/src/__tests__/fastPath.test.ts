@@ -452,6 +452,45 @@ describe('press N times', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Import fast-path — multi-command utterances (regression: greedy .+ bug)
+// ---------------------------------------------------------------------------
+describe('import fast-path — multi-command utterances', () => {
+    test('single import', () => {
+        expect(fastInterpretMulti('import argparse')).toEqual({
+            commands: [{ cmd: 'dictateText', text: 'import argparse' }],
+            remainder: '',
+        });
+    });
+
+    test('import letter romeo letter echo → dictateText with NATO module name', () => {
+        // normalizeDictation converts "letter romeo letter echo" → "re" downstream
+        expect(fastInterpretMulti('import letter romeo letter echo')).toEqual({
+            commands: [{ cmd: 'dictateText', text: 'import letter romeo letter echo' }],
+            remainder: '',
+        });
+    });
+
+    test('two imports separated by new line — must dispatch as 3 commands, not 1', () => {
+        // Regression: greedy .+ swallowed entire utterance into one dictateText.
+        // prepare() now strips Whisper mid-sentence periods; import rule is non-greedy.
+        const result = fastInterpretMulti('. Import argparse. New line. Import letter romeo. Letter echo.');
+        expect(result.commands).toHaveLength(3);
+        expect(result.commands[0]).toEqual({ cmd: 'dictateText', text: 'import argparse' });
+        expect(result.commands[1]).toEqual({ cmd: 'insertText',  text: '\n' });
+        expect(result.commands[2]).toEqual({ cmd: 'dictateText', text: 'import letter romeo Letter echo' });
+        expect(result.remainder).toBe('');
+    });
+
+    test('two imports separated by newline (no Whisper periods)', () => {
+        const result = fastInterpretMulti('import argparse new line import re');
+        expect(result.commands).toHaveLength(3);
+        expect(result.commands[0]).toEqual({ cmd: 'dictateText', text: 'import argparse' });
+        expect(result.commands[1]).toEqual({ cmd: 'insertText',  text: '\n' });
+        expect(result.commands[2]).toEqual({ cmd: 'dictateText', text: 'import re' });
+    });
+});
+
+// ---------------------------------------------------------------------------
 // TEMPLATE_CMDS coverage — every commandData.ts entry must match fast-path
 // Prevents phrase drift where the data file is updated but the pattern breaks
 // ---------------------------------------------------------------------------
