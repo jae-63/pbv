@@ -44,6 +44,13 @@ const VSCODE_COMMANDS: Record<string, string> = {
     pageDown:           'scrollPageDown',
 };
 
+// Commands that should not fire on low-confidence (uncertain) transcripts.
+// Destructive / hard-to-reverse operations where a mishearing is costly.
+const DESTRUCTIVE_CMDS = new Set([
+    'clearCachePad', 'deleteLine', 'deleteToEndOfLine',
+    'deleteWords', 'deleteChars', 'undoTransaction', 'revertTransactions',
+]);
+
 interface Mark {
     uri:    string;
     text:   string;
@@ -233,9 +240,16 @@ export class IpcServer {
                 }
 
                 if (commands.length > 0) {
+                    const lowConf = !!(msg as any).lowConfidence;
                     const labels = commands.map(c => this.describeCmd(c as InboundMessage)).join(' | ');
                     vscode.window.setStatusBarMessage(`$(mic) "${raw}" → ${labels}`, 10000);
                     for (const cmd of commands) {
+                        const cmdName = (cmd as any).cmd as string;
+                        if (lowConf && DESTRUCTIVE_CMDS.has(cmdName)) {
+                            vscode.window.setStatusBarMessage(
+                                `$(warning) "${raw}" → skipped ${cmdName} (low confidence)`, 10000);
+                            continue;
+                        }
                         await this.dispatch(cmd as InboundMessage, _socket);
                     }
                     if (!remainder) return;

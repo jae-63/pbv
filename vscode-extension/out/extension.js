@@ -1519,6 +1519,15 @@ var VSCODE_COMMANDS = {
   pageUp: "scrollPageUp",
   pageDown: "scrollPageDown"
 };
+var DESTRUCTIVE_CMDS = /* @__PURE__ */ new Set([
+  "clearCachePad",
+  "deleteLine",
+  "deleteToEndOfLine",
+  "deleteWords",
+  "deleteChars",
+  "undoTransaction",
+  "revertTransactions"
+]);
 var TX_COLORS = ["#1a7a1a", "#4ca64c", "#80c080", "#b3d9b3"];
 function txGutterIcon(color) {
   const hex = color.replace("#", "%23");
@@ -1650,9 +1659,18 @@ var IpcServer = class {
           return;
         }
         if (commands3.length > 0) {
+          const lowConf = !!msg.lowConfidence;
           const labels = commands3.map((c) => this.describeCmd(c)).join(" | ");
           vscode5.window.setStatusBarMessage(`$(mic) "${raw}" \u2192 ${labels}`, 1e4);
           for (const cmd of commands3) {
+            const cmdName = cmd.cmd;
+            if (lowConf && DESTRUCTIVE_CMDS.has(cmdName)) {
+              vscode5.window.setStatusBarMessage(
+                `$(warning) "${raw}" \u2192 skipped ${cmdName} (low confidence)`,
+                1e4
+              );
+              continue;
+            }
             await this.dispatch(cmd, _socket);
           }
           if (!remainder) return;
