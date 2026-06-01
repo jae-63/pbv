@@ -457,6 +457,132 @@ async function selectToken(token) {
   editor.revealRange(new vscode3.Range(startPos, endPos), vscode3.TextEditorRevealType.InCenter);
 }
 
+// src/commandData.ts
+var TEMPLATE_CMDS = [
+  // ---- Python boilerplate -------------------------------------------------
+  {
+    lang: "python",
+    phrase: "shebang",
+    pattern: "(?:python\\s+)?shebang",
+    text: "#!/usr/bin/env python3\n",
+    desc: "#!/usr/bin/env python3"
+  },
+  {
+    lang: "python",
+    phrase: "module doc",
+    text: '"""\n{CURSOR}TITLE_TEMPLATE\n====================\nSUMMARY_TEMPLATE\n"""\n',
+    desc: '"""TITLE / SUMMARY docstring"""'
+  },
+  {
+    lang: "python",
+    phrase: "main guard",
+    text: 'if __name__ == "__main__":\n    ',
+    desc: 'if __name__ == "__main__":'
+  },
+  {
+    lang: "python",
+    phrase: "sys exit",
+    text: "sys.exit({CURSOR})",
+    desc: "sys.exit(\u2026)"
+  },
+  // ---- Python control flow ------------------------------------------------
+  {
+    lang: "python",
+    phrase: "define function",
+    text: "def {CURSOR}():\n    ",
+    desc: "def {cursor}():"
+  },
+  {
+    lang: "python",
+    phrase: "define method",
+    text: "def {CURSOR}(self):\n    ",
+    desc: "def {cursor}(self):"
+  },
+  {
+    lang: "python",
+    phrase: "for loop",
+    text: "for {CURSOR} in :\n    ",
+    desc: "for {cursor} in \u2026:"
+  },
+  {
+    lang: "python",
+    phrase: "while loop",
+    text: "while {CURSOR}:\n    ",
+    desc: "while \u2026:"
+  },
+  {
+    lang: "python",
+    phrase: "if block",
+    text: "if {CURSOR}:\n    ",
+    desc: "if \u2026:"
+  },
+  {
+    lang: "python",
+    phrase: "elif block",
+    text: "elif {CURSOR}:\n    ",
+    desc: "elif \u2026:"
+  },
+  {
+    lang: "python",
+    phrase: "else block",
+    text: "else:\n    {CURSOR}",
+    desc: "else:"
+  },
+  {
+    lang: "python",
+    phrase: "try except",
+    pattern: "try\\s+(?:block|except)",
+    text: "try:\n    {CURSOR}\nexcept EXCEPTION_TEMPLATE as error:\n    ",
+    desc: "try / except block"
+  },
+  {
+    lang: "python",
+    phrase: "with block",
+    text: "with {CURSOR} as :\n    ",
+    desc: "with \u2026 as \u2026:"
+  },
+  {
+    lang: "python",
+    phrase: "list comprehension",
+    text: "[{CURSOR} for  in ]",
+    desc: "[expr for item in \u2026]"
+  },
+  {
+    lang: "python",
+    phrase: "dict comprehension",
+    text: "{{CURSOR}: for  in }",
+    desc: "{k: v for item in \u2026}"
+  },
+  {
+    lang: "python",
+    phrase: "f string",
+    text: 'f"{CURSOR}"',
+    desc: 'f"\u2026{expression}\u2026"'
+  },
+  {
+    lang: "python",
+    phrase: "raw string",
+    text: 'r"{CURSOR}"',
+    desc: 'r"\u2026" (no escape processing)'
+  },
+  // ---- Doc-comment templates ---------------------------------------------
+  // ALL_CAPS placeholders are navigable: say "select summary template" etc.
+  // Cursor lands at SUMMARY_TEMPLATE on insertion. Assumes 4-space Python indent.
+  {
+    lang: "python",
+    phrase: "function doc",
+    text: '"""{CURSOR}SUMMARY_TEMPLATE\n\n    Args:\n        ARGUMENTS_TEMPLATE\n\n    Returns:\n        RETURNS_TEMPLATE\n    """',
+    desc: "Python docstring (summary / args / returns)"
+  },
+  // Go: inserts above the func line; cursor lands at start of comment text.
+  {
+    lang: "go",
+    phrase: "go doc",
+    text: "// {CURSOR}SUMMARY_TEMPLATE\n",
+    desc: "Go comment above function"
+  }
+];
+
 // src/fastPath.ts
 var n = (s) => parseInt(s, 10);
 function rule(src, build) {
@@ -499,14 +625,10 @@ var RULES = [
     (_) => ({ cmd: "cursorDown", n: 1 })
   ),
   // Navigation — cursor movement
-  rule("cursor\\s+left", (_) => ({ cmd: "cursorLeft" })),
-  rule("cursor\\s+right", (_) => ({ cmd: "cursorRight" })),
   rule("(?:cursor\\s+)?home", (_) => ({ cmd: "cursorHome" })),
   rule("(?:cursor\\s+)?end(?:\\s+of\\s+line)?", (_) => ({ cmd: "cursorEnd" })),
   rule("(?:(?:cursor|go)\\s+to\\s+)?top", (_) => ({ cmd: "cursorTop" })),
   rule("(?:(?:cursor|go)\\s+to\\s+)?bottom", (_) => ({ cmd: "cursorBottom" })),
-  rule("page\\s+up", (_) => ({ cmd: "pageUp" })),
-  rule("page\\s+down", (_) => ({ cmd: "pageDown" })),
   // Cache pad — retrieval
   rule(
     "cache\\s+(\\d+)",
@@ -547,40 +669,21 @@ var RULES = [
     "delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?",
     (_) => ({ cmd: "deleteToEndOfLine" })
   ),
-  // Mode switching — voice-only, no keyboard required
-  rule("command\\s+mode", (_) => ({ cmd: "commandMode" })),
-  rule("dictation\\s+mode", (_) => ({ cmd: "dictationMode" })),
-  // ---------------------------------------------------------------------------
-  // Python code templates — fast-path so they never wait on the LLM.
-  // {CURSOR} marks insertion point; UPPER_TEMPLATE marks navigable placeholders
-  // (say "select exception template" etc. to jump to them after insertion).
-  // ---------------------------------------------------------------------------
-  rule("define\\s+function", (_) => ({ cmd: "insertText", text: "def {CURSOR}():\n    " })),
-  rule("define\\s+method", (_) => ({ cmd: "insertText", text: "def {CURSOR}(self):\n    " })),
-  rule("for\\s+loop", (_) => ({ cmd: "insertText", text: "for {CURSOR} in :\n    " })),
-  rule("while\\s+loop", (_) => ({ cmd: "insertText", text: "while {CURSOR}:\n    " })),
-  rule("if\\s+block", (_) => ({ cmd: "insertText", text: "if {CURSOR}:\n    " })),
-  rule("elif\\s+block", (_) => ({ cmd: "insertText", text: "elif {CURSOR}:\n    " })),
-  rule("else\\s+block", (_) => ({ cmd: "insertText", text: "else:\n    {CURSOR}" })),
-  rule("try\\s+(?:block|except)", (_) => ({ cmd: "insertText", text: "try:\n    {CURSOR}\nexcept EXCEPTION_TEMPLATE as error:\n    " })),
-  rule("with\\s+block", (_) => ({ cmd: "insertText", text: "with {CURSOR} as :\n    " })),
-  rule("list\\s+comprehension", (_) => ({ cmd: "insertText", text: "[{CURSOR} for  in ]" })),
-  rule("dict\\s+comprehension", (_) => ({ cmd: "insertText", text: "{{CURSOR}: for  in }" })),
-  rule("f\\s+string", (_) => ({ cmd: "insertText", text: 'f"{CURSOR}"' })),
-  rule("raw\\s+string", (_) => ({ cmd: "insertText", text: 'r"{CURSOR}"' })),
+  // Text-insertion templates — derived from TEMPLATE_CMDS in commandData.ts.
+  // Add new templates there; no change here needed.
+  ...TEMPLATE_CMDS.map((tc) => {
+    const src = tc.pattern ?? tc.phrase.replace(/\s+/g, "\\s+");
+    return rule(src, (_) => ({ cmd: "insertText", text: tc.text }));
+  }),
   // Dictation helpers
   rule("no\\s+space", (_) => ({ cmd: "deleteChars", n: 1 })),
   rule("open\\s+string", (_) => ({ cmd: "insertText", text: '"' })),
   rule("close\\s+string", (_) => ({ cmd: "closeString" })),
   // UI — voice-only access to help and cache pad
+  // "show commands" handled by canonical; keep human aliases
   rule("what\\s+can\\s+I\\s+say", (_) => ({ cmd: "showCommands" })),
-  rule("show\\s+commands", (_) => ({ cmd: "showCommands" })),
   rule("help", (_) => ({ cmd: "showCommands" })),
   rule("show\\s+cache(?:\\s+pad)?", (_) => ({ cmd: "showCachePad" })),
-  // Transactions & mark navigation
-  rule("set\\s+mark", (_) => ({ cmd: "setMark" })),
-  rule("undo\\s+transaction", (_) => ({ cmd: "undoTransaction" })),
-  rule("jump\\s+to\\s+mark", (_) => ({ cmd: "jumpToMark" })),
   // Navigation bookmark — survives buffer edits; auto-set on traversal entry.
   // "set bookmark" / "jump to bookmark" to distinguish from transaction mark.
   rule("set\\s+bookmark", (_) => ({ cmd: "setNavMark" })),
@@ -588,24 +691,9 @@ var RULES = [
   rule("jump\\s+back", (_) => ({ cmd: "jumpToNavMark" })),
   // Accept inline completion (Tab / acceptSelectedSuggestion)
   rule("accept(?:\\s+(?:completion|suggestion))?", (_) => ({ cmd: "acceptCompletion" })),
-  // Doc-comment templates — ALL_CAPS placeholders are navigable by voice:
-  //   "select summary template"   → selects SUMMARY_TEMPLATE
-  //   "select arguments template" → selects ARGUMENTS_TEMPLATE
-  //   "select returns template"   → selects RETURNS_TEMPLATE
-  // Cursor lands at SUMMARY_TEMPLATE on insertion. Assumes 4-space Python indent.
-  rule("function\\s+doc", (_) => ({
-    cmd: "insertText",
-    text: '"""{CURSOR}SUMMARY_TEMPLATE\n\n    Args:\n        ARGUMENTS_TEMPLATE\n\n    Returns:\n        RETURNS_TEMPLATE\n    """'
-  })),
-  // Go: insert above the func line; cursor lands at start of comment text.
-  rule("go\\s+doc", (_) => ({
-    cmd: "insertText",
-    text: "// {CURSOR}SUMMARY_TEMPLATE\n"
-  })),
   // Cache selection
   rule("cache\\s+(?:this|that|selection)", (_) => ({ cmd: "cacheSelection" })),
   // Word selection & bracket matching
-  rule("select\\s+word", (_) => ({ cmd: "selectWord" })),
   rule("double\\s+select", (_) => ({ cmd: "selectWord" })),
   rule(
     "match\\s+(?:this\\s+)?paren(?:thesis)?|match\\s+bracket",
@@ -614,13 +702,8 @@ var RULES = [
   // Document ops
   rule("save(?:\\s+(?:the\\s+)?(?:file|document))?", (_) => ({ cmd: "save" })),
   rule("undo(?:\\s+that)?", (_) => ({ cmd: "undo" })),
-  rule("redo", (_) => ({ cmd: "redo" })),
   rule("format(?:\\s+(?:the\\s+)?(?:file|document))?", (_) => ({ cmd: "formatDocument" })),
-  rule("(?:toggle\\s+)?comment(?:\\s+line)?", (_) => ({ cmd: "toggleLineComment" })),
-  rule("select\\s+all", (_) => ({ cmd: "selectAll" })),
-  rule("copy", (_) => ({ cmd: "copy" })),
-  rule("cut", (_) => ({ cmd: "cut" })),
-  rule("paste", (_) => ({ cmd: "paste" }))
+  rule("(?:toggle\\s+)?comment(?:\\s+line)?", (_) => ({ cmd: "toggleLineComment" }))
 ];
 var NATO = {
   alpha: "a",
@@ -817,6 +900,72 @@ ${DASHES}
 
 ` };
 }
+var NO_ARG_COMMANDS = [
+  // Cache pad
+  "clearCachePad",
+  "showCachePad",
+  "refreshCachePad",
+  // Modes
+  "commandMode",
+  "dictationMode",
+  // Transaction mark
+  "setMark",
+  "undoTransaction",
+  "jumpToMark",
+  // Nav bookmark
+  "setNavMark",
+  "jumpToNavMark",
+  // No-arg cursor
+  "cursorLeft",
+  "cursorRight",
+  "cursorHome",
+  "cursorEnd",
+  "cursorTop",
+  "cursorBottom",
+  "pageUp",
+  "pageDown",
+  // Editing
+  "deleteLine",
+  "deleteToEndOfLine",
+  "selectAll",
+  "selectWord",
+  "matchParen",
+  // Clipboard / history
+  "copy",
+  "cut",
+  "paste",
+  "undo",
+  "redo",
+  // Document
+  "save",
+  "formatDocument",
+  "toggleLineComment",
+  // Misc
+  "cacheSelection",
+  "acceptCompletion",
+  "showCommands",
+  // Scroll / traversal
+  "enterScrollMode",
+  "exitScrollMode",
+  "enterTraversalMode"
+];
+function smash(s) {
+  return s.toLowerCase().replace(/[^a-z]/g, "");
+}
+var CANONICAL_MAP = new Map(
+  NO_ARG_COMMANDS.map((cmd) => [smash(cmd.replace(/([A-Z])/g, " $1")), cmd])
+);
+function applyCanonicalPrefix(text) {
+  const words = text.split(/\s+/);
+  let acc = "";
+  let best = null;
+  for (let i = 0; i < words.length && i < 8; i++) {
+    acc += smash(words[i]);
+    if (CANONICAL_MAP.has(acc)) best = { i, cmd: CANONICAL_MAP.get(acc) };
+  }
+  if (!best) return null;
+  return { command: { cmd: best.cmd }, consumed: words.slice(0, best.i + 1).join(" ") };
+}
 function fastInterpretMulti(utterance) {
   let text = prepare(utterance);
   const commands3 = [];
@@ -829,6 +978,14 @@ function fastInterpretMulti(utterance) {
         text = text.slice(m[0].length).replace(/^\s+/, "");
         matched = true;
         break;
+      }
+    }
+    if (!matched) {
+      const can = applyCanonicalPrefix(text);
+      if (can) {
+        commands3.push(can.command);
+        text = text.slice(can.consumed.length).replace(/^\s+/, "");
+        matched = true;
       }
     }
     if (!matched) {
@@ -980,21 +1137,21 @@ var UNIVERSAL = [
 ];
 var LANG_SECTIONS = {
   python: {
-    title: "Python Templates  (via LLM)",
+    title: "Python Templates",
     cmds: [
-      { phrase: "for loop", desc: "for i in range(\u2026):", llm: true },
+      // Fast-path templates — derived from commandData.ts (instant, no LLM wait)
+      ...TEMPLATE_CMDS.filter((tc) => tc.lang === "python").map((tc) => ({ phrase: tc.phrase, desc: tc.desc })),
+      // LLM-only (no fast-path equivalent)
       { phrase: "for each", desc: "for item in \u2026:", llm: true },
-      { phrase: "if statement", desc: "if \u2026:", llm: true },
-      { phrase: "while loop", desc: "while \u2026:", llm: true },
-      { phrase: "function definition", desc: "def name(\u2026):", llm: true },
-      { phrase: "class definition", desc: "class Name:", llm: true },
-      { phrase: "try except", desc: "try / except block", llm: true },
-      { phrase: "with statement", desc: "with \u2026 as \u2026:", llm: true }
+      { phrase: "class definition", desc: "class Name:", llm: true }
     ]
   },
   go: {
-    title: "Go Templates  (via LLM)",
+    title: "Go Templates",
     cmds: [
+      // Fast-path templates — derived from commandData.ts
+      ...TEMPLATE_CMDS.filter((tc) => tc.lang === "go").map((tc) => ({ phrase: tc.phrase, desc: tc.desc })),
+      // LLM-only
       { phrase: "for loop", desc: "for i := 0; i < N; i++", llm: true },
       { phrase: "if statement", desc: "if condition {", llm: true },
       { phrase: "if error", desc: "if err != nil { return }", llm: true },
@@ -1174,10 +1331,10 @@ var IpcServer = class {
     this.port = port;
     this.server = net.createServer((socket) => this.onConnection(socket));
     this.server.listen(port, "127.0.0.1", () => {
-      vscode5.window.setStatusBarMessage(`Voice Coder: listening on :${port}`, 3e3);
+      vscode5.window.setStatusBarMessage(`PBV: listening on :${port}`, 3e3);
     });
     this.server.on("error", (err) => {
-      vscode5.window.showErrorMessage(`Voice Coder IPC error: ${err.message}`);
+      vscode5.window.showErrorMessage(`PBV IPC error: ${err.message}`);
     });
     context.subscriptions.push(
       vscode5.commands.registerCommand("pbv.scrollStep", () => this.scrollStep(1)),
@@ -1264,7 +1421,7 @@ var IpcServer = class {
         }
         if (!this.claude) {
           vscode5.window.showWarningMessage(
-            "Voice Coder: LLM client not initialized (check pbv.ollamaModel setting)"
+            "PBV: LLM client not initialized (check pbv.ollamaModel setting)"
           );
           return;
         }
@@ -1313,8 +1470,9 @@ var IpcServer = class {
           );
           const isBufferEdit = cmd.cmd === "replaceSelection" || cmd.cmd === "insertText";
           if (snap.selectedText && !isBufferEdit) {
-            vscode5.window.showWarningMessage(
-              `Voice Coder: selection ignored \u2014 LLM returned "${cmd.cmd}" instead of an edit`
+            vscode5.window.setStatusBarMessage(
+              `$(warning) PBV: selection ignored \u2014 LLM returned "${cmd.cmd}" instead of an edit`,
+              5e3
             );
             return;
           }
@@ -1569,11 +1727,11 @@ var IpcServer = class {
       }
       case "undoTransaction": {
         if (!this.mark) {
-          vscode5.window.showWarningMessage("Voice Coder: no mark set");
+          vscode5.window.setStatusBarMessage("$(warning) PBV: no mark set", 3e3);
           return;
         }
         if (!editor || editor.document.uri.toString() !== this.mark.uri) {
-          vscode5.window.showWarningMessage("Voice Coder: mark is from a different file");
+          vscode5.window.setStatusBarMessage("$(warning) PBV: mark is from a different file", 3e3);
           return;
         }
         const { text, cursor } = this.mark;
@@ -1584,7 +1742,7 @@ var IpcServer = class {
         );
         await editor.edit((eb) => eb.replace(fullRange, text));
         editor.selection = new vscode5.Selection(cursor, cursor);
-        vscode5.window.setStatusBarMessage("$(discard) Voice Coder: transaction undone", 2e3);
+        vscode5.window.setStatusBarMessage("$(discard) PBV: transaction undone", 2e3);
         break;
       }
       // --- Undo grouping ---
@@ -1829,9 +1987,9 @@ ${snap.selectedText}`);
       const name = err instanceof Error ? err.name : "";
       if (name === "AbortError") return null;
       if (name === "TimeoutError") {
-        vscode6.window.showWarningMessage("Voice Coder: LLM timed out (Ollama took >10 s)");
+        vscode6.window.setStatusBarMessage("$(warning) PBV: LLM timed out (Ollama took >10 s)", 6e3);
       } else {
-        vscode6.window.showWarningMessage(`Voice Coder: LLM error \u2014 ${err}`);
+        vscode6.window.setStatusBarMessage(`$(warning) PBV: LLM error \u2014 ${err}`, 8e3);
       }
       return null;
     }

@@ -1,3 +1,5 @@
+import { TEMPLATE_CMDS } from './commandData';
+
 // Fast regex-based command matching — runs in <1ms, no LLM needed.
 //
 // fastInterpret(text)      — single command, exact match (backward compat)
@@ -49,15 +51,10 @@ const RULES: Rule[] = [
          _  => ({ cmd: 'cursorDown', n: 1 })),
 
     // Navigation — cursor movement
-    rule('cursor\\s+left',   _ => ({ cmd: 'cursorLeft' })),
-    rule('cursor\\s+right',  _ => ({ cmd: 'cursorRight' })),
     rule('(?:cursor\\s+)?home', _ => ({ cmd: 'cursorHome' })),
     rule('(?:cursor\\s+)?end(?:\\s+of\\s+line)?', _ => ({ cmd: 'cursorEnd' })),
     rule('(?:(?:cursor|go)\\s+to\\s+)?top',    _ => ({ cmd: 'cursorTop' })),
     rule('(?:(?:cursor|go)\\s+to\\s+)?bottom', _ => ({ cmd: 'cursorBottom' })),
-    rule('page\\s+up',   _ => ({ cmd: 'pageUp' })),
-    rule('page\\s+down', _ => ({ cmd: 'pageDown' })),
-
     // Cache pad — retrieval
     rule('cache\\s+(\\d+)',
          m => ({ cmd: 'insertCacheItem', index: n(m[1]) })),
@@ -89,28 +86,12 @@ const RULES: Rule[] = [
     rule('delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?',
          _ => ({ cmd: 'deleteToEndOfLine' })),
 
-    // Mode switching — voice-only, no keyboard required
-    rule('command\\s+mode',    _ => ({ cmd: 'commandMode' })),
-    rule('dictation\\s+mode',  _ => ({ cmd: 'dictationMode' })),
-
-    // ---------------------------------------------------------------------------
-    // Python code templates — fast-path so they never wait on the LLM.
-    // {CURSOR} marks insertion point; UPPER_TEMPLATE marks navigable placeholders
-    // (say "select exception template" etc. to jump to them after insertion).
-    // ---------------------------------------------------------------------------
-    rule('define\\s+function',    _ => ({ cmd: 'insertText', text: 'def {CURSOR}():\n    ' })),
-    rule('define\\s+method',      _ => ({ cmd: 'insertText', text: 'def {CURSOR}(self):\n    ' })),
-    rule('for\\s+loop',           _ => ({ cmd: 'insertText', text: 'for {CURSOR} in :\n    ' })),
-    rule('while\\s+loop',         _ => ({ cmd: 'insertText', text: 'while {CURSOR}:\n    ' })),
-    rule('if\\s+block',           _ => ({ cmd: 'insertText', text: 'if {CURSOR}:\n    ' })),
-    rule('elif\\s+block',         _ => ({ cmd: 'insertText', text: 'elif {CURSOR}:\n    ' })),
-    rule('else\\s+block',         _ => ({ cmd: 'insertText', text: 'else:\n    {CURSOR}' })),
-    rule('try\\s+(?:block|except)',_ => ({ cmd: 'insertText', text: 'try:\n    {CURSOR}\nexcept EXCEPTION_TEMPLATE as error:\n    ' })),
-    rule('with\\s+block',         _ => ({ cmd: 'insertText', text: 'with {CURSOR} as :\n    ' })),
-    rule('list\\s+comprehension', _ => ({ cmd: 'insertText', text: '[{CURSOR} for  in ]' })),
-    rule('dict\\s+comprehension', _ => ({ cmd: 'insertText', text: '{{CURSOR}: for  in }' })),
-    rule('f\\s+string',           _ => ({ cmd: 'insertText', text: 'f"{CURSOR}"' })),
-    rule('raw\\s+string',         _ => ({ cmd: 'insertText', text: 'r"{CURSOR}"' })),
+    // Text-insertion templates — derived from TEMPLATE_CMDS in commandData.ts.
+    // Add new templates there; no change here needed.
+    ...TEMPLATE_CMDS.map(tc => {
+        const src = tc.pattern ?? tc.phrase.replace(/\s+/g, '\\s+');
+        return rule(src, _ => ({ cmd: 'insertText', text: tc.text }));
+    }),
 
     // Dictation helpers
     rule('no\\s+space',    _ => ({ cmd: 'deleteChars', n: 1 })),
@@ -118,15 +99,10 @@ const RULES: Rule[] = [
     rule('close\\s+string',_ => ({ cmd: 'closeString' })),
 
     // UI — voice-only access to help and cache pad
+    // "show commands" handled by canonical; keep human aliases
     rule('what\\s+can\\s+I\\s+say', _ => ({ cmd: 'showCommands' })),
-    rule('show\\s+commands',        _ => ({ cmd: 'showCommands' })),
     rule('help',                    _ => ({ cmd: 'showCommands' })),
     rule('show\\s+cache(?:\\s+pad)?', _ => ({ cmd: 'showCachePad' })),
-
-    // Transactions & mark navigation
-    rule('set\\s+mark',        _ => ({ cmd: 'setMark' })),
-    rule('undo\\s+transaction', _ => ({ cmd: 'undoTransaction' })),
-    rule('jump\\s+to\\s+mark', _ => ({ cmd: 'jumpToMark' })),
 
     // Navigation bookmark — survives buffer edits; auto-set on traversal entry.
     // "set bookmark" / "jump to bookmark" to distinguish from transaction mark.
@@ -137,26 +113,10 @@ const RULES: Rule[] = [
     // Accept inline completion (Tab / acceptSelectedSuggestion)
     rule('accept(?:\\s+(?:completion|suggestion))?', _ => ({ cmd: 'acceptCompletion' })),
 
-    // Doc-comment templates — ALL_CAPS placeholders are navigable by voice:
-    //   "select summary template"   → selects SUMMARY_TEMPLATE
-    //   "select arguments template" → selects ARGUMENTS_TEMPLATE
-    //   "select returns template"   → selects RETURNS_TEMPLATE
-    // Cursor lands at SUMMARY_TEMPLATE on insertion. Assumes 4-space Python indent.
-    rule('function\\s+doc', _ => ({
-        cmd: 'insertText',
-        text: '"""{CURSOR}SUMMARY_TEMPLATE\n\n    Args:\n        ARGUMENTS_TEMPLATE\n\n    Returns:\n        RETURNS_TEMPLATE\n    """',
-    })),
-    // Go: insert above the func line; cursor lands at start of comment text.
-    rule('go\\s+doc', _ => ({
-        cmd: 'insertText',
-        text: '// {CURSOR}SUMMARY_TEMPLATE\n',
-    })),
-
     // Cache selection
     rule('cache\\s+(?:this|that|selection)', _ => ({ cmd: 'cacheSelection' })),
 
     // Word selection & bracket matching
-    rule('select\\s+word',     _ => ({ cmd: 'selectWord' })),
     rule('double\\s+select',   _ => ({ cmd: 'selectWord' })),
     rule('match\\s+(?:this\\s+)?paren(?:thesis)?|match\\s+bracket',
          _ => ({ cmd: 'matchParen' })),
@@ -164,13 +124,8 @@ const RULES: Rule[] = [
     // Document ops
     rule('save(?:\\s+(?:the\\s+)?(?:file|document))?', _ => ({ cmd: 'save' })),
     rule('undo(?:\\s+that)?', _ => ({ cmd: 'undo' })),
-    rule('redo',              _ => ({ cmd: 'redo' })),
     rule('format(?:\\s+(?:the\\s+)?(?:file|document))?', _ => ({ cmd: 'formatDocument' })),
     rule('(?:toggle\\s+)?comment(?:\\s+line)?', _ => ({ cmd: 'toggleLineComment' })),
-    rule('select\\s+all', _ => ({ cmd: 'selectAll' })),
-    rule('copy',  _ => ({ cmd: 'copy' })),
-    rule('cut',   _ => ({ cmd: 'cut' })),
-    rule('paste', _ => ({ cmd: 'paste' })),
 ];
 
 // ---------------------------------------------------------------------------
@@ -275,7 +230,7 @@ export function fastInterpret(utterance: string): Command | null {
         const m = text.match(exact);
         if (m) return build(m);
     }
-    return applyFormatter(text) ?? applyCommentBlock(text) ?? null;
+    return applyFormatter(text) ?? applyCommentBlock(text) ?? applyCanonical(text) ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -327,6 +282,69 @@ function applyCommentBlock(utterance: string): Command | null {
 }
 
 // ---------------------------------------------------------------------------
+// Canonical no-argument command matching
+// ---------------------------------------------------------------------------
+// camelCase name and spoken words share a smashed lowercase form:
+//   clearCachePad → "clear cache pad" → matches spoken "clear cache pad"
+// Adding a command here makes it speakable with no further fast-path work.
+
+const NO_ARG_COMMANDS = [
+    // Cache pad
+    'clearCachePad', 'showCachePad', 'refreshCachePad',
+    // Modes
+    'commandMode', 'dictationMode',
+    // Transaction mark
+    'setMark', 'undoTransaction', 'jumpToMark',
+    // Nav bookmark
+    'setNavMark', 'jumpToNavMark',
+    // No-arg cursor
+    'cursorLeft', 'cursorRight',
+    'cursorHome', 'cursorEnd', 'cursorTop', 'cursorBottom',
+    'pageUp', 'pageDown',
+    // Editing
+    'deleteLine', 'deleteToEndOfLine',
+    'selectAll', 'selectWord', 'matchParen',
+    // Clipboard / history
+    'copy', 'cut', 'paste', 'undo', 'redo',
+    // Document
+    'save', 'formatDocument', 'toggleLineComment',
+    // Misc
+    'cacheSelection', 'acceptCompletion', 'showCommands',
+    // Scroll / traversal
+    'enterScrollMode', 'exitScrollMode', 'enterTraversalMode',
+];
+
+// Strip everything but lowercase letters — "Clear cachepad" → "clearcachepad"
+function smash(s: string): string {
+    return s.toLowerCase().replace(/[^a-z]/g, '');
+}
+
+// Build lookup: smashed camelCase name → command
+// "clearCachePad" → split → "clear cache pad" → smash → "clearcachepad"
+const CANONICAL_MAP = new Map<string, string>(
+    NO_ARG_COMMANDS.map(cmd => [smash(cmd.replace(/([A-Z])/g, ' $1')), cmd])
+);
+
+function applyCanonical(text: string): Command | null {
+    const cmd = CANONICAL_MAP.get(smash(text));
+    return cmd ? { cmd } : null;
+}
+
+// Accumulate smashed words left-to-right; keep the longest prefix that matches
+// a command so "undo transaction" beats bare "undo" in a compound utterance.
+function applyCanonicalPrefix(text: string): { command: Command; consumed: string } | null {
+    const words = text.split(/\s+/);
+    let acc = '';
+    let best: { i: number; cmd: string } | null = null;
+    for (let i = 0; i < words.length && i < 8; i++) {
+        acc += smash(words[i]);
+        if (CANONICAL_MAP.has(acc)) best = { i, cmd: CANONICAL_MAP.get(acc)! };
+    }
+    if (!best) return null;
+    return { command: { cmd: best.cmd }, consumed: words.slice(0, best.i + 1).join(' ') };
+}
+
+// ---------------------------------------------------------------------------
 // Greedy multi-command parser — Dragon-style continuous speech
 // ---------------------------------------------------------------------------
 
@@ -348,6 +366,14 @@ export function fastInterpretMulti(utterance: string): MultiResult {
                 text = text.slice(m[0].length).replace(/^\s+/, '');
                 matched = true;
                 break;
+            }
+        }
+        if (!matched) {
+            const can = applyCanonicalPrefix(text);
+            if (can) {
+                commands.push(can.command);
+                text = text.slice(can.consumed.length).replace(/^\s+/, '');
+                matched = true;
             }
         }
         if (!matched) {

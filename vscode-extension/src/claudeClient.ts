@@ -135,9 +135,9 @@ export class ClaudeClient {
             const name = err instanceof Error ? err.name : '';
             if (name === 'AbortError') return null; // intentional cancel by new command
             if (name === 'TimeoutError') {
-                vscode.window.showWarningMessage('Voice Coder: LLM timed out (Ollama took >10 s)');
+                vscode.window.setStatusBarMessage('$(warning) PBV: LLM timed out (Ollama took >10 s)', 6000);
             } else {
-                vscode.window.showWarningMessage(`Voice Coder: LLM error — ${err}`);
+                vscode.window.setStatusBarMessage(`$(warning) PBV: LLM error — ${err}`, 8000);
             }
             return null;
         }
