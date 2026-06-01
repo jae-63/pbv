@@ -515,7 +515,11 @@ final class SpeechEngine: NSObject {
             defer { sem.signal() }
             guard let data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let raw  = json["text"] as? String else { return }
+                  let raw  = json["text"] as? String else {
+                SpeechEngine.transcriptLog("(no response or parse error)")
+                return
+            }
+            SpeechEngine.transcriptLog("raw:     \(raw.trimmingCharacters(in: .whitespacesAndNewlines))")
             let cleaned = raw
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .replacingOccurrences(of: #"<\|[^|]+\|>"#, with: "",
@@ -526,11 +530,35 @@ final class SpeechEngine: NSObject {
             // Filter common Whisper hallucinations on near-silence.
             let lower = cleaned.lowercased()
             let hallucinations = ["you", "thank you", "thanks", ".", ""]
-            if hallucinations.contains(lower) { return }
+            if hallucinations.contains(lower) {
+                SpeechEngine.transcriptLog("filtered: \(cleaned)")
+                return
+            }
+            SpeechEngine.transcriptLog("sent:    \(cleaned)")
             text = cleaned
         }.resume()
         sem.wait()
         return text
+    }
+
+    // ---------------------------------------------------------------------------
+    // Transcript logging — writes to /tmp/pbv-transcripts.log
+    // Watch live with: tail -f /tmp/pbv-transcripts.log
+    // ---------------------------------------------------------------------------
+
+    static func transcriptLog(_ message: String) {
+        let ts   = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+        let line = "[\(ts)] \(message)\n"
+        if let data = line.data(using: .utf8) {
+            let url = URL(fileURLWithPath: "/tmp/pbv-transcripts.log")
+            if let fh = try? FileHandle(forWritingTo: url) {
+                fh.seekToEndOfFile()
+                fh.write(data)
+                fh.closeFile()
+            } else {
+                try? data.write(to: url, options: .atomic)
+            }
+        }
     }
 
     // ---------------------------------------------------------------------------
