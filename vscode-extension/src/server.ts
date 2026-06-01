@@ -70,10 +70,10 @@ export class IpcServer {
         this.port   = port;
         this.server = net.createServer(socket => this.onConnection(socket));
         this.server.listen(port, '127.0.0.1', () => {
-            vscode.window.setStatusBarMessage(`Voice Coder: listening on :${port}`, 3000);
+            vscode.window.setStatusBarMessage(`PBV: listening on :${port}`, 3000);
         });
         this.server.on('error', err => {
-            vscode.window.showErrorMessage(`Voice Coder IPC error: ${err.message}`);
+            vscode.window.showErrorMessage(`PBV IPC error: ${err.message}`);
         });
 
         // Register keybinding targets for Ctrl+Down / Ctrl+Up in scroll mode.
@@ -179,7 +179,7 @@ export class IpcServer {
 
                 if (!this.claude) {
                     vscode.window.showWarningMessage(
-                        'Voice Coder: LLM client not initialized (check pbv.ollamaModel setting)'
+                        'PBV: LLM client not initialized (check pbv.ollamaModel setting)'
                     );
                     return;
                 }
@@ -233,8 +233,8 @@ export class IpcServer {
 
                     // Warn if selected text was present but LLM returned a non-editing command.
                     if (snap.selectedText && !isBufferEdit) {
-                        vscode.window.showWarningMessage(
-                            `Voice Coder: selection ignored — LLM returned "${cmd.cmd}" instead of an edit`
+                        vscode.window.setStatusBarMessage(
+                            `$(warning) PBV: selection ignored — LLM returned "${cmd.cmd}" instead of an edit`, 5000
                         );
                         return;
                     }
@@ -506,11 +506,11 @@ export class IpcServer {
             }
             case 'undoTransaction': {
                 if (!this.mark) {
-                    vscode.window.showWarningMessage('Voice Coder: no mark set');
+                    vscode.window.setStatusBarMessage('$(warning) PBV: no mark set', 3000);
                     return;
                 }
                 if (!editor || editor.document.uri.toString() !== this.mark.uri) {
-                    vscode.window.showWarningMessage('Voice Coder: mark is from a different file');
+                    vscode.window.setStatusBarMessage('$(warning) PBV: mark is from a different file', 3000);
                     return;
                 }
                 const { text, cursor } = this.mark;
@@ -521,7 +521,7 @@ export class IpcServer {
                 );
                 await editor.edit(eb => eb.replace(fullRange, text));
                 editor.selection = new vscode.Selection(cursor, cursor);
-                vscode.window.setStatusBarMessage('$(discard) Voice Coder: transaction undone', 2000);
+                vscode.window.setStatusBarMessage('$(discard) PBV: transaction undone', 2000);
                 break;
             }
 

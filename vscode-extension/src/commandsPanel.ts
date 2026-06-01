@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { TEMPLATE_CMDS } from './commandData';
 
 // ---------------------------------------------------------------------------
 // Command data
@@ -74,21 +75,25 @@ const UNIVERSAL: Section[] = [
 
 const LANG_SECTIONS: Record<string, Section> = {
     python: {
-        title: 'Python Templates  (via LLM)',
+        title: 'Python Templates',
         cmds: [
-            { phrase: 'for loop',            desc: 'for i in range(…):',   llm: true },
-            { phrase: 'for each',            desc: 'for item in …:',        llm: true },
-            { phrase: 'if statement',        desc: 'if …:',                 llm: true },
-            { phrase: 'while loop',          desc: 'while …:',              llm: true },
-            { phrase: 'function definition', desc: 'def name(…):',          llm: true },
-            { phrase: 'class definition',    desc: 'class Name:',           llm: true },
-            { phrase: 'try except',          desc: 'try / except block',    llm: true },
-            { phrase: 'with statement',      desc: 'with … as …:',          llm: true },
+            // Fast-path templates — derived from commandData.ts (instant, no LLM wait)
+            ...TEMPLATE_CMDS
+                .filter(tc => tc.lang === 'python')
+                .map(tc => ({ phrase: tc.phrase, desc: tc.desc })),
+            // LLM-only (no fast-path equivalent)
+            { phrase: 'for each',         desc: 'for item in …:',  llm: true },
+            { phrase: 'class definition', desc: 'class Name:',     llm: true },
         ],
     },
     go: {
-        title: 'Go Templates  (via LLM)',
+        title: 'Go Templates',
         cmds: [
+            // Fast-path templates — derived from commandData.ts
+            ...TEMPLATE_CMDS
+                .filter(tc => tc.lang === 'go')
+                .map(tc => ({ phrase: tc.phrase, desc: tc.desc })),
+            // LLM-only
             { phrase: 'for loop',            desc: 'for i := 0; i < N; i++',  llm: true },
             { phrase: 'if statement',        desc: 'if condition {',            llm: true },
             { phrase: 'if error',            desc: 'if err != nil { return }',  llm: true },
