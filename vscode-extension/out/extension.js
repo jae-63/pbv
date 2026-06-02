@@ -170,7 +170,7 @@ var CachePad = class {
   }
   insertAt(index) {
     const sym = this.items[index - 1];
-    if (sym) this.markRecent(sym);
+    if (sym) this.prependExplicit(sym);
     return sym;
   }
   evict(index) {

@@ -96,7 +96,7 @@ export class CachePad implements vscode.TreeDataProvider<CachePadItem> {
 
     insertAt(index: number): string | undefined {
         const sym = this.items[index - 1]; // 1-based
-        if (sym) this.markRecent(sym);
+        if (sym) this.prependExplicit(sym); // LRU: promote to position 1
         return sym;
     }
 
