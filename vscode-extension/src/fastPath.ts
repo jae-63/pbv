@@ -69,12 +69,16 @@ const SYMBOL_MAP: Record<string, string> = {
     'not equal':    '!=',  'double equals':     '==',
     'equals equals':'==',
     'greater than': '>',   'less than':         '<',
+    // Annotation shorthand — "colon space" inserts ": " for Python type hints
+    'colon space':    ': ',
     // Single-word names
     'backslash':  '\\',  'caret':      '^',
     'ampersand':  '&',   'bang':       '!',
     'tilde':      '~',   'semicolon':  ';',
     'colon':      ':',   'apostrophe': "'",
     'backtick':   '`',   'plus':       '+',
+    'comma':      ',',   'dot':        '.',
+    'period':     '.',
 };
 const SYMBOL_PATTERN = Object.keys(SYMBOL_MAP)
     .sort((a, b) => b.length - a.length)
@@ -108,6 +112,18 @@ const KEYWORD_MAP: Record<string, string> = {
     'nonlocal': 'nonlocal ',
 };
 const KEYWORD_PATTERN = Object.keys(KEYWORD_MAP).join('|');
+
+// Python type names for "type X" prefix and compound bracket-type rules.
+// Keys lowercase; values are the exact Python text to insert.
+const TYPE_MAP: Record<string, string> = {
+    'str': 'str', 'string': 'str', 'strings': 'str',
+    'int': 'int', 'integer': 'int',
+    'float': 'float', 'bool': 'bool', 'boolean': 'bool',
+    'none': 'None',
+    'path': 'Path', 'namespace': 'Namespace',
+    'exception': 'Exception',
+};
+const TYPE_PATTERN = Object.keys(TYPE_MAP).join('|');
 
 const RULES: Rule[] = [
     // Navigation — word on line (before bare "line N")
@@ -157,7 +173,7 @@ const RULES: Rule[] = [
     // NATO phonetic navigation — full ordinal range + current/next/previous line
     // "jump to third tango on 21"  "jump to last underscore on current line"
     // "jump to second sierra on next line"
-    rule('jump\\s+to\\s+(first|second|third|fourth|fifth|sixth|last|penultimate)\\s+(.+?)\\s+on\\s+(?:(current|next|prev(?:ious)?)\\s+line|(\\d+))',
+    rule('jump\\s+to\\s+(\\d+(?:st|nd|rd|th)?|first|second|third|fourth|fifth|sixth|last|penultimate)\\s+(.+?)\\s+on\\s+(?:(current|next|prev(?:ious)?)\\s+line|(\\d+))',
          m => ({
              cmd:     'jumpToCharOnLine',
              ordinal: ordinalToN(m[1]),
@@ -167,12 +183,23 @@ const RULES: Rule[] = [
 
     // Deletion
     rule('delete\\s+(?:this\\s+)?line',         _ => ({ cmd: 'deleteLine' })),
+    rule('delete\\s+(\\d+)\\s+lines?',          m => ({ cmd: 'deleteLines', n: n(m[1]) })),
     rule('delete\\s+(\\d+)\\s+words?',          m => ({ cmd: 'deleteWords', n: n(m[1]) })),
     rule('delete\\s+(?:a\\s+)?word',            _ => ({ cmd: 'deleteWords', n: 1 })),
     rule('backspace',                        _ => ({ cmd: 'deleteChars', n: 1 })),
     rule('delete\\s+(\\d+)\\s+characters?', m => ({ cmd: 'deleteChars', n: n(m[1]) })),
     rule('delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?',
          _ => ({ cmd: 'deleteToEndOfLine' })),
+
+    // "define function snake my func" → defineFunction("my_func") — inserts "def my_func" AND
+    // caches the name so it's immediately available via "recent N".
+    // Must precede TEMPLATE_CMDS so it wins over the bare "define function" template.
+    rule('(?:define|to\\s+find)\\s+(?:a\\s+)?(?:function|method)\\s+(snake|camel|hammer|pascal|constant|kebab|smash|dotted|packed)\\s+(.+)',
+        m => {
+            const fn = FORMATTERS[m[1].toLowerCase()];
+            const tokens = m[2].trim().split(/\s+/);
+            return { cmd: 'defineFunction', text: fn ? fn(tokens) : m[2].trim() };
+        }),
 
     // Templates with optional inline argument — must precede TEMPLATE_CMDS rules
     // so the more-specific pattern wins over the bare phrase match.
@@ -182,10 +209,12 @@ const RULES: Rule[] = [
         m => ({ cmd: 'sectionHeader', label: m[1] ?? '' })),
 
     // Text-insertion templates — derived from TEMPLATE_CMDS in commandData.ts.
-    // Add new templates there; no change here needed.
+    // Structural templates (def, for, if, …) emit insertStructure so the dispatch
+    // layer wraps the insert in startUndoGroup/endUndoGroup + sets the mark.
     ...TEMPLATE_CMDS.map(tc => {
         const src = tc.pattern ?? tc.phrase.replace(/\s+/g, '\\s+');
-        return rule(src, _ => ({ cmd: 'insertText', text: tc.text }));
+        const cmd = tc.structural ? 'insertStructure' : 'insertText';
+        return rule(src, _ => ({ cmd, text: tc.text }));
     }),
 
     // Dictation helpers — "new line", "newline", "return", "enter" all insert \n.
@@ -218,6 +247,41 @@ const RULES: Rule[] = [
 
     // Python return-type annotation — "returns value", "arrow", "right arrow"
     rule('returns?\\s+(?:value|type)|(?:right\\s+)?arrow', _ => ({ cmd: 'insertText', text: ' -> ' })),
+
+    // ---- Python type annotations --------------------------------------------
+    // "annotate string" → ": str"  — "annotate" is a strong first word Whisper won't mangle.
+    // Chains naturally: "annotate string close paren" → ": str)" in one utterance.
+    rule('annotate\\s+(str(?:ing)?s?|int(?:eger)?s?|float|bool|path|namespace)',
+         m => ({ cmd: 'insertText', text: `: ${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}` })),
+    rule('annotate\\s+list\\s+(?:of\\s+)?(str(?:ing)?s?|int(?:eger)?s?|float|bool)',
+         m => ({ cmd: 'insertText', text: `: list[${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })),
+    rule('annotate\\s+dict\\s+(?:of\\s+)?str(?:ing)?s?\\s+(?:to\\s+)?(int(?:eger)?s?|str(?:ing)?s?|float|bool)',
+         m => ({ cmd: 'insertText', text: `: dict[str, ${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })),
+    rule('annotate\\s+optional\\s+(path|str(?:ing)?|int(?:eger)?|float|bool|namespace)',
+         m => ({ cmd: 'insertText', text: `: Optional[${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })),
+    rule('annotate\\s+list\\s+(?:of\\s+)?tuples?\\s+str(?:ing)?s?\\s+int(?:eger)?s?',
+         _ => ({ cmd: 'insertText', text: ': list[tuple[str, int]]' })),
+
+    // ---- Python type expressions --------------------------------------------
+    // Compound bracket types — consumed as single fast-path utterances.
+    // Chain with "colon space" in one breath: "colon space list of str" → ": list[str]"
+    // More-specific patterns must precede less-specific ones (list-tuple before list-str).
+    rule('list\\s+(?:of\\s+)?tuples?\\s+str(?:ing)?s?\\s+int(?:eger)?s?',
+         _ => ({ cmd: 'insertText', text: 'list[tuple[str, int]]' })),
+    rule('list\\s+(?:of\\s+)?(str(?:ing)?s?|int(?:eger)?s?|float|bool)',
+         m => ({ cmd: 'insertText', text: `list[${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })),
+    rule('dict\\s+(?:of\\s+)?str(?:ing)?s?\\s+(?:to\\s+)?(int(?:eger)?s?|str(?:ing)?s?|float|bool)',
+         m => ({ cmd: 'insertText', text: `dict[str, ${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })),
+    rule('optional\\s+(path|str(?:ing)?|int(?:eger)?|float|bool|namespace)',
+         m => ({ cmd: 'insertText', text: `Optional[${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })),
+    rule('argparse\\s+(?:dot\\s+)?namespace',
+         _ => ({ cmd: 'insertText', text: 'argparse.Namespace' })),
+    rule('default\\s+dict',
+         _ => ({ cmd: 'insertText', text: 'defaultdict' })),
+    // "type str" / "type int" / "type path" etc. — bare type name, use after "colon space"
+    rule('type\\s+(' + TYPE_PATTERN + ')',
+         m => ({ cmd: 'insertText', text: TYPE_MAP[m[1].toLowerCase()] ?? m[1] })),
+    // -------------------------------------------------------------------------
 
     rule('open\\s+string', _ => ({ cmd: 'insertText', text: '"' })),
     rule('close\\s+string',_ => ({ cmd: 'closeString' })),
@@ -345,6 +409,8 @@ const ORDINAL_MAP: Record<string, number> = {
 };
 
 function ordinalToN(word: string): number {
+    const num = parseInt(word, 10);   // handles "1st", "2nd", "3rd" after normalizeNumbers
+    if (!isNaN(num)) return num;
     return ORDINAL_MAP[word.toLowerCase()] ?? 1;
 }
 
@@ -452,7 +518,10 @@ function applyFormatter(utterance: string): Command | null {
     if (!m) return null;
     const fn = FORMATTERS[m[1].toLowerCase()];
     if (!fn) return null;
-    const tokens = m[2].trim().split(/\s+/);
+    const operand = m[2].trim();
+    // "smash that", "camel that" etc. refer to the active selection — fall through to tryTransform.
+    if (operand === 'that' || operand === 'this') return null;
+    const tokens = operand.split(/\s+/);
     return { cmd: 'insertText', text: fn(tokens) };
 }
 

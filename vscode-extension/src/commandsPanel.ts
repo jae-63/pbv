@@ -81,7 +81,9 @@ const UNIVERSAL: Section[] = [
             { phrase: 'ampersand',                    desc: '&' },
             { phrase: 'bang  (or: exclamation mark)', desc: '!' },
             { phrase: 'tilde',                        desc: '~' },
-            { phrase: 'semicolon / colon',            desc: '; :' },
+            { phrase: 'semicolon / colon / comma',     desc: '; : ,' },
+            { phrase: 'dot  (or: period)',             desc: '.' },
+            { phrase: 'colon space',                   desc: ':  (with trailing space — for type annotations: "colon space type str")' },
             { phrase: 'apostrophe  (or: single quote)', desc: "'" },
             { phrase: 'double quote',                 desc: '"  (see also: open string)' },
             { phrase: 'backtick',                     desc: '`' },
@@ -141,6 +143,16 @@ const LANG_SECTIONS: Record<string, Section> = {
             ...TEMPLATE_CMDS
                 .filter(tc => tc.lang === 'python')
                 .map(tc => ({ phrase: tc.phrase, desc: tc.desc })),
+            // Type annotations (instant, no LLM)
+            { phrase: 'type str  (or: int / float / bool / none / path / namespace)', desc: 'bare type name — use after "colon space"' },
+            { phrase: 'list of str  (or: list of int, list str, …)',  desc: 'list[str]' },
+            { phrase: 'list of tuple str int',          desc: 'list[tuple[str, int]]' },
+            { phrase: 'dict str int  (or: dict of str to int)',       desc: 'dict[str, int]' },
+            { phrase: 'optional path  (or: optional str / int / …)', desc: 'Optional[Path]  etc.' },
+            { phrase: 'argparse namespace  (or: argparse dot namespace)', desc: 'argparse.Namespace' },
+            { phrase: 'default dict',                   desc: 'defaultdict' },
+            // Function name shorthand — inserts "def NAME" and auto-caches the name
+            { phrase: 'define function snake my func name  (or: camel / pascal / smash …)', desc: 'def my_func_name — caches name for "recent N" reuse; "define method" works too' },
             // LLM-only (no fast-path equivalent)
             { phrase: 'for each',         desc: 'for item in …:',  llm: true },
             { phrase: 'class definition', desc: 'class Name:',     llm: true },

@@ -125,7 +125,7 @@ describe('fastInterpret — cache pad', () => {
 
 describe('fastInterpret — Python code templates', () => {
     test('define function / method', () => {
-        expect(fastInterpret('define function')).toMatchObject({ cmd: 'insertText' });
+        expect(fastInterpret('define function')).toMatchObject({ cmd: 'insertStructure' });
         expect((fastInterpret('define function')!.text as string)).toContain('{CURSOR}');
         expect((fastInterpret('define function')!.text as string)).toContain('def ');
         expect((fastInterpret('define method')!.text as string)).toContain('self');
@@ -203,6 +203,15 @@ describe('fastInterpret — number normalisation', () => {
     test('ordinal words on line', () => {
         expect(fastInterpret('third word on line 10')).toEqual({ cmd: 'gotoWordOnLine', word: 3, line: 10 });
         expect(fastInterpret('first word on line 5')).toEqual({ cmd: 'gotoWordOnLine', word: 1, line: 5 });
+    });
+
+    test('NATO jump — ordinals survive normalizeNumbers conversion', () => {
+        // normalizeNumbers converts "first" → "1st", "second" → "2nd", etc.
+        // The rule must match the digit form and ordinalToN must decode it.
+        const j = (s: string) => fastInterpret(s);
+        expect(j('jump to first juliet on 33')).toEqual({ cmd: 'jumpToCharOnLine', ordinal: 1, char: 'j', line: 33 });
+        expect(j('jump to second sierra on 10')).toEqual({ cmd: 'jumpToCharOnLine', ordinal: 2, char: 's', line: 10 });
+        expect(j('jump to last underscore on 5')).toEqual({ cmd: 'jumpToCharOnLine', ordinal: -1, char: '_', line: 5 });
     });
 });
 
@@ -348,6 +357,123 @@ describe('fastInterpretMulti', () => {
         expect(fmt('smash foo bar')).toEqual({ cmd: 'insertText', text: 'foobar' });
     });
 
+    test('defineFunction — "define function/method FORMATTER NAME" inserts and caches function name', () => {
+        const r1 = fastInterpretMulti('define function snake normalize text for counting');
+        expect(r1.commands).toEqual([{ cmd: 'defineFunction', text: 'normalize_text_for_counting' }]);
+        expect(r1.remainder).toBe('');
+
+        const r2 = fastInterpretMulti('define function camel count word frequencies');
+        expect(r2.commands).toEqual([{ cmd: 'defineFunction', text: 'countWordFrequencies' }]);
+
+        const r3 = fastInterpretMulti('define method snake my method name');
+        expect(r3.commands).toEqual([{ cmd: 'defineFunction', text: 'my_method_name' }]);
+
+        // Whisper often renders "define function" as "to find a function"
+        const r3w = fastInterpretMulti('to find a function snake normalize text for counting');
+        expect(r3w.commands).toEqual([{ cmd: 'defineFunction', text: 'normalize_text_for_counting' }]);
+
+        // Regular formatter does NOT produce defineFunction.
+        const r4 = fastInterpretMulti('snake raw text');
+        expect(r4.commands).toEqual([{ cmd: 'insertText', text: 'raw_text' }]);
+
+        // Bare "define function" (no formatter) still fires the template.
+        const r5 = fastInterpretMulti('define function');
+        expect(r5.commands[0]).toMatchObject({ cmd: 'insertStructure' });
+        expect((r5.commands[0] as any).text).toContain('def ');
+    });
+
+    test('"X that/this" passes through fast path (selection-transform intent)', () => {
+        // These refer to the active selection and must reach tryTransform in server.ts,
+        // not be consumed as formatter("that") → insertText:"that".
+        // Remainder is the full utterance so server.ts uses it as llmInput for tryTransform.
+        for (const word of ['that', 'this']) {
+            for (const verb of ['smash', 'camel', 'snake', 'constant', 'kebab', 'pascal', 'hammer']) {
+                const phrase = `${verb} ${word}`;
+                const r = fastInterpretMulti(phrase);
+                expect(r.commands).toHaveLength(0);
+                expect(r.remainder).toBe(phrase);
+            }
+        }
+    });
+
+    test('"annotate TYPE" → ": type" — robust annotation prefix', () => {
+        const ins = (s: string) => fastInterpretMulti(s).commands[0];
+        expect(ins('annotate string')).toEqual({ cmd: 'insertText', text: ': str' });
+        expect(ins('annotate integer')).toEqual({ cmd: 'insertText', text: ': int' });
+        expect(ins('annotate path')).toEqual({ cmd: 'insertText', text: ': Path' });
+        expect(ins('annotate list of string')).toEqual({ cmd: 'insertText', text: ': list[str]' });
+        expect(ins('annotate dict string integer')).toEqual({ cmd: 'insertText', text: ': dict[str, int]' });
+        expect(ins('annotate optional path')).toEqual({ cmd: 'insertText', text: ': Optional[Path]' });
+        expect(ins('annotate list of tuple string integer')).toEqual({ cmd: 'insertText', text: ': list[tuple[str, int]]' });
+
+        // "annotate string close paren" chains: ": str" + ")" in one utterance
+        const r = fastInterpretMulti('annotate string close paren');
+        expect(r.commands).toEqual([
+            { cmd: 'insertText', text: ': str' },
+            { cmd: 'insertText', text: ')' },
+        ]);
+        expect(r.remainder).toBe('');
+    });
+
+    test('Python type expressions', () => {
+        const ins = (s: string) => fastInterpretMulti(s).commands[0];
+        expect(ins('list of str')).toEqual({ cmd: 'insertText', text: 'list[str]' });
+        expect(ins('list str')).toEqual({ cmd: 'insertText', text: 'list[str]' });
+        expect(ins('list of int')).toEqual({ cmd: 'insertText', text: 'list[int]' });
+        expect(ins('list of strings')).toEqual({ cmd: 'insertText', text: 'list[str]' });
+        expect(ins('dict str int')).toEqual({ cmd: 'insertText', text: 'dict[str, int]' });
+        expect(ins('dict of str to int')).toEqual({ cmd: 'insertText', text: 'dict[str, int]' });
+        expect(ins('dict of str str')).toEqual({ cmd: 'insertText', text: 'dict[str, str]' });
+        expect(ins('list of tuple str int')).toEqual({ cmd: 'insertText', text: 'list[tuple[str, int]]' });
+        expect(ins('list tuple str int')).toEqual({ cmd: 'insertText', text: 'list[tuple[str, int]]' });
+        expect(ins('optional path')).toEqual({ cmd: 'insertText', text: 'Optional[Path]' });
+        expect(ins('optional str')).toEqual({ cmd: 'insertText', text: 'Optional[str]' });
+        expect(ins('optional int')).toEqual({ cmd: 'insertText', text: 'Optional[int]' });
+        expect(ins('argparse namespace')).toEqual({ cmd: 'insertText', text: 'argparse.Namespace' });
+        expect(ins('argparse dot namespace')).toEqual({ cmd: 'insertText', text: 'argparse.Namespace' });
+        expect(ins('default dict')).toEqual({ cmd: 'insertText', text: 'defaultdict' });
+        expect(ins('type str')).toEqual({ cmd: 'insertText', text: 'str' });
+        expect(ins('type int')).toEqual({ cmd: 'insertText', text: 'int' });
+        expect(ins('type none')).toEqual({ cmd: 'insertText', text: 'None' });
+        expect(ins('type path')).toEqual({ cmd: 'insertText', text: 'Path' });
+    });
+
+    test('colon space chains with type rules — annotation workflow', () => {
+        // "colon space type str" → ": str"  (param annotation in one breath)
+        const r1 = fastInterpretMulti('colon space type str');
+        expect(r1.commands).toEqual([
+            { cmd: 'insertText', text: ': ' },
+            { cmd: 'insertText', text: 'str' },
+        ]);
+        expect(r1.remainder).toBe('');
+
+        // "colon space list of str" → ": list[str]"
+        const r2 = fastInterpretMulti('colon space list of str');
+        expect(r2.commands).toEqual([
+            { cmd: 'insertText', text: ': ' },
+            { cmd: 'insertText', text: 'list[str]' },
+        ]);
+
+        // "arrow list of str colon" → " -> list[str]:"  (return type annotation)
+        const r3 = fastInterpretMulti('arrow list of str colon');
+        expect(r3.commands).toEqual([
+            { cmd: 'insertText', text: ' -> ' },
+            { cmd: 'insertText', text: 'list[str]' },
+            { cmd: 'insertText', text: ':' },
+        ]);
+        expect(r3.remainder).toBe('');
+
+        // "default dict open paren type int close paren" → "defaultdict(int)"
+        const r4 = fastInterpretMulti('default dict open paren type int close paren');
+        expect(r4.commands).toEqual([
+            { cmd: 'insertText', text: 'defaultdict' },
+            { cmd: 'insertText', text: '(' },
+            { cmd: 'insertText', text: 'int' },
+            { cmd: 'insertText', text: ')' },
+        ]);
+        expect(r4.remainder).toBe('');
+    });
+
     test('navigation then formatter', () => {
         const r = fastInterpretMulti('line 10 snake my var');
         expect(r.commands).toEqual([
@@ -427,8 +553,9 @@ describe('Whisper alias patterns', () => {
     });
 
     test('while loop / "why unloop" mishearing', () => {
-        expect(fastInterpret('while loop')).toEqual(insertCmd('while {CURSOR}:\n    '));
-        expect(fastInterpret('why unloop')).toEqual(insertCmd('while {CURSOR}:\n    '));
+        const text = 'while {CURSOR}:\n    ';
+        expect(fastInterpret('while loop')).toEqual({ cmd: 'insertStructure', text });
+        expect(fastInterpret('why unloop')).toEqual({ cmd: 'insertStructure', text });
     });
 });
 
@@ -512,9 +639,9 @@ describe('import fast-path — multi-command utterances', () => {
 import { TEMPLATE_CMDS } from '../commandData';
 
 describe('commandData.ts — every phrase matches fast-path', () => {
-    test.each(TEMPLATE_CMDS)('$phrase', ({ phrase }) => {
+    test.each(TEMPLATE_CMDS)('$phrase', ({ phrase, structural }) => {
         const result = fastInterpret(phrase);
         expect(result).not.toBeNull();
-        expect(result?.cmd).toBe('insertText');
+        expect(result?.cmd).toBe(structural ? 'insertStructure' : 'insertText');
     });
 });

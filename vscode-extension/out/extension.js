@@ -505,12 +505,14 @@ var TEMPLATE_CMDS = [
   {
     lang: "python",
     phrase: "module doc",
+    structural: true,
     text: '"""\n{CURSOR}TITLE_TEMPLATE\nUNDERLINE_TEMPLATE\nSUMMARY_TEMPLATE\n"""\n',
     desc: '"""TITLE / underline / SUMMARY  \u2014 say "underline" to auto-fill the separator"'
   },
   {
     lang: "python",
     phrase: "main guard",
+    structural: true,
     text: 'if __name__ == "__main__":\n    ',
     desc: 'if __name__ == "__main__":'
   },
@@ -526,24 +528,28 @@ var TEMPLATE_CMDS = [
   {
     lang: "python",
     phrase: "define function",
+    structural: true,
     text: "def {CURSOR}():\n    ",
     desc: "def {cursor}():"
   },
   {
     lang: "python",
     phrase: "define method",
+    structural: true,
     text: "def {CURSOR}(self):\n    ",
     desc: "def {cursor}(self):"
   },
   {
     lang: "python",
     phrase: "for loop",
+    structural: true,
     text: "for {CURSOR} in :\n    ",
     desc: "for {cursor} in \u2026:"
   },
   {
     lang: "python",
     phrase: "while loop",
+    structural: true,
     pattern: "(?:while|why\\s+un)\\s*loop",
     // "why unloop" is a common Whisper mishearing
     text: "while {CURSOR}:\n    ",
@@ -552,24 +558,28 @@ var TEMPLATE_CMDS = [
   {
     lang: "python",
     phrase: "if block",
+    structural: true,
     text: "if {CURSOR}:\n    ",
     desc: "if \u2026:"
   },
   {
     lang: "python",
     phrase: "elif block",
+    structural: true,
     text: "elif {CURSOR}:\n    ",
     desc: "elif \u2026:"
   },
   {
     lang: "python",
     phrase: "else block",
+    structural: true,
     text: "else:\n    {CURSOR}",
     desc: "else:"
   },
   {
     lang: "python",
     phrase: "try except",
+    structural: true,
     pattern: "try\\s+(?:block|except)",
     text: "try:\n    {CURSOR}\nexcept EXCEPTION_TEMPLATE as error:\n    ",
     desc: "try / except block"
@@ -577,6 +587,7 @@ var TEMPLATE_CMDS = [
   {
     lang: "python",
     phrase: "with block",
+    structural: true,
     text: "with {CURSOR} as :\n    ",
     desc: "with \u2026 as \u2026:"
   },
@@ -618,7 +629,15 @@ var TEMPLATE_CMDS = [
   // Cursor lands at SUMMARY_TEMPLATE on insertion. Assumes 4-space Python indent.
   {
     lang: "python",
+    phrase: "simple doc",
+    structural: true,
+    text: '"""\n{CURSOR}\n"""',
+    desc: '""" simple one-paragraph docstring \u2014 indent is inferred from cursor position """'
+  },
+  {
+    lang: "python",
     phrase: "function doc",
+    structural: true,
     text: '"""{CURSOR}SUMMARY_TEMPLATE\n\n    Args:\n        ARGUMENTS_TEMPLATE\n\n    Returns:\n        RETURNS_TEMPLATE\n    """',
     desc: "Python docstring (summary / args / returns)"
   },
@@ -709,6 +728,8 @@ var SYMBOL_MAP = {
   "equals equals": "==",
   "greater than": ">",
   "less than": "<",
+  // Annotation shorthand — "colon space" inserts ": " for Python type hints
+  "colon space": ": ",
   // Single-word names
   "backslash": "\\",
   "caret": "^",
@@ -719,7 +740,10 @@ var SYMBOL_MAP = {
   "colon": ":",
   "apostrophe": "'",
   "backtick": "`",
-  "plus": "+"
+  "plus": "+",
+  "comma": ",",
+  "dot": ".",
+  "period": "."
 };
 var SYMBOL_PATTERN = Object.keys(SYMBOL_MAP).sort((a, b) => b.length - a.length).map((k) => k.replace(/\s+/g, "\\s+")).join("|");
 var BARE_KEYWORDS = {
@@ -755,6 +779,21 @@ var KEYWORD_MAP = {
   "nonlocal": "nonlocal "
 };
 var KEYWORD_PATTERN = Object.keys(KEYWORD_MAP).join("|");
+var TYPE_MAP = {
+  "str": "str",
+  "string": "str",
+  "strings": "str",
+  "int": "int",
+  "integer": "int",
+  "float": "float",
+  "bool": "bool",
+  "boolean": "bool",
+  "none": "None",
+  "path": "Path",
+  "namespace": "Namespace",
+  "exception": "Exception"
+};
+var TYPE_PATTERN = Object.keys(TYPE_MAP).join("|");
 var RULES = [
   // Navigation — word on line (before bare "line N")
   rule(
@@ -825,7 +864,7 @@ var RULES = [
   // "jump to third tango on 21"  "jump to last underscore on current line"
   // "jump to second sierra on next line"
   rule(
-    "jump\\s+to\\s+(first|second|third|fourth|fifth|sixth|last|penultimate)\\s+(.+?)\\s+on\\s+(?:(current|next|prev(?:ious)?)\\s+line|(\\d+))",
+    "jump\\s+to\\s+(\\d+(?:st|nd|rd|th)?|first|second|third|fourth|fifth|sixth|last|penultimate)\\s+(.+?)\\s+on\\s+(?:(current|next|prev(?:ious)?)\\s+line|(\\d+))",
     (m) => ({
       cmd: "jumpToCharOnLine",
       ordinal: ordinalToN(m[1]),
@@ -835,6 +874,7 @@ var RULES = [
   ),
   // Deletion
   rule("delete\\s+(?:this\\s+)?line", (_) => ({ cmd: "deleteLine" })),
+  rule("delete\\s+(\\d+)\\s+lines?", (m) => ({ cmd: "deleteLines", n: n(m[1]) })),
   rule("delete\\s+(\\d+)\\s+words?", (m) => ({ cmd: "deleteWords", n: n(m[1]) })),
   rule("delete\\s+(?:a\\s+)?word", (_) => ({ cmd: "deleteWords", n: 1 })),
   rule("backspace", (_) => ({ cmd: "deleteChars", n: 1 })),
@@ -842,6 +882,17 @@ var RULES = [
   rule(
     "delete\\s+(?:to\\s+)?end(?:\\s+of\\s+(?:the\\s+)?line)?",
     (_) => ({ cmd: "deleteToEndOfLine" })
+  ),
+  // "define function snake my func" → defineFunction("my_func") — inserts "def my_func" AND
+  // caches the name so it's immediately available via "recent N".
+  // Must precede TEMPLATE_CMDS so it wins over the bare "define function" template.
+  rule(
+    "(?:define|to\\s+find)\\s+(?:a\\s+)?(?:function|method)\\s+(snake|camel|hammer|pascal|constant|kebab|smash|dotted|packed)\\s+(.+)",
+    (m) => {
+      const fn = FORMATTERS[m[1].toLowerCase()];
+      const tokens = m[2].trim().split(/\s+/);
+      return { cmd: "defineFunction", text: fn ? fn(tokens) : m[2].trim() };
+    }
   ),
   // Templates with optional inline argument — must precede TEMPLATE_CMDS rules
   // so the more-specific pattern wins over the bare phrase match.
@@ -852,10 +903,12 @@ var RULES = [
     (m) => ({ cmd: "sectionHeader", label: m[1] ?? "" })
   ),
   // Text-insertion templates — derived from TEMPLATE_CMDS in commandData.ts.
-  // Add new templates there; no change here needed.
+  // Structural templates (def, for, if, …) emit insertStructure so the dispatch
+  // layer wraps the insert in startUndoGroup/endUndoGroup + sets the mark.
   ...TEMPLATE_CMDS.map((tc) => {
     const src = tc.pattern ?? tc.phrase.replace(/\s+/g, "\\s+");
-    return rule(src, (_) => ({ cmd: "insertText", text: tc.text }));
+    const cmd = tc.structural ? "insertStructure" : "insertText";
+    return rule(src, (_) => ({ cmd, text: tc.text }));
   }),
   // Dictation helpers — "new line", "newline", "return", "enter" all insert \n.
   // "return"/"enter" are preferred at utterance end: Whisper often swallows
@@ -885,6 +938,63 @@ var RULES = [
   })),
   // Python return-type annotation — "returns value", "arrow", "right arrow"
   rule("returns?\\s+(?:value|type)|(?:right\\s+)?arrow", (_) => ({ cmd: "insertText", text: " -> " })),
+  // ---- Python type annotations --------------------------------------------
+  // "annotate string" → ": str"  — "annotate" is a strong first word Whisper won't mangle.
+  // Chains naturally: "annotate string close paren" → ": str)" in one utterance.
+  rule(
+    "annotate\\s+(str(?:ing)?s?|int(?:eger)?s?|float|bool|path|namespace)",
+    (m) => ({ cmd: "insertText", text: `: ${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}` })
+  ),
+  rule(
+    "annotate\\s+list\\s+(?:of\\s+)?(str(?:ing)?s?|int(?:eger)?s?|float|bool)",
+    (m) => ({ cmd: "insertText", text: `: list[${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })
+  ),
+  rule(
+    "annotate\\s+dict\\s+(?:of\\s+)?str(?:ing)?s?\\s+(?:to\\s+)?(int(?:eger)?s?|str(?:ing)?s?|float|bool)",
+    (m) => ({ cmd: "insertText", text: `: dict[str, ${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })
+  ),
+  rule(
+    "annotate\\s+optional\\s+(path|str(?:ing)?|int(?:eger)?|float|bool|namespace)",
+    (m) => ({ cmd: "insertText", text: `: Optional[${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })
+  ),
+  rule(
+    "annotate\\s+list\\s+(?:of\\s+)?tuples?\\s+str(?:ing)?s?\\s+int(?:eger)?s?",
+    (_) => ({ cmd: "insertText", text: ": list[tuple[str, int]]" })
+  ),
+  // ---- Python type expressions --------------------------------------------
+  // Compound bracket types — consumed as single fast-path utterances.
+  // Chain with "colon space" in one breath: "colon space list of str" → ": list[str]"
+  // More-specific patterns must precede less-specific ones (list-tuple before list-str).
+  rule(
+    "list\\s+(?:of\\s+)?tuples?\\s+str(?:ing)?s?\\s+int(?:eger)?s?",
+    (_) => ({ cmd: "insertText", text: "list[tuple[str, int]]" })
+  ),
+  rule(
+    "list\\s+(?:of\\s+)?(str(?:ing)?s?|int(?:eger)?s?|float|bool)",
+    (m) => ({ cmd: "insertText", text: `list[${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })
+  ),
+  rule(
+    "dict\\s+(?:of\\s+)?str(?:ing)?s?\\s+(?:to\\s+)?(int(?:eger)?s?|str(?:ing)?s?|float|bool)",
+    (m) => ({ cmd: "insertText", text: `dict[str, ${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })
+  ),
+  rule(
+    "optional\\s+(path|str(?:ing)?|int(?:eger)?|float|bool|namespace)",
+    (m) => ({ cmd: "insertText", text: `Optional[${TYPE_MAP[m[1].toLowerCase()] ?? m[1]}]` })
+  ),
+  rule(
+    "argparse\\s+(?:dot\\s+)?namespace",
+    (_) => ({ cmd: "insertText", text: "argparse.Namespace" })
+  ),
+  rule(
+    "default\\s+dict",
+    (_) => ({ cmd: "insertText", text: "defaultdict" })
+  ),
+  // "type str" / "type int" / "type path" etc. — bare type name, use after "colon space"
+  rule(
+    "type\\s+(" + TYPE_PATTERN + ")",
+    (m) => ({ cmd: "insertText", text: TYPE_MAP[m[1].toLowerCase()] ?? m[1] })
+  ),
+  // -------------------------------------------------------------------------
   rule("open\\s+string", (_) => ({ cmd: "insertText", text: '"' })),
   rule("close\\s+string", (_) => ({ cmd: "closeString" })),
   // Template placeholder navigation — "select title template" → selects TITLE_TEMPLATE
@@ -1068,6 +1178,8 @@ var ORDINAL_MAP = {
   penultimate: -2
 };
 function ordinalToN(word) {
+  const num = parseInt(word, 10);
+  if (!isNaN(num)) return num;
   return ORDINAL_MAP[word.toLowerCase()] ?? 1;
 }
 function lineRef(word, absNum) {
@@ -1175,7 +1287,9 @@ function applyFormatter(utterance) {
   if (!m) return null;
   const fn = FORMATTERS[m[1].toLowerCase()];
   if (!fn) return null;
-  const tokens = m[2].trim().split(/\s+/);
+  const operand = m[2].trim();
+  if (operand === "that" || operand === "this") return null;
+  const tokens = operand.split(/\s+/);
   return { cmd: "insertText", text: fn(tokens) };
 }
 var COMMENT_RULE = /^comment\s+(?:(template)|(block)\s+(.+))$/i;
@@ -1466,7 +1580,9 @@ var UNIVERSAL = [
       { phrase: "ampersand", desc: "&" },
       { phrase: "bang  (or: exclamation mark)", desc: "!" },
       { phrase: "tilde", desc: "~" },
-      { phrase: "semicolon / colon", desc: "; :" },
+      { phrase: "semicolon / colon / comma", desc: "; : ," },
+      { phrase: "dot  (or: period)", desc: "." },
+      { phrase: "colon space", desc: ':  (with trailing space \u2014 for type annotations: "colon space type str")' },
       { phrase: "apostrophe  (or: single quote)", desc: "'" },
       { phrase: "double quote", desc: '"  (see also: open string)' },
       { phrase: "backtick", desc: "`" },
@@ -1523,6 +1639,16 @@ var LANG_SECTIONS = {
     cmds: [
       // Fast-path templates — derived from commandData.ts (instant, no LLM wait)
       ...TEMPLATE_CMDS.filter((tc) => tc.lang === "python").map((tc) => ({ phrase: tc.phrase, desc: tc.desc })),
+      // Type annotations (instant, no LLM)
+      { phrase: "type str  (or: int / float / bool / none / path / namespace)", desc: 'bare type name \u2014 use after "colon space"' },
+      { phrase: "list of str  (or: list of int, list str, \u2026)", desc: "list[str]" },
+      { phrase: "list of tuple str int", desc: "list[tuple[str, int]]" },
+      { phrase: "dict str int  (or: dict of str to int)", desc: "dict[str, int]" },
+      { phrase: "optional path  (or: optional str / int / \u2026)", desc: "Optional[Path]  etc." },
+      { phrase: "argparse namespace  (or: argparse dot namespace)", desc: "argparse.Namespace" },
+      { phrase: "default dict", desc: "defaultdict" },
+      // Function name shorthand — inserts "def NAME" and auto-caches the name
+      { phrase: "define function snake my func name  (or: camel / pascal / smash \u2026)", desc: 'def my_func_name \u2014 caches name for "recent N" reuse; "define method" works too' },
       // LLM-only (no fast-path equivalent)
       { phrase: "for each", desc: "for item in \u2026:", llm: true },
       { phrase: "class definition", desc: "class Name:", llm: true }
@@ -1739,6 +1865,7 @@ function looksLikeDictation(utterance) {
 var DESTRUCTIVE_CMDS = /* @__PURE__ */ new Set([
   "clearCachePad",
   "deleteLine",
+  "deleteLines",
   "deleteToEndOfLine",
   "deleteWords",
   "deleteChars",
@@ -1871,7 +1998,22 @@ var IpcServer = class {
           if (editor) {
             const dictated = normalizeDictation(raw);
             const sel = editor.selection;
-            await editor.edit((eb) => sel.isEmpty ? eb.insert(sel.active, dictated + " ") : eb.replace(sel, dictated));
+            const lineText = editor.document.lineAt(sel.active.line).text;
+            const indent = lineText.match(/^(\s*)/)?.[1] ?? "";
+            const indented = dictated.replace(/\n/g, "\n" + indent);
+            if (sel.isEmpty && indented === "\n" + indent) {
+              const trailingSpaces = lineText.length - lineText.trimEnd().length;
+              const trimStart = new vscode5.Position(sel.active.line, lineText.length - trailingSpaces);
+              await editor.edit((eb) => {
+                if (trailingSpaces > 0)
+                  eb.replace(new vscode5.Range(trimStart, sel.active), "\n" + indent);
+                else
+                  eb.insert(sel.active, "\n" + indent);
+              });
+            } else {
+              const toInsert = sel.isEmpty ? indented + " " : indented;
+              await editor.edit((eb) => sel.isEmpty ? eb.insert(sel.active, toInsert) : eb.replace(sel, toInsert));
+            }
             vscode5.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 1e4);
           }
           return;
@@ -1975,6 +2117,10 @@ var IpcServer = class {
         const raw = msg.text;
         const cursor = raw.indexOf("{CURSOR}");
         const text = raw.replace("{CURSOR}", "");
+        if (text === "\n") {
+          await vscode5.commands.executeCommand("type", { text: "\n" });
+          break;
+        }
         await editor.edit((eb) => eb.insert(editor.selection.active, text));
         if (cursor !== -1) {
           const inserted = editor.selection.active;
@@ -1983,6 +2129,42 @@ var IpcServer = class {
           const markPos = editor.document.positionAt(markOffset);
           editor.selection = new vscode5.Selection(markPos, markPos);
         }
+        break;
+      }
+      // --- Function definition — inserts "def NAME", starts a transaction, caches name ---
+      case "defineFunction": {
+        if (!editor) return;
+        await this.beginStructuralEdit(editor);
+        await editor.edit((eb) => eb.insert(editor.selection.active, "def " + msg.text));
+        await this.endStructuralEdit(editor);
+        this.cache.prepend(msg.text);
+        break;
+      }
+      // --- Structural template — like insertText but wrapped in a transaction ---
+      // navMark is set to the END of the inserted block so "jump back" lands
+      // after the closing delimiter (e.g. after `"""` in simple doc), letting
+      // the user dictate the body and then say "jump back return" to continue.
+      case "insertStructure": {
+        if (!editor) return;
+        const raw = msg.text;
+        const cursor = raw.indexOf("{CURSOR}");
+        const text = raw.replace("{CURSOR}", "");
+        const curLineText = editor.document.lineAt(editor.selection.active.line).text;
+        const indent = curLineText.match(/^(\s*)/)?.[1] ?? "";
+        const indented = text.replace(/\n/g, "\n" + indent);
+        const newlinesBefore = (raw.slice(0, cursor).match(/\n/g) ?? []).length;
+        const cursorInIndented = cursor - "{CURSOR}".length + newlinesBefore * indent.length;
+        await this.beginStructuralEdit(editor);
+        await editor.edit((eb) => eb.insert(editor.selection.active, indented));
+        this.navMark = { uri: editor.document.uri.toString(), cursor: editor.selection.active };
+        if (cursor !== -1) {
+          const inserted = editor.selection.active;
+          const endOffset = editor.document.offsetAt(inserted);
+          const markOffset = endOffset - (indented.length - cursorInIndented);
+          const markPos = editor.document.positionAt(markOffset);
+          editor.selection = new vscode5.Selection(markPos, markPos);
+        }
+        await this.endStructuralEdit(editor);
         break;
       }
       // --- Selection replacement (Claude code transforms) ---
@@ -2351,6 +2533,10 @@ ${dashes}
         for (let i = 0; i < msg.n; i++)
           await vscode5.commands.executeCommand("deleteWordLeft");
         break;
+      case "deleteLines":
+        for (let i = 0; i < msg.n; i++)
+          await vscode5.commands.executeCommand("editor.action.deleteLines");
+        break;
       // --- Undo / redo ---
       case "undo":
         await vscode5.commands.executeCommand("undo");
@@ -2388,6 +2574,31 @@ ${dashes}
     }
     for (let i = 0; i < this.txDecoTypes.length; i++)
       editor.setDecorations(this.txDecoTypes[i], byShade[i]);
+  }
+  // Begin a structural edit: snapshot for undoTransaction + undo stop + gutter dot.
+  async beginStructuralEdit(editor) {
+    this.mark = {
+      uri: editor.document.uri.toString(),
+      text: editor.document.getText(),
+      cursor: editor.selection.active
+    };
+    await editor.edit((_eb) => {
+    }, { undoStopBefore: true, undoStopAfter: false });
+    this.txStack.push({
+      uri: editor.document.uri.toString(),
+      startLine: editor.selection.active.line,
+      endLine: null
+    });
+    this.refreshTxDecorations();
+  }
+  // Close a structural edit: trailing undo stop + update gutter dot end line.
+  async endStructuralEdit(editor) {
+    await editor.edit((_eb) => {
+    }, { undoStopBefore: false, undoStopAfter: true });
+    const top = this.txStack[this.txStack.length - 1];
+    if (top && top.uri === editor.document.uri.toString())
+      top.endLine = editor.selection.active.line;
+    this.refreshTxDecorations();
   }
   async scrollStep(direction) {
     if (this.traversalMatches && this.traversalMatches.length > 0) {

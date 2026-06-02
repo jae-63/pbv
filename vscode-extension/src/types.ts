@@ -3,6 +3,8 @@
 export type InboundMessage =
   | { cmd: 'transcript';       text: string; lowConfidence?: boolean }
   | { cmd: 'insertText';       text: string }
+  | { cmd: 'insertStructure';  text: string }
+  | { cmd: 'defineFunction';   text: string }
   | { cmd: 'replaceSelection'; text: string }
   | { cmd: 'gotoLine';         line: number }
   | { cmd: 'gotoWordOnLine';   word: number; line: number }
@@ -63,6 +65,7 @@ export type InboundMessage =
   | { cmd: 'formatDocument' }
   | { cmd: 'toggleLineComment' }
   | { cmd: 'deleteLine' }
+  | { cmd: 'deleteLines';      n: number }
   | { cmd: 'deleteToEndOfLine' }
   | { cmd: 'duplicateLine' }
   | { cmd: 'dictateText';       text: string }

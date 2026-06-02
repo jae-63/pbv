@@ -60,7 +60,7 @@ function looksLikeDictation(utterance: string): boolean {
 // Commands that should not fire on low-confidence (uncertain) transcripts.
 // Destructive / hard-to-reverse operations where a mishearing is costly.
 const DESTRUCTIVE_CMDS = new Set([
-    'clearCachePad', 'deleteLine', 'deleteToEndOfLine',
+    'clearCachePad', 'deleteLine', 'deleteLines', 'deleteToEndOfLine',
     'deleteWords', 'deleteChars', 'undoTransaction', 'revertTransactions',
 ]);
 
@@ -246,11 +246,31 @@ export class IpcServer {
                     }
                     if (editor) {
                         const dictated = normalizeDictation(raw);
-                        const sel = editor.selection;
-                        await editor.edit(eb =>
-                            sel.isEmpty
-                                ? eb.insert(sel.active, dictated + ' ')
-                                : eb.replace(sel, dictated));
+                        const sel      = editor.selection;
+                        // Preserve current line's indentation across embedded newlines so
+                        // "new line" inside a docstring stays at the correct column.
+                        const lineText = editor.document.lineAt(sel.active.line).text;
+                        const indent   = lineText.match(/^(\s*)/)?.[1] ?? '';
+                        const indented = dictated.replace(/\n/g, '\n' + indent);
+
+                        if (sel.isEmpty && indented === '\n' + indent) {
+                            // Pure "new line" at end of line: trim the trailing space that
+                            // the previous dictation left (W291), then insert newline+indent.
+                            const trailingSpaces = lineText.length - lineText.trimEnd().length;
+                            const trimStart = new vscode.Position(sel.active.line, lineText.length - trailingSpaces);
+                            await editor.edit(eb => {
+                                if (trailingSpaces > 0)
+                                    eb.replace(new vscode.Range(trimStart, sel.active), '\n' + indent);
+                                else
+                                    eb.insert(sel.active, '\n' + indent);
+                            });
+                        } else {
+                            const toInsert = sel.isEmpty ? indented + ' ' : indented;
+                            await editor.edit(eb =>
+                                sel.isEmpty
+                                    ? eb.insert(sel.active, toInsert)
+                                    : eb.replace(sel, toInsert));
+                        }
                         vscode.window.setStatusBarMessage(`$(keyboard) "${raw}"`, 10000);
                     }
                     return;
@@ -372,6 +392,12 @@ export class IpcServer {
                 const raw   = msg.text;
                 const cursor = raw.indexOf('{CURSOR}');
                 const text   = raw.replace('{CURSOR}', '');
+                // Bare newline: use VS Code's language-aware type command so Python
+                // auto-indent fires (e.g. correct indent after "jump back return").
+                if (text === '\n') {
+                    await vscode.commands.executeCommand('type', { text: '\n' });
+                    break;
+                }
                 await editor.edit(eb => eb.insert(editor.selection.active, text));
                 if (cursor !== -1) {
                     // Place cursor at the {CURSOR} marker position
@@ -383,6 +409,48 @@ export class IpcServer {
                     const markPos    = editor.document.positionAt(markOffset);
                     editor.selection = new vscode.Selection(markPos, markPos);
                 }
+                break;
+            }
+
+            // --- Function definition — inserts "def NAME", starts a transaction, caches name ---
+            case 'defineFunction': {
+                if (!editor) return;
+                await this.beginStructuralEdit(editor);
+                await editor.edit(eb => eb.insert(editor.selection.active, 'def ' + msg.text));
+                await this.endStructuralEdit(editor);
+                this.cache.prepend(msg.text);
+                break;
+            }
+
+            // --- Structural template — like insertText but wrapped in a transaction ---
+            // navMark is set to the END of the inserted block so "jump back" lands
+            // after the closing delimiter (e.g. after `"""` in simple doc), letting
+            // the user dictate the body and then say "jump back return" to continue.
+            case 'insertStructure': {
+                if (!editor) return;
+                const raw    = msg.text;
+                const cursor = raw.indexOf('{CURSOR}');
+                const text   = raw.replace('{CURSOR}', '');
+                // Inject current line's indentation into every \n so the template
+                // adapts to whatever indent level the cursor is at (4-space, 5-space, etc.)
+                const curLineText = editor.document.lineAt(editor.selection.active.line).text;
+                const indent  = curLineText.match(/^(\s*)/)?.[1] ?? '';
+                const indented = text.replace(/\n/g, '\n' + indent);
+                // Recalculate {CURSOR} position in the indented text:
+                // each \n before cursor gains indent.length extra chars.
+                const newlinesBefore = (raw.slice(0, cursor).match(/\n/g) ?? []).length;
+                const cursorInIndented = (cursor - '{CURSOR}'.length) + newlinesBefore * indent.length;
+                await this.beginStructuralEdit(editor);
+                await editor.edit(eb => eb.insert(editor.selection.active, indented));
+                this.navMark = { uri: editor.document.uri.toString(), cursor: editor.selection.active };
+                if (cursor !== -1) {
+                    const inserted   = editor.selection.active;
+                    const endOffset  = editor.document.offsetAt(inserted);
+                    const markOffset = endOffset - (indented.length - cursorInIndented);
+                    const markPos    = editor.document.positionAt(markOffset);
+                    editor.selection = new vscode.Selection(markPos, markPos);
+                }
+                await this.endStructuralEdit(editor);
                 break;
             }
 
@@ -755,6 +823,10 @@ export class IpcServer {
                 for (let i = 0; i < msg.n; i++)
                     await vscode.commands.executeCommand('deleteWordLeft');
                 break;
+            case 'deleteLines':
+                for (let i = 0; i < msg.n; i++)
+                    await vscode.commands.executeCommand('editor.action.deleteLines');
+                break;
 
             // --- Undo / redo ---
             case 'undo':
@@ -798,6 +870,31 @@ export class IpcServer {
         }
         for (let i = 0; i < this.txDecoTypes.length; i++)
             editor.setDecorations(this.txDecoTypes[i], byShade[i]);
+    }
+
+    // Begin a structural edit: snapshot for undoTransaction + undo stop + gutter dot.
+    private async beginStructuralEdit(editor: vscode.TextEditor): Promise<void> {
+        this.mark = {
+            uri:    editor.document.uri.toString(),
+            text:   editor.document.getText(),
+            cursor: editor.selection.active,
+        };
+        await editor.edit(_eb => {}, { undoStopBefore: true, undoStopAfter: false });
+        this.txStack.push({
+            uri:       editor.document.uri.toString(),
+            startLine: editor.selection.active.line,
+            endLine:   null,
+        });
+        this.refreshTxDecorations();
+    }
+
+    // Close a structural edit: trailing undo stop + update gutter dot end line.
+    private async endStructuralEdit(editor: vscode.TextEditor): Promise<void> {
+        await editor.edit(_eb => {}, { undoStopBefore: false, undoStopAfter: true });
+        const top = this.txStack[this.txStack.length - 1];
+        if (top && top.uri === editor.document.uri.toString())
+            top.endLine = editor.selection.active.line;
+        this.refreshTxDecorations();
     }
 
     private async scrollStep(direction: 1 | -1): Promise<void> {
