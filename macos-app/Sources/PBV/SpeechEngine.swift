@@ -477,9 +477,15 @@ final class SpeechEngine: NSObject {
         NSLog("[PBV] flush: %d frames rms=%.4f", captured.count, energy)
         guard energy >= energyThreshold else { return }
 
+        // Strip leading sub-threshold buffers before sending to Whisper.
+        // Whisper pads input to 30 s with silence; leading silence in the audio
+        // causes the decoder to start confused and mangle the first word.
+        let trimmed = Array(captured.drop(while: { self.rmsBuffer($0) < self.energyThreshold }))
+        NSLog("[PBV] flush: trimmed %d leading silence frames", captured.count - trimmed.count)
+
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
-            guard let result = self.transcribe(captured), !result.text.isEmpty else { return }
+            guard let result = self.transcribe(trimmed), !result.text.isEmpty else { return }
             NSLog("[PBV] transcript: %@ low_conf=%d", result.text, result.lowConfidence)
             DispatchQueue.main.async { self.onTranscript?(result.text, result.lowConfidence) }
         }
