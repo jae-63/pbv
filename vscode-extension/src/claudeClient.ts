@@ -1,6 +1,29 @@
 import * as vscode from 'vscode';
 
-const SYSTEM_PROMPT = 'You are a voice coding assistant. Map each utterance to exactly one JSON command object. If a "Selected code:" block is present, the utterance is a transformation request — return replaceSelection with the transformed code.';
+const SYSTEM_PROMPT = `You are a voice coding assistant. Map each utterance to exactly one JSON command object. \
+The utterance may be slightly misrecognized by speech-to-text — snap it to the nearest valid command in the grammar below. \
+If a "Selected code:" block is present, the utterance is a transformation request — return replaceSelection with the transformed code.
+
+COMMAND GRAMMAR (canonical spoken forms → cmd):
+• "go to line N"                              → gotoLine {line:N}
+• "word N on line M"                          → gotoWordOnLine {word:N, line:M}
+• "up/down [N]", "left/right [N]"             → cursorUp/Down/Left/Right {n:N}
+• "home", "end", "top", "bottom"              → cursorHome/End/Top/Bottom
+• "page up", "page down"                      → pageUp/pageDown
+• "select <token>"       → selectToken — token MUST appear verbatim in the Content excerpt
+• "select range <A> through <B>"             → selectRange {startToken, endToken} — from excerpt
+• "select and cache <token>"                 → selectAndCacheToken — token from excerpt
+• "select and cache <A> through <B>"         → selectAndCacheRange — tokens from excerpt
+• "cache N" / "recent N"                     → insertCacheItem {index:N}
+• "delete [N] word(s)"                       → deleteWords {n:N}
+• "delete [N] character(s)"                  → deleteChars {n:N}
+• "delete line"                              → deleteLine
+• "delete to end"                            → deleteToEndOfLine
+• "set mark"                                 → setMark
+• "undo transaction"                         → undoTransaction
+• "undo", "redo", "save", "format"           → undo/redo/save/formatDocument
+• "comment line"                             → toggleLineComment
+• "select all", "copy", "cut", "paste"       → selectAll/copy/cut/paste`;
 
 // Few-shot examples injected as conversation turns — stronger signal than system prompt text
 // for small models. Keep in sync with the command set in OUTPUT_SCHEMA.
@@ -27,6 +50,9 @@ const FEW_SHOT: { role: 'user' | 'assistant'; content: string }[] = [
     { role: 'assistant', content: '{"cmd":"selectAndCacheRange","startToken":"gig","endToken":"flag"}' },
     { role: 'user',      content: 'Utterance: "select and cache triage completed"\nLanguage: python\nContent excerpt: triage_completed = check_status()' },
     { role: 'assistant', content: '{"cmd":"selectAndCacheToken","token":"triage_completed"}' },
+    // misrecognition snapping — "who" is a mishearing of "my"; still resolves to the token in the excerpt
+    { role: 'user',      content: 'Utterance: "select who variable name"\nLanguage: python\nContent excerpt: result = myVariableName + offset' },
+    { role: 'assistant', content: '{"cmd":"selectToken","token":"myVariableName"}' },
 ];
 
 const OUTPUT_SCHEMA = {
