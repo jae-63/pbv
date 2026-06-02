@@ -20,8 +20,9 @@ final class SpeechEngine: NSObject {
     // Configuration
     // ---------------------------------------------------------------------------
 
-    // whisper-server runs as a LaunchAgent (com.voicecoder.whisper) on this port.
-    private let serverPort  = 8765
+    // ASR router (asr-router/router.py) runs on this port; it tries Vosk first
+    // and falls back to whisper-server on 8765 for non-matching utterances.
+    private let serverPort  = 8766
 
     // Initial prompt — biases Whisper toward our command vocabulary.
     // Phrased as natural command utterances so the model learns the pattern.
@@ -97,7 +98,7 @@ final class SpeechEngine: NSObject {
     func start() {
         guard !isRunning else { return }
         isRunning = true
-        // whisper-server runs as a LaunchAgent — just wait for it to be ready.
+        // ASR router runs as a LaunchAgent — just wait for it to be ready.
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
             let ready = self.waitForServer()
@@ -106,8 +107,8 @@ final class SpeechEngine: NSObject {
                     self.startAudioEngine()
                 } else {
                     self.onStateChange?(.error(
-                        "whisper-server not reachable on port \(self.serverPort). " +
-                        "Run: launchctl load ~/Library/LaunchAgents/com.voicecoder.whisper.plist"))
+                        "ASR router not reachable on port \(self.serverPort). " +
+                        "Run: bash asr-router/setup.sh"))
                 }
             }
         }
