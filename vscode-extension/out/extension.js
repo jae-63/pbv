@@ -1022,6 +1022,19 @@ var RULES = [
   // Dragon-style "Select and Say": select a placeholder, say "dictate <title>".
   // "dict" is a common Whisper mishearing of "dictate" — alias it here.
   rule("(?:dictate|dict)\\s+(.+)", (m) => ({ cmd: "dictateText", text: m[1] })),
+  // Mode switching — explicit rules so every phrasing reaches the right command
+  // without depending on the canonical prefix-match fallback.
+  // "dictation" alone is the shortest unambiguous form; "stop dictating" / "coding mode"
+  // return to command mode when the user is mid-dictation.
+  rule(
+    "(?:start|enter|begin|go\\s+to|switch\\s+to)\\s+dictation(?:\\s+mode)?",
+    (_) => ({ cmd: "dictationMode" })
+  ),
+  rule("dictation(?:\\s+mode)?", (_) => ({ cmd: "dictationMode" })),
+  rule(
+    "(?:stop\\s+dict(?:ating|ation)?|coding\\s+mode|back\\s+to\\s+commands?)",
+    (_) => ({ cmd: "commandMode" })
+  ),
   // UI — voice-only access to help and cache pad
   // "show commands" handled by canonical; keep human aliases
   rule("what\\s+can\\s+I\\s+say", (_) => ({ cmd: "showCommands" })),
@@ -2150,7 +2163,10 @@ var IpcServer = class {
         const cursor = raw.indexOf("{CURSOR}");
         const text = raw.replace("{CURSOR}", "");
         const curLineText = editor.document.lineAt(editor.selection.active.line).text;
-        const indent = curLineText.match(/^(\s*)/)?.[1] ?? "";
+        const baseIndent = curLineText.match(/^(\s*)/)?.[1] ?? "";
+        const tabSize = typeof editor.options.tabSize === "number" ? editor.options.tabSize : 4;
+        const oneIndent = editor.options.insertSpaces !== false ? " ".repeat(tabSize) : "	";
+        const indent = curLineText.trimEnd().endsWith(":") ? baseIndent + oneIndent : baseIndent;
         const indented = text.replace(/\n/g, "\n" + indent);
         const newlinesBefore = (raw.slice(0, cursor).match(/\n/g) ?? []).length;
         const cursorInIndented = cursor - "{CURSOR}".length + newlinesBefore * indent.length;
@@ -2694,7 +2710,28 @@ function traversalRegex(languageId, pattern) {
 
 // src/claudeClient.ts
 var vscode6 = __toESM(require("vscode"));
-var SYSTEM_PROMPT = 'You are a voice coding assistant. Map each utterance to exactly one JSON command object. If a "Selected code:" block is present, the utterance is a transformation request \u2014 return replaceSelection with the transformed code.';
+var SYSTEM_PROMPT = `You are a voice coding assistant. Map each utterance to exactly one JSON command object. The utterance may be slightly misrecognized by speech-to-text \u2014 snap it to the nearest valid command in the grammar below. If a "Selected code:" block is present, the utterance is a transformation request \u2014 return replaceSelection with the transformed code.
+
+COMMAND GRAMMAR (canonical spoken forms \u2192 cmd):
+\u2022 "go to line N"                              \u2192 gotoLine {line:N}
+\u2022 "word N on line M"                          \u2192 gotoWordOnLine {word:N, line:M}
+\u2022 "up/down [N]", "left/right [N]"             \u2192 cursorUp/Down/Left/Right {n:N}
+\u2022 "home", "end", "top", "bottom"              \u2192 cursorHome/End/Top/Bottom
+\u2022 "page up", "page down"                      \u2192 pageUp/pageDown
+\u2022 "select <token>"       \u2192 selectToken \u2014 token MUST appear verbatim in the Content excerpt
+\u2022 "select range <A> through <B>"             \u2192 selectRange {startToken, endToken} \u2014 from excerpt
+\u2022 "select and cache <token>"                 \u2192 selectAndCacheToken \u2014 token from excerpt
+\u2022 "select and cache <A> through <B>"         \u2192 selectAndCacheRange \u2014 tokens from excerpt
+\u2022 "cache N" / "recent N"                     \u2192 insertCacheItem {index:N}
+\u2022 "delete [N] word(s)"                       \u2192 deleteWords {n:N}
+\u2022 "delete [N] character(s)"                  \u2192 deleteChars {n:N}
+\u2022 "delete line"                              \u2192 deleteLine
+\u2022 "delete to end"                            \u2192 deleteToEndOfLine
+\u2022 "set mark"                                 \u2192 setMark
+\u2022 "undo transaction"                         \u2192 undoTransaction
+\u2022 "undo", "redo", "save", "format"           \u2192 undo/redo/save/formatDocument
+\u2022 "comment line"                             \u2192 toggleLineComment
+\u2022 "select all", "copy", "cut", "paste"       \u2192 selectAll/copy/cut/paste`;
 var FEW_SHOT = [
   { role: "user", content: 'Utterance: "set mark"' },
   { role: "assistant", content: '{"cmd":"setMark"}' },
@@ -2716,7 +2753,10 @@ var FEW_SHOT = [
   { role: "user", content: 'Utterance: "select and cache gig through flag"\nLanguage: python\nContent excerpt: "gig_worker_flag": False,' },
   { role: "assistant", content: '{"cmd":"selectAndCacheRange","startToken":"gig","endToken":"flag"}' },
   { role: "user", content: 'Utterance: "select and cache triage completed"\nLanguage: python\nContent excerpt: triage_completed = check_status()' },
-  { role: "assistant", content: '{"cmd":"selectAndCacheToken","token":"triage_completed"}' }
+  { role: "assistant", content: '{"cmd":"selectAndCacheToken","token":"triage_completed"}' },
+  // misrecognition snapping — "who" is a mishearing of "my"; still resolves to the token in the excerpt
+  { role: "user", content: 'Utterance: "select who variable name"\nLanguage: python\nContent excerpt: result = myVariableName + offset' },
+  { role: "assistant", content: '{"cmd":"selectToken","token":"myVariableName"}' }
 ];
 var OUTPUT_SCHEMA = {
   type: "object",
