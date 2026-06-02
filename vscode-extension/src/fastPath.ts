@@ -308,6 +308,16 @@ const RULES: Rule[] = [
     // "dict" is a common Whisper mishearing of "dictate" — alias it here.
     rule('(?:dictate|dict)\\s+(.+)', m => ({ cmd: 'dictateText', text: m[1] })),
 
+    // Mode switching — explicit rules so every phrasing reaches the right command
+    // without depending on the canonical prefix-match fallback.
+    // "dictation" alone is the shortest unambiguous form; "stop dictating" / "coding mode"
+    // return to command mode when the user is mid-dictation.
+    rule('(?:start|enter|begin|go\\s+to|switch\\s+to)\\s+dictation(?:\\s+mode)?',
+         _ => ({ cmd: 'dictationMode' })),
+    rule('dictation(?:\\s+mode)?',  _ => ({ cmd: 'dictationMode' })),
+    rule('(?:stop\\s+dict(?:ating|ation)?|coding\\s+mode|back\\s+to\\s+commands?)',
+         _ => ({ cmd: 'commandMode' })),
+
     // UI — voice-only access to help and cache pad
     // "show commands" handled by canonical; keep human aliases
     rule('what\\s+can\\s+I\\s+say', _ => ({ cmd: 'showCommands' })),

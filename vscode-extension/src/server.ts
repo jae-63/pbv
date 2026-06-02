@@ -433,8 +433,14 @@ export class IpcServer {
                 const text   = raw.replace('{CURSOR}', '');
                 // Inject current line's indentation into every \n so the template
                 // adapts to whatever indent level the cursor is at (4-space, 5-space, etc.)
+                // If the cursor sits at the end of a block-opener (def/class/if/for…:),
+                // add one indentation level so docstrings land inside the body, not at the
+                // definition level. Tab size is read from VSCode editor settings.
                 const curLineText = editor.document.lineAt(editor.selection.active.line).text;
-                const indent  = curLineText.match(/^(\s*)/)?.[1] ?? '';
+                const baseIndent  = curLineText.match(/^(\s*)/)?.[1] ?? '';
+                const tabSize     = typeof editor.options.tabSize === 'number' ? editor.options.tabSize : 4;
+                const oneIndent   = editor.options.insertSpaces !== false ? ' '.repeat(tabSize) : '\t';
+                const indent      = curLineText.trimEnd().endsWith(':') ? baseIndent + oneIndent : baseIndent;
                 const indented = text.replace(/\n/g, '\n' + indent);
                 // Recalculate {CURSOR} position in the indented text:
                 // each \n before cursor gains indent.length extra chars.
