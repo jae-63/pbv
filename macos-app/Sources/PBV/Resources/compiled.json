@@ -3693,6 +3693,102 @@
       "written": "__slots__ = ({CURSOR},)"
     },
     {
+      "spoken": "dunder bool",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__bool__"
+    },
+    {
+      "spoken": "dunder contains",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__contains__"
+    },
+    {
+      "spoken": "dunder del",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__del__"
+    },
+    {
+      "spoken": "dunder less than",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__lt__"
+    },
+    {
+      "spoken": "dunder less equal",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__le__"
+    },
+    {
+      "spoken": "dunder greater than",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__gt__"
+    },
+    {
+      "spoken": "dunder greater equal",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__ge__"
+    },
+    {
+      "spoken": "dunder add",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__add__"
+    },
+    {
+      "spoken": "dunder doc",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__doc__"
+    },
+    {
+      "spoken": "dunder file",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__file__"
+    },
+    {
+      "spoken": "dunder class",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__class__"
+    },
+    {
+      "spoken": "dunder dict",
+      "source": "python",
+      "category": "metaclasses",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": "__dict__"
+    },
+    {
       "spoken": "async function",
       "source": "python",
       "category": "asyncio",
@@ -4019,6 +4115,438 @@
       "spaceBefore": true,
       "spaceAfter": false,
       "written": "multiprocessing.get_context(\"spawn\")"
+    },
+    {
+      "spoken": "argument parse",
+      "source": "python",
+      "category": "argparse",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "argparse"
+    },
+    {
+      "spoken": "import argument parse",
+      "source": "python",
+      "category": "argparse",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import argparse\n"
+    },
+    {
+      "spoken": "argument parser",
+      "source": "python",
+      "category": "argparse",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "argparse.ArgumentParser({CURSOR})"
+    },
+    {
+      "spoken": "add argument",
+      "source": "python",
+      "category": "argparse",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".add_argument({CURSOR})"
+    },
+    {
+      "spoken": "parse arguments",
+      "source": "python",
+      "category": "argparse",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".parse_args()"
+    },
+    {
+      "spoken": "argument namespace",
+      "source": "python",
+      "category": "argparse",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "argparse.Namespace"
+    },
+    {
+      "spoken": "import unique I D",
+      "source": "python",
+      "category": "uuid",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import uuid\n"
+    },
+    {
+      "spoken": "unique I D",
+      "source": "python",
+      "category": "uuid",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "uuid"
+    },
+    {
+      "spoken": "unique I D four",
+      "source": "python",
+      "category": "uuid",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "uuid.uuid4()"
+    },
+    {
+      "spoken": "unique I D class",
+      "source": "python",
+      "category": "uuid",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "uuid.UUID"
+    },
+    {
+      "spoken": "import U R L parse",
+      "source": "python",
+      "category": "urllib",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "from urllib.parse import {CURSOR}\n"
+    },
+    {
+      "spoken": "U R L encode",
+      "source": "python",
+      "category": "urllib",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "urllib.parse.urlencode"
+    },
+    {
+      "spoken": "U R L decode",
+      "source": "python",
+      "category": "urllib",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "urllib.parse.unquote"
+    },
+    {
+      "spoken": "U R L parse",
+      "source": "python",
+      "category": "urllib",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "urllib.parse.urlparse"
+    },
+    {
+      "spoken": "U R L join",
+      "source": "python",
+      "category": "urllib",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "urllib.parse.urljoin"
+    },
+    {
+      "spoken": "U R L open",
+      "source": "python",
+      "category": "urllib",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "urllib.request.urlopen"
+    },
+    {
+      "spoken": "import base sixty four",
+      "source": "python",
+      "category": "base64",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import base64\n"
+    },
+    {
+      "spoken": "base sixty four",
+      "source": "python",
+      "category": "base64",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "base64"
+    },
+    {
+      "spoken": "base sixty four encode",
+      "source": "python",
+      "category": "base64",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "base64.b64encode({CURSOR})"
+    },
+    {
+      "spoken": "base sixty four decode",
+      "source": "python",
+      "category": "base64",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "base64.b64decode({CURSOR})"
+    },
+    {
+      "spoken": "import path",
+      "source": "python",
+      "category": "pathlib",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "from pathlib import Path\n"
+    },
+    {
+      "spoken": "path of",
+      "source": "python",
+      "category": "pathlib",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Path({CURSOR})"
+    },
+    {
+      "spoken": "path join",
+      "source": "python",
+      "category": "os_path",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "os.path.join"
+    },
+    {
+      "spoken": "path exists",
+      "source": "python",
+      "category": "os_path",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "os.path.exists"
+    },
+    {
+      "spoken": "dir name",
+      "source": "python",
+      "category": "os_path",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "os.path.dirname"
+    },
+    {
+      "spoken": "base name",
+      "source": "python",
+      "category": "os_path",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "os.path.basename"
+    },
+    {
+      "spoken": "absolute path",
+      "source": "python",
+      "category": "os_path",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "os.path.abspath"
+    },
+    {
+      "spoken": "path split",
+      "source": "python",
+      "category": "os_path",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "os.path.split"
+    },
+    {
+      "spoken": "import P G two",
+      "source": "python",
+      "category": "psycopg2",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import psycopg2\n"
+    },
+    {
+      "spoken": "P G two",
+      "source": "python",
+      "category": "psycopg2",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "psycopg2"
+    },
+    {
+      "spoken": "P G connect",
+      "source": "python",
+      "category": "psycopg2",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "psycopg2.connect({CURSOR})"
+    },
+    {
+      "spoken": "P G cursor",
+      "source": "python",
+      "category": "psycopg2",
+      "spaceBefore": false,
+      "spaceAfter": false,
+      "written": ".cursor()"
+    },
+    {
+      "spoken": "import pie dan tic",
+      "source": "python",
+      "category": "pydantic",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "from pydantic import {CURSOR}\n"
+    },
+    {
+      "spoken": "pie dan tic",
+      "source": "python",
+      "category": "pydantic",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "pydantic"
+    },
+    {
+      "spoken": "base model",
+      "source": "python",
+      "category": "pydantic",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "BaseModel"
+    },
+    {
+      "spoken": "pie dan tic field",
+      "source": "python",
+      "category": "pydantic",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Field({CURSOR})"
+    },
+    {
+      "spoken": "model validator",
+      "source": "python",
+      "category": "pydantic",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "@model_validator(mode=\"{CURSOR}\")\n"
+    },
+    {
+      "spoken": "import sequel alchemy",
+      "source": "python",
+      "category": "sqlalchemy",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "from sqlalchemy import {CURSOR}\n"
+    },
+    {
+      "spoken": "sequel alchemy",
+      "source": "python",
+      "category": "sqlalchemy",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "sqlalchemy"
+    },
+    {
+      "spoken": "sequel session",
+      "source": "python",
+      "category": "sqlalchemy",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Session"
+    },
+    {
+      "spoken": "sequel column",
+      "source": "python",
+      "category": "sqlalchemy",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "Column({CURSOR})"
+    },
+    {
+      "spoken": "sequel engine",
+      "source": "python",
+      "category": "sqlalchemy",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "create_engine({CURSOR})"
+    },
+    {
+      "spoken": "import boto three",
+      "source": "python",
+      "category": "boto3",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import boto3\n"
+    },
+    {
+      "spoken": "boto three",
+      "source": "python",
+      "category": "boto3",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "boto3"
+    },
+    {
+      "spoken": "boto client",
+      "source": "python",
+      "category": "boto3",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "boto3.client(\"{CURSOR}\")"
+    },
+    {
+      "spoken": "boto resource",
+      "source": "python",
+      "category": "boto3",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "boto3.resource(\"{CURSOR}\")"
+    },
+    {
+      "spoken": "import async http",
+      "source": "python",
+      "category": "aiohttp",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import aiohttp\n"
+    },
+    {
+      "spoken": "async http",
+      "source": "python",
+      "category": "aiohttp",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "aiohttp"
+    },
+    {
+      "spoken": "async http session",
+      "source": "python",
+      "category": "aiohttp",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "aiohttp.ClientSession()"
+    },
+    {
+      "spoken": "async http get",
+      "source": "python",
+      "category": "aiohttp",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "await session.get({CURSOR})"
+    },
+    {
+      "spoken": "import H T T P X",
+      "source": "python",
+      "category": "httpx",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "import httpx\n"
+    },
+    {
+      "spoken": "H T T P X",
+      "source": "python",
+      "category": "httpx",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "httpx"
+    },
+    {
+      "spoken": "H T T P X client",
+      "source": "python",
+      "category": "httpx",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "httpx.Client()"
+    },
+    {
+      "spoken": "H T T P X async client",
+      "source": "python",
+      "category": "httpx",
+      "spaceBefore": true,
+      "spaceAfter": false,
+      "written": "httpx.AsyncClient()"
     },
     {
       "spoken": "resource",
