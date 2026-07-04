@@ -55,7 +55,10 @@ final class SpeechEngine: NSObject {
     var preferBuiltInMic: Bool = false
 
     // RMS below this level is treated as silence and not sent to Whisper.
-    private let energyThreshold: Float = 0.002
+    // 0.002 sits below typical room-tone noise floors (~0.015 observed), which
+    // makes the gate pass continuously and Whisper hallucinate command words
+    // from the initial prompt. Keep this above the ambient floor.
+    private let energyThreshold: Float = 0.03
 
     // Silence timeout — wait this long after last audio before transcribing.
     private let silenceDelay: TimeInterval = 0.8
@@ -550,7 +553,7 @@ final class SpeechEngine: NSObject {
         append("\r\n--\(boundary)\r\n")
         append("Content-Disposition: form-data; name=\"temperature\"\r\n\r\n0\r\n")
         append("--\(boundary)\r\n")
-        append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\njson\r\n")
+        append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\nverbose_json\r\n")
         append("--\(boundary)\r\n")
         append("Content-Disposition: form-data; name=\"language\"\r\n\r\nen\r\n")
         append("--\(boundary)\r\n")
