@@ -550,7 +550,7 @@ final class SpeechEngine: NSObject {
         append("\r\n--\(boundary)\r\n")
         append("Content-Disposition: form-data; name=\"temperature\"\r\n\r\n0\r\n")
         append("--\(boundary)\r\n")
-        append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\njson\r\n")
+        append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\nverbose_json\r\n")
         append("--\(boundary)\r\n")
         append("Content-Disposition: form-data; name=\"language\"\r\n\r\nen\r\n")
         append("--\(boundary)\r\n")
