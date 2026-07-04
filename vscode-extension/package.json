@@ -13,6 +13,12 @@
   "activationEvents": [
     "onStartupFinished"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
